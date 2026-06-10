@@ -76,12 +76,13 @@ ul { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 90px;
+  height: 110px;
 }
 
 .mp-logo img {
-  height: 72px;
+  height: 90px;
   width: auto;
+  max-width: 340px;
 }
 
 .mp-nav {
