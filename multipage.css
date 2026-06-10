@@ -80,8 +80,8 @@ ul { list-style: none; }
 }
 
 .mp-logo img {
-  height: 100px;
-  width: auto;
+  height: auto;
+  width: 300px;
 }
 
 .mp-nav {
