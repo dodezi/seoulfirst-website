@@ -1,0 +1,1066 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 | 서울퍼스트내과의원</title>
+  <meta name="description" content="서울퍼스트내과의원 공지사항 - 진료 일정 변경, 휴진 안내, 비급여 비용 공지 등 최신 소식을 확인하세요." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="multipage.css" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4",
+      measurementId:     "G-TYXZ511SVG"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <style>
+    /* ── 게시판 툴바 ── */
+    .board-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .board-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 200px;
+      max-width: 400px;
+    }
+    .board-search-wrap input {
+      flex: 1;
+      padding: 9px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border .2s;
+      outline: none;
+    }
+    .board-search-wrap input:focus { border-color: var(--teal); }
+    .board-search-wrap button {
+      padding: 9px 18px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .board-right { display: flex; align-items: center; gap: 10px; }
+    .board-count { font-size: 13px; color: var(--gray-400); }
+
+    /* 관리자 전용 버튼 (기본 숨김) */
+    .admin-only { display: none; }
+
+    .btn-write {
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+    .btn-write:hover { background: #0a5a5d; }
+
+    /* 로그인/로그아웃 */
+    .admin-bar {
+      background: #f0f9f9;
+      border: 1px solid rgba(13,115,119,.2);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--teal);
+      font-weight: 600;
+    }
+    .admin-bar.visible { display: flex; }
+    .btn-logout-small {
+      background: none;
+      border: 1px solid var(--teal);
+      color: var(--teal);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── 게시판 테이블 ── */
+    .notice-board-wrap { border-top: 2px solid var(--navy); }
+    .notice-th {
+      display: flex;
+      align-items: center;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--gray-300);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray-500);
+      background: var(--gray-50);
+    }
+    .n-num  { flex: 0 0 60px; text-align: center; }
+    .n-title{ flex: 1; }
+    .n-date { flex: 0 0 100px; text-align: center; }
+    .n-act  { flex: 0 0 110px; text-align: center; display: none; }
+
+    .notice-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 8px;
+      border-bottom: 1px solid var(--gray-200);
+      transition: background .15s;
+      gap: 4px;
+    }
+    .notice-row:hover { background: var(--gray-50); }
+    .notice-row.pinned { background: rgba(13,115,119,.04); }
+    .notice-row .n-num {
+      font-size: 13px; color: var(--gray-400); font-weight: 600; text-align: center;
+    }
+    .notice-row .n-num.pin { color: var(--teal); }
+    .notice-row .n-title {
+      font-size: 15px; color: var(--gray-700); cursor: pointer;
+    }
+    .notice-row .n-title:hover { color: var(--teal); }
+    .pin-badge {
+      display: inline-block;
+      background: var(--teal); color: #fff;
+      font-size: 11px; padding: 2px 7px;
+      border-radius: 4px; margin-right: 8px;
+      font-weight: 600; vertical-align: middle;
+    }
+    .notice-row .n-date { font-size: 13px; color: var(--gray-400); text-align: center; }
+    .notice-row .n-act  { text-align: center; display: none; }
+
+    .btn-edit-row, .btn-del-row {
+      border: none; padding: 4px 10px;
+      border-radius: 5px; font-size: 12px;
+      font-weight: 600; cursor: pointer;
+    }
+    .btn-edit-row { background: #eaf4f4; color: var(--teal); margin-right: 4px; }
+    .btn-del-row  { background: #fdecea; color: #c0392b; }
+
+    .notice-empty {
+      text-align: center; padding: 60px 0;
+      color: var(--gray-400); font-size: 15px;
+    }
+    .search-empty {
+      text-align: center; padding: 40px 0;
+      color: var(--gray-400); font-size: 14px;
+    }
+
+    /* 페이지네이션 */
+    .notice-pagination {
+      display: flex; justify-content: center;
+      gap: 6px; margin-top: 24px;
+    }
+    .page-btn {
+      width: 36px; height: 36px;
+      border: 1px solid var(--gray-200);
+      background: #fff; border-radius: 6px;
+      font-size: 14px; cursor: pointer;
+      transition: all .15s;
+    }
+    .page-btn:hover  { border-color: var(--teal); color: var(--teal); }
+    .page-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .page-btn:disabled { opacity: .35; cursor: default; }
+
+    /* ── 글 내용 모달 ── */
+    .notice-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 9000;
+      align-items: center; justify-content: center;
+    }
+    .notice-modal-backdrop.open { display: flex; }
+    .notice-modal {
+      background: #fff; border-radius: var(--radius-lg);
+      max-width: 620px; width: 92%;
+      max-height: 80vh; overflow-y: auto;
+      padding: 36px 32px; position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .notice-modal-close {
+      position: absolute; top: 16px; right: 20px;
+      font-size: 22px; cursor: pointer;
+      color: var(--gray-400); background: none; border: none;
+    }
+    .notice-modal h3 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .notice-modal-meta { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--gray-200); }
+    .notice-modal-body { font-size: 15px; color: var(--gray-600); line-height: 1.85; white-space: pre-line; }
+
+    /* ── 글쓰기/수정 모달 ── */
+    .edit-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 9100;
+      align-items: center; justify-content: center;
+    }
+    .edit-modal-backdrop.open { display: flex; }
+    .edit-modal-box {
+      background: #fff; border-radius: var(--radius-lg);
+      width: min(660px, 94vw); max-height: 90vh;
+      overflow-y: auto; padding: 36px 32px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .edit-modal-box h2 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 24px; }
+    .em-close {
+      position: absolute; top: 16px; right: 20px;
+      font-size: 22px; cursor: pointer;
+      color: var(--gray-400); background: none; border: none;
+    }
+    .em-field { margin-bottom: 18px; }
+    .em-field label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .em-field input[type=text],
+    .em-field textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 15px; font-family: inherit;
+      transition: border .2s;
+    }
+    .em-field input:focus, .em-field textarea:focus { outline: none; border-color: var(--teal); }
+    .em-field textarea { min-height: 200px; resize: vertical; line-height: 1.75; }
+    .em-pin { display: flex; align-items: center; gap: 10px; }
+    .em-pin input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--teal); cursor: pointer; }
+    .em-pin label { font-size: 14px; font-weight: 500; cursor: pointer; }
+    .em-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .btn-em-cancel {
+      padding: 10px 22px; background: var(--gray-100);
+      color: #555; border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-em-save {
+      padding: 10px 28px; background: var(--teal);
+      color: #fff; border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-em-save:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── 삭제 확인 모달 ── */
+    .del-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 9200;
+      align-items: center; justify-content: center;
+    }
+    .del-modal-backdrop.open { display: flex; }
+    .del-modal-box {
+      background: #fff; border-radius: var(--radius-lg);
+      padding: 32px 28px; width: 340px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .del-modal-box h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .del-modal-box p  { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 24px; }
+    .del-modal-box .del-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn-del-confirm { padding: 10px 24px; background: #e74c3c; color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; }
+
+    /* ── 관리자 로그인 모달 ── */
+    .login-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 9300;
+      align-items: center; justify-content: center;
+    }
+    .login-modal-backdrop.open { display: flex; }
+    .login-modal-box {
+      background: #fff; border-radius: var(--radius-lg);
+      padding: 36px 32px; width: min(380px, 94vw);
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      position: relative;
+    }
+    .login-modal-box h2 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 24px; text-align: center; }
+    .lm-close { position: absolute; top: 16px; right: 20px; font-size: 22px; cursor: pointer; color: var(--gray-400); background: none; border: none; }
+    .lm-field { margin-bottom: 14px; }
+    .lm-field label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .lm-field input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 15px; font-family: inherit;
+    }
+    .lm-field input:focus { outline: none; border-color: var(--teal); }
+    .btn-lm-login {
+      width: 100%; padding: 13px;
+      background: var(--teal); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 8px;
+    }
+    #lm-error { color: #c0392b; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+    /* ── 관리자 링크 (페이지 하단 숨김) ── */
+    .admin-trigger {
+      position: fixed; bottom: 140px; right: 20px;
+      font-size: 11px; color: rgba(0,0,0,.18);
+      cursor: pointer; user-select: none;
+      writing-mode: vertical-rl;
+      letter-spacing: 1px;
+    }
+
+    /* ── 토스트 ── */
+    #toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--navy); color: #fff;
+      padding: 12px 28px; border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      opacity: 0; transition: all .3s;
+      pointer-events: none; z-index: 9999;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .board-toolbar { flex-direction: column; align-items: stretch; }
+      .board-search-wrap { max-width: 100%; }
+      .notice-modal, .edit-modal-box { padding: 24px 18px; }
+      .n-date { flex: 0 0 76px; font-size: 12px; }
+      .n-act  { flex: 0 0 88px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header id="mp-header">
+  <div class="mp-header-top">
+    <div class="container">
+      <a href="tel:0315151500">📞 031-515-1500</a>
+      <span class="sep">|</span>
+      평일 08:30–18:00
+      <span class="sep">|</span>
+      토 08:30–13:30
+      <span class="sep">|</span>
+      일·공휴일 휴진
+    </div>
+  </div>
+  <div class="mp-header-main">
+    <div class="container mp-header-inner">
+      <a href="index.html" class="mp-logo">
+        <img src="images/bf5e9252c7c01.png" alt="서울퍼스트내과 로고" />
+      </a>
+      <nav class="mp-nav" id="mpNav">
+        <div class="mp-nav-item">
+          <a href="hours.html" class="mp-nav-link">병원 이용안내 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="hours.html">진료시간</a>
+            <a href="booking-info.html">예약안내</a>
+            <a href="location.html">오시는 길</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="about.html" class="mp-nav-link">의료진 소개 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="about.html">인사말</a>
+            <a href="doctors.html">원장 약력</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="checkup.html" class="mp-nav-link">건강검진 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="general-checkup.html">일반건강공단검진</a>
+            <a href="cancer-checkup.html">5대암 검진</a>
+            <a href="checkup.html">종합패키지 검진</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="facility.html" class="mp-nav-link">시설 및 장비 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="facility.html">내부시설</a>
+            <a href="equipment.html">보유장비</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="general-medicine.html" class="mp-nav-link">내과 진료</a>
+        </div>
+        <div class="mp-nav-item">
+          <a href="notice.html" class="mp-nav-link active">공지사항</a>
+        </div>
+        <div class="mp-nav-item">
+          <a href="health.html" class="mp-nav-link">건강소식 및 블로그 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="health.html">건강소식</a>
+            <a href="blog.html">블로그</a>
+          </div>
+        </div>
+        <a href="booking.html" class="mp-nav-link mp-nav-cta">예약하기</a>
+      </nav>
+      <button class="mp-menu-toggle" id="mpMenuToggle" aria-label="메뉴 열기" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== PAGE HERO ===================== -->
+<div class="page-hero">
+  <div class="container">
+    <span class="page-hero-badge">서울퍼스트내과의원</span>
+    <h1>공지사항</h1>
+    <p class="page-hero-breadcrumb">
+      <a href="index.html">홈</a><span>›</span>공지사항
+    </p>
+  </div>
+</div>
+
+<!-- ===================== 공지사항 게시판 ===================== -->
+<section class="mp-section">
+  <div class="container">
+
+    <!-- 관리자 로그인 상태 바 -->
+    <div class="admin-bar" id="adminBar">
+      <span>🔐 관리자로 로그인됨 — <span id="adminEmail"></span></span>
+      <button class="btn-logout-small" id="btnLogout">로그아웃</button>
+    </div>
+
+    <!-- 툴바: 검색 + 글쓰기 -->
+    <div class="board-toolbar">
+      <div class="board-search-wrap">
+        <input type="text" id="searchInput" placeholder="제목으로 검색하세요..." />
+        <button id="searchBtn">검색</button>
+      </div>
+      <div class="board-right">
+        <span class="board-count" id="boardCount"></span>
+        <button class="btn-write admin-only" id="btnWrite">✏️ 글쓰기</button>
+      </div>
+    </div>
+
+    <!-- 테이블 헤더 -->
+    <div class="notice-board-wrap">
+      <div class="notice-th">
+        <div class="n-num">번호</div>
+        <div class="n-title">제목</div>
+        <div class="n-date">날짜</div>
+        <div class="n-act admin-only" id="thAct">관리</div>
+      </div>
+      <!-- 글 목록 -->
+      <div id="noticeList">
+        <div class="notice-empty">공지사항을 불러오는 중입니다...</div>
+      </div>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="notice-pagination" id="pagination"></div>
+
+    <!-- 관리자 버튼 영역 -->
+    <div style="margin-top:32px; text-align:center; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; align-items:center;">
+      <!-- 비로그인 상태: 관리자 글쓰기 버튼 -->
+      <button id="btnAdminEntry" style="
+        background:#fff; border:1.5px solid var(--gray-200);
+        color:var(--gray-400); padding:10px 28px;
+        border-radius:var(--radius); font-size:14px;
+        cursor:pointer; transition:all .2s;
+        font-family:inherit;
+      " onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
+         onmouseout="this.style.borderColor='var(--gray-200)';this.style.color='var(--gray-400)'">
+        🔐 관리자 글쓰기
+      </button>
+
+      <!-- 예약명단 확인 버튼 (항상 표시) -->
+      <button id="btnBookingEntry" style="
+        background:#fff; border:1.5px solid var(--gray-200);
+        color:var(--gray-400); padding:10px 28px;
+        border-radius:var(--radius); font-size:14px;
+        cursor:pointer; transition:all .2s;
+        font-family:inherit;
+      " onmouseover="this.style.borderColor='#0f2b3d';this.style.color='#0f2b3d'"
+         onmouseout="this.style.borderColor='var(--gray-200)';this.style.color='var(--gray-400)'">
+        📋 예약명단 확인하기
+      </button>
+
+      <!-- 로그인 상태: 새 글 작성 + 로그아웃 -->
+      <div id="adminWriteBar" style="display:none; justify-content:center; gap:12px; align-items:center; flex-wrap:wrap;">
+        <button id="btnWrite2" style="
+          background:var(--teal); color:#fff; border:none;
+          padding:11px 28px; border-radius:var(--radius);
+          font-size:15px; font-weight:700; cursor:pointer;
+          font-family:inherit; transition:background .2s;
+        " onmouseover="this.style.background='#0a5a5d'"
+           onmouseout="this.style.background='var(--teal)'">
+          ✏️ 새 글 작성
+        </button>
+        <span style="font-size:13px; color:var(--gray-400);" id="adminEmailBadge"></span>
+        <button id="btnBookingList" style="
+          background:#0f2b3d; color:#fff; border:none;
+          padding:11px 22px; border-radius:var(--radius);
+          font-size:14px; font-weight:700; cursor:pointer;
+          font-family:inherit; transition:background .2s;
+        " onmouseover="this.style.background='#1a3d55'"
+           onmouseout="this.style.background='#0f2b3d'"
+           onclick="location.href='booking-list.html'">
+          📋 예약명단 확인하기
+        </button>
+        <button id="btnLogout2" style="
+          background:none; border:1px solid var(--gray-200);
+          color:var(--gray-400); padding:9px 18px;
+          border-radius:var(--radius); font-size:13px;
+          cursor:pointer; font-family:inherit;
+        ">로그아웃</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== 빠른 안내 ===================== -->
+<section class="mp-section mp-section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">빠른 안내</span>
+      <h2 class="section-title">자주 묻는 <span class="text-accent">진료 정보</span></h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🕐</div>
+        <h3>진료 시간</h3>
+        <p>평일 08:30–18:00 / 토요일 08:30–13:30<br />일요일·공휴일 휴진<br />수요일 오후·화·목 오후 일부 의사 휴진</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📞</div>
+        <h3>예약 및 문의</h3>
+        <p>전화: <a href="tel:0315151500" style="color:var(--teal);font-weight:700;">031-515-1500</a><br />FAX: 031-515-1501<br />온라인: 24시간 예약 신청 가능</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🩺</div>
+        <h3>내시경 주의사항</h3>
+        <p>위내시경: 검진 당일 공복<br />대장내시경: 전날부터 장 세척 필요<br />수면 내시경: 보호자 동반 필수</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="mp-footer">
+  <div class="container mp-footer-inner">
+    <div>
+      <img src="images/bf5e9252c7c01.png" alt="서울퍼스트내과 로고" class="mp-footer-logo" />
+      <p class="mp-footer-addr">
+        상호: 서울퍼스트내과의원 | 대표원장: 이동원<br />
+        사업자등록번호: 120-98-28430<br />
+        경기 남양주시 다산중앙로82번안길 118 다산메인타워 3층<br />
+        T. 031-515-1500 | F. 031-515-1501
+      </p>
+      <p class="mp-footer-copy">ⓒ 2025 서울퍼스트내과의원. All rights reserved.</p>
+    </div>
+    <div class="mp-footer-col">
+      <h5>병원 이용안내</h5>
+      <a href="hours.html">진료시간</a>
+      <a href="booking-info.html">예약안내</a>
+      <a href="location.html">오시는 길</a>
+    </div>
+    <div class="mp-footer-col">
+      <h5>진료·검진</h5>
+      <a href="general-medicine.html">내과 진료</a>
+      <a href="services.html">위·대장내시경</a>
+      <a href="general-checkup.html">일반건강공단검진</a>
+      <a href="cancer-checkup.html">5대암 검진</a>
+      <a href="checkup.html">건강검진 패키지</a>
+    </div>
+    <div class="mp-footer-col">
+      <h5>예약·상담</h5>
+      <a href="booking.html">온라인 예약</a>
+      <a href="tel:0315151500">전화 예약</a>
+      <a href="notice.html">공지사항</a>
+      <a href="https://blog.naver.com/dodezi" target="_blank" rel="noopener">블로그</a>
+    </div>
+  </div>
+  <hr class="mp-footer-divider" />
+  <div class="container mp-footer-bottom">
+    <span id="adminTrigger" style="cursor:default;user-select:none;">ⓒ 2025 서울퍼스트내과의원</span>
+    <span>평일 08:30–18:00 | 토 08:30–13:30 | 일·공휴일 휴진</span>
+  </div>
+</footer>
+
+<div class="mp-floating">
+  <a href="tel:0315151500" class="mp-float-btn call" title="전화하기">📞</a>
+  <a href="booking.html" class="mp-float-btn book" title="예약하기">📅</a>
+  <button class="mp-float-btn top" id="mpScrollTop" title="맨 위로" style="opacity:0;pointer-events:none;">↑</button>
+</div>
+
+
+<!-- ===================== 글 내용 모달 ===================== -->
+<div class="notice-modal-backdrop" id="viewModal">
+  <div class="notice-modal">
+    <button class="notice-modal-close" id="viewModalClose">✕</button>
+    <h3 id="viewTitle"></h3>
+    <div class="notice-modal-meta" id="viewMeta"></div>
+    <div class="notice-modal-body" id="viewBody"></div>
+  </div>
+</div>
+
+<!-- ===================== 글쓰기/수정 모달 ===================== -->
+<div class="edit-modal-backdrop" id="editModal">
+  <div class="edit-modal-box">
+    <button class="em-close" id="editModalClose">✕</button>
+    <h2 id="editModalHeading">새 글 작성</h2>
+    <input type="hidden" id="editDocId" />
+    <div class="em-field">
+      <label>제목 <span style="color:#e74c3c">*</span></label>
+      <input type="text" id="editTitle" placeholder="공지 제목을 입력하세요" maxlength="100" />
+    </div>
+    <div class="em-field">
+      <label>내용 <span style="color:#e74c3c">*</span></label>
+      <textarea id="editContent" placeholder="공지 내용을 입력하세요&#10;줄바꿈은 그대로 표시됩니다."></textarea>
+    </div>
+    <div class="em-field">
+      <div class="em-pin">
+        <input type="checkbox" id="editPinned" />
+        <label for="editPinned">📌 상단 고정 공지로 설정</label>
+      </div>
+    </div>
+    <div class="em-actions">
+      <button class="btn-em-cancel" id="editModalCancel">취소</button>
+      <button class="btn-em-save"   id="editModalSave">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 삭제 확인 모달 ===================== -->
+<div class="del-modal-backdrop" id="delModal">
+  <div class="del-modal-box">
+    <h3>글을 삭제할까요?</h3>
+    <p id="delTitlePreview" style="font-weight:600;color:#333;margin-bottom:6px;"></p>
+    <p>삭제한 글은 복구할 수 없습니다.</p>
+    <div class="del-actions">
+      <button class="btn-em-cancel" id="delModalCancel">취소</button>
+      <button class="btn-del-confirm" id="delModalConfirm">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 관리자 로그인 모달 ===================== -->
+<div class="login-modal-backdrop" id="loginModal">
+  <div class="login-modal-box">
+    <button class="lm-close" id="loginModalClose">✕</button>
+    <h2>관리자 로그인</h2>
+    <div class="lm-field">
+      <label>이메일</label>
+      <input type="email" id="lmEmail" placeholder="관리자 이메일" autocomplete="username" />
+    </div>
+    <div class="lm-field">
+      <label>비밀번호</label>
+      <input type="password" id="lmPw" placeholder="비밀번호" autocomplete="current-password" />
+    </div>
+    <button class="btn-lm-login" id="btnLmLogin">로그인</button>
+    <div id="lm-error"></div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script src="multipage.js"></script>
+<script>
+// ── 상태 ─────────────────────────────────────────────────
+const PER_PAGE   = 10;
+let allDocs      = [];   // 전체 문서
+let filteredDocs = [];   // 검색 결과
+let currentPage  = 1;
+let isAdmin      = false;
+let deleteTargetId = null;
+
+// ── 관리자 UI 토글 ────────────────────────────────────────
+function setAdminUI(user) {
+  isAdmin = !!user;
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin ? (el.tagName === 'DIV' ? 'flex' : 'inline-block') : 'none';
+  });
+
+  // 상단 관리자 바
+  const bar = document.getElementById('adminBar');
+  if (isAdmin) {
+    bar.classList.add('visible');
+    document.getElementById('adminEmail').textContent = user.email;
+  } else {
+    bar.classList.remove('visible');
+  }
+
+  // 하단 버튼 영역
+  const entryBtn   = document.getElementById('btnAdminEntry');
+  const writeBar   = document.getElementById('adminWriteBar');
+  if (isAdmin) {
+    entryBtn.style.display = 'none';
+    writeBar.style.display = 'flex';
+    document.getElementById('adminEmailBadge').textContent = user.email + ' 로그인 중';
+  } else {
+    entryBtn.style.display = 'inline-block';
+    writeBar.style.display = 'none';
+  }
+
+  renderList(); // 수정/삭제 버튼 재렌더
+}
+
+// ── 인증 상태 감지 ────────────────────────────────────────
+auth.onAuthStateChanged(user => setAdminUI(user));
+
+// ── 게시글 불러오기 ───────────────────────────────────────
+async function loadNotices() {
+  try {
+    const snap = await db.collection('notices')
+      .orderBy('createdAt', 'desc').get();
+
+    allDocs = snap.docs
+      .map(d => ({ id: d.id, data: d.data() }))
+      .sort((a, b) => (b.data.pinned ? 1 : 0) - (a.data.pinned ? 1 : 0));
+
+    filteredDocs = [...allDocs];
+    currentPage  = 1;
+    renderList();
+  } catch(e) {
+    document.getElementById('noticeList').innerHTML =
+      '<div class="notice-empty" style="color:#c0392b;">불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';
+    console.error(e);
+  }
+}
+
+// ── 목록 렌더링 ───────────────────────────────────────────
+function renderList() {
+  const listEl = document.getElementById('noticeList');
+  const total  = filteredDocs.length;
+
+  document.getElementById('boardCount').textContent = `총 ${total}건`;
+
+  if (total === 0) {
+    const isSearch = document.getElementById('searchInput').value.trim() !== '';
+    listEl.innerHTML = isSearch
+      ? '<div class="search-empty">검색 결과가 없습니다.</div>'
+      : '<div class="notice-empty">등록된 공지사항이 없습니다.</div>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const start    = (currentPage - 1) * PER_PAGE;
+  const pageDocs = filteredDocs.slice(start, start + PER_PAGE);
+  let normalNum  = filteredDocs.filter(d => !d.data.pinned).length; // 전체 일반글 수 기준
+  let normalIdx  = 0;
+
+  // 핀 고정 글은 번호 없이, 일반 글은 내림차순 번호
+  const nonPinnedTotal = allDocs.filter(d => !d.data.pinned).length;
+
+  listEl.innerHTML = pageDocs.map((item, i) => {
+    const d = item.data;
+    const isPinned = !!d.pinned;
+    const globalIdx = start + i;
+    // 일반 글 번호: 전체 일반글 수에서 해당 위치 빼기
+    const pinnedCount = allDocs.filter(d2 => d2.data.pinned).length;
+    const nonPinnedIdx = filteredDocs
+      .slice(0, globalIdx)
+      .filter(d2 => !d2.data.pinned).length;
+    const displayNum = isPinned ? '📌' : (nonPinnedTotal - nonPinnedIdx);
+
+    const dateStr = d.createdAt
+      ? new Date(d.createdAt.seconds * 1000)
+          .toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'})
+          .replace(/\. /g,'.').replace(/\.$/,'')
+      : '-';
+
+    const actBtns = isAdmin
+      ? `<div class="n-act" style="display:flex;justify-content:center;gap:4px;">
+           <button class="btn-edit-row" onclick="openEdit('${item.id}')">수정</button>
+           <button class="btn-del-row"  onclick="openDel('${item.id}')">삭제</button>
+         </div>`
+      : '';
+
+    return `
+      <div class="notice-row${isPinned?' pinned':''}">
+        <div class="n-num${isPinned?' pin':''}">${displayNum}</div>
+        <div class="n-title" onclick="location.href='notice-view.html?id=${item.id}'" style="cursor:pointer;">
+          ${isPinned ? '<span class="pin-badge">공지</span>' : ''}
+          ${escHtml(d.title||'(제목 없음)')}
+        </div>
+        <div class="n-date">${dateStr}</div>
+        ${actBtns}
+      </div>`;
+  }).join('');
+
+  renderPagination(total);
+}
+
+// ── 페이지네이션 ──────────────────────────────────────────
+function renderPagination(total) {
+  const pages  = Math.ceil(total / PER_PAGE);
+  const pEl    = document.getElementById('pagination');
+  if (pages <= 1) { pEl.innerHTML = ''; return; }
+
+  const RANGE  = 2;
+  let html     = '';
+  html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let p = 1; p <= pages; p++) {
+    if (p === 1 || p === pages || Math.abs(p - currentPage) <= RANGE) {
+      html += `<button class="page-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
+    } else if (Math.abs(p - currentPage) === RANGE + 1) {
+      html += `<button class="page-btn" disabled>…</button>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button>`;
+  pEl.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filteredDocs.length / PER_PAGE);
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderList();
+  document.querySelector('.mp-section').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ── 검색 ──────────────────────────────────────────────────
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if (!q) {
+    filteredDocs = [...allDocs];
+  } else {
+    filteredDocs = allDocs.filter(item =>
+      (item.data.title  || '').toLowerCase().includes(q) ||
+      (item.data.content|| '').toLowerCase().includes(q)
+    );
+  }
+  currentPage = 1;
+  renderList();
+}
+
+document.getElementById('searchBtn').addEventListener('click', doSearch);
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+// 검색어 지우면 전체 복원
+document.getElementById('searchInput').addEventListener('input', e => {
+  if (!e.target.value.trim()) {
+    filteredDocs = [...allDocs];
+    currentPage  = 1;
+    renderList();
+  }
+});
+
+// ── 글 내용 보기 모달 ────────────────────────────────────
+function openView(docId) {
+  const item = allDocs.find(d => d.id === docId);
+  if (!item) return;
+  const d = item.data;
+  const dateStr = d.createdAt
+    ? new Date(d.createdAt.seconds*1000).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})
+    : '';
+  document.getElementById('viewTitle').textContent = d.title || '';
+  document.getElementById('viewMeta').textContent  = dateStr;
+  document.getElementById('viewBody').textContent  = d.content || '';
+  openModal('viewModal');
+}
+
+// ── 글쓰기/수정 모달 ─────────────────────────────────────
+document.getElementById('btnWrite').addEventListener('click', () => {
+  document.getElementById('editModalHeading').textContent = '새 글 작성';
+  document.getElementById('editDocId').value   = '';
+  document.getElementById('editTitle').value   = '';
+  document.getElementById('editContent').value = '';
+  document.getElementById('editPinned').checked= false;
+  openModal('editModal');
+});
+
+function openEdit(docId) {
+  const item = allDocs.find(d => d.id === docId);
+  if (!item) return;
+  const d = item.data;
+  document.getElementById('editModalHeading').textContent = '공지 수정';
+  document.getElementById('editDocId').value   = docId;
+  document.getElementById('editTitle').value   = d.title   || '';
+  document.getElementById('editContent').value = d.content || '';
+  document.getElementById('editPinned').checked= !!d.pinned;
+  openModal('editModal');
+}
+
+document.getElementById('editModalSave').addEventListener('click', async () => {
+  const title   = document.getElementById('editTitle').value.trim();
+  const content = document.getElementById('editContent').value.trim();
+  const pinned  = document.getElementById('editPinned').checked;
+  const docId   = document.getElementById('editDocId').value;
+
+  if (!title)   { alert('제목을 입력해 주세요.'); return; }
+  if (!content) { alert('내용을 입력해 주세요.'); return; }
+
+  const btn = document.getElementById('editModalSave');
+  btn.disabled = true; btn.textContent = '저장 중...';
+
+  try {
+    if (docId) {
+      await db.collection('notices').doc(docId).update({
+        title, content, pinned,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('notices').add({
+        title, content, pinned,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    closeModal('editModal');
+    await loadNotices();
+    showToast(docId ? '✅ 수정되었습니다.' : '✅ 공지가 등록되었습니다.');
+  } catch(e) {
+    alert('저장 오류: ' + e.message);
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '저장하기';
+  }
+});
+
+// ── 삭제 모달 ────────────────────────────────────────────
+function openDel(docId) {
+  deleteTargetId = docId;
+  const item = allDocs.find(d => d.id === docId);
+  document.getElementById('delTitlePreview').textContent = item ? `"${item.data.title}"` : '';
+  openModal('delModal');
+}
+
+document.getElementById('delModalConfirm').addEventListener('click', async () => {
+  if (!deleteTargetId) return;
+  try {
+    await db.collection('notices').doc(deleteTargetId).delete();
+    closeModal('delModal');
+    await loadNotices();
+    showToast('🗑️ 삭제되었습니다.');
+  } catch(e) { alert('삭제 오류: ' + e.message); }
+  deleteTargetId = null;
+});
+
+// ── 관리자 로그인 모달 ───────────────────────────────────
+document.getElementById('btnAdminEntry').addEventListener('click', () => {
+  if (!isAdmin) openModal('loginModal');
+});
+
+// ── 예약명단 버튼 ─────────────────────────────────────────
+document.getElementById('btnBookingEntry').addEventListener('click', () => {
+  if (isAdmin) {
+    location.href = 'booking-list.html';
+  } else {
+    // 로그인 후 예약명단으로 이동하도록 플래그 설정
+    sessionStorage.setItem('afterLoginGoto', 'booking-list');
+    openModal('loginModal');
+  }
+});
+document.getElementById('btnWrite2').addEventListener('click', () => {
+  document.getElementById('editModalHeading').textContent = '새 글 작성';
+  document.getElementById('editDocId').value   = '';
+  document.getElementById('editTitle').value   = '';
+  document.getElementById('editContent').value = '';
+  document.getElementById('editPinned').checked= false;
+  openModal('editModal');
+});
+document.getElementById('btnLogout2').addEventListener('click', async () => {
+  await auth.signOut();
+  showToast('로그아웃되었습니다.');
+});
+
+document.getElementById('btnLmLogin').addEventListener('click', doLogin);
+document.getElementById('lmPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogin() {
+  const email = document.getElementById('lmEmail').value.trim();
+  const pw    = document.getElementById('lmPw').value;
+  const errEl = document.getElementById('lm-error');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+
+  const btn = document.getElementById('btnLmLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+    closeModal('loginModal');
+    document.getElementById('lmEmail').value = '';
+    document.getElementById('lmPw').value    = '';
+    const goto = sessionStorage.getItem('afterLoginGoto');
+    if (goto === 'booking-list') {
+      sessionStorage.removeItem('afterLoginGoto');
+      location.href = 'booking-list.html';
+      return;
+    }
+    showToast('🔐 관리자로 로그인되었습니다.');
+  } catch(e) {
+    let msg = '로그인에 실패했습니다.';
+    if (['auth/wrong-password','auth/user-not-found','auth/invalid-credential'].includes(e.code))
+      msg = '이메일 또는 비밀번호가 올바르지 않습니다.';
+    errEl.textContent = msg;
+  } finally {
+    btn.textContent = '로그인'; btn.disabled = false;
+  }
+}
+
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await auth.signOut();
+  showToast('로그아웃되었습니다.');
+});
+
+// ── 모달 공통 ────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+[
+  ['viewModal',  'viewModalClose',   null],
+  ['editModal',  'editModalClose',   'editModalCancel'],
+  ['delModal',   null,               'delModalCancel'],
+  ['loginModal', 'loginModalClose',  null],
+].forEach(([id, closeBtn, cancelBtn]) => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+  if (closeBtn)  document.getElementById(closeBtn).addEventListener('click',  () => closeModal(id));
+  if (cancelBtn) document.getElementById(cancelBtn).addEventListener('click', () => closeModal(id));
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    ['viewModal','editModal','delModal','loginModal'].forEach(closeModal);
+});
+
+// ── 토스트 ───────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── 시작 ─────────────────────────────────────────────────
+loadNotices();
+</script>
+</body>
+</html>

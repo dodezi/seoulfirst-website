@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "seoulfirst-multipage",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5678", "--directory", "C:\\Users\\dodez\\Downloads\\seoulfirst_multipage"],
+      "port": 5678
+    }
+  ]
+}

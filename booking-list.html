@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>예약명단 | 서울퍼스트내과의원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f9; color: #1e2a38; min-height: 100vh; }
+
+    /* ── 로그인 화면 ── */
+    #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #fff; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.12); }
+    .login-box .logo { text-align: center; margin-bottom: 24px; }
+    .login-box .logo img { height: 38px; }
+    .login-box h2 { font-size: 19px; font-weight: 700; text-align: center; color: #0f2b3d; margin-bottom: 24px; }
+    .lf { margin-bottom: 14px; }
+    .lf label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .lf input { width: 100%; padding: 11px 14px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 15px; font-family: inherit; }
+    .lf input:focus { outline: none; border-color: #0d7377; }
+    .btn-login { width: 100%; padding: 13px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; }
+    #loginError { color: #c0392b; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+    /* ── 관리자 화면 ── */
+    #adminScreen { display: none; }
+
+    .top-bar { background: #0f2b3d; color: #fff; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .top-bar .tl { display: flex; align-items: center; gap: 14px; }
+    .top-bar .tl img { height: 28px; }
+    .top-bar .tl span { font-size: 15px; font-weight: 700; }
+    .top-bar .tr { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .btn-small  { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+    .btn-logout { background: rgba(255,255,255,.15); color: #fff; }
+    .btn-back   { background: rgba(255,255,255,.1); color: #fff; text-decoration: none; display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+    .page-body { max-width: 1400px; margin: 0 auto; padding: 28px 20px; }
+
+    /* ── 툴바 ── */
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .toolbar h1 { font-size: 22px; font-weight: 700; color: #0f2b3d; flex: 1; }
+    .search-box input { padding: 8px 14px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 14px; font-family: inherit; width: 200px; }
+    .search-box input:focus { outline: none; border-color: #0d7377; }
+    .btn-reload { padding: 8px 16px; background: #e8f4f4; color: #0d7377; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    /* ── 필터 탭 ── */
+    .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-btn { padding: 7px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid #dde1e7; background: #fff; color: #666; transition: all .15s; font-family: inherit; }
+    .filter-btn.on { background: #0d7377; border-color: #0d7377; color: #fff; }
+    .filter-btn.del-tab.on { background: #c0392b; border-color: #c0392b; color: #fff; }
+    .stat-chips { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+    .stat-chip  { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+    .chip-total   { background: #e8f4f4; color: #0d7377; }
+    .chip-waiting { background: #fff3e0; color: #e67e22; }
+    .chip-confirm { background: #e8f8e8; color: #27ae60; }
+    .chip-deleted { background: #fdecea; color: #c0392b; }
+
+    /* ── 테이블 ── */
+    .table-wrap { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    thead th { background: #f8fafc; padding: 11px 12px; font-size: 12px; font-weight: 700; color: #555; border-bottom: 2px solid #e8ecf0; text-align: left; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #f0f2f4; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr.row-deleted { background: #fff8f8; opacity: .75; }
+    tbody td { padding: 11px 12px; font-size: 13px; color: #333; vertical-align: middle; }
+    .td-num  { color: #aaa; font-size: 12px; width: 36px; text-align: center; }
+    .td-name { font-weight: 600; white-space: nowrap; }
+    .td-phone { font-family: monospace; font-size: 13px; color: #0d7377; white-space: nowrap; }
+    .td-date  { font-size: 13px; white-space: nowrap; }
+    .td-recv  { font-size: 11px; color: #aaa; white-space: nowrap; }
+    .td-service { font-size: 12px; max-width: 120px; }
+    .td-memo    { font-size: 12px; color: #666; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* 상태 배지 */
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; user-select: none; }
+    .s-대기중   { background: #fff3e0; color: #e67e22; }
+    .s-확인완료 { background: #e8f8e8; color: #27ae60; }
+    .s-완료     { background: #f0f0f0; color: #888; }
+    .s-취소     { background: #fdecea; color: #c0392b; }
+    .s-deleted  { background: #f0f0f0; color: #bbb; font-size: 11px; cursor: default; }
+
+    /* 확인 직원 */
+    .checker-wrap { display: flex; align-items: center; gap: 5px; min-width: 120px; }
+    .checker-input { border: 1px solid #e0e4ea; border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit; width: 76px; background: #f8fafc; }
+    .checker-input:focus { outline: none; border-color: #0d7377; background: #fff; }
+    .checker-saved { font-size: 13px; font-weight: 700; color: #0d7377; white-space: nowrap; }
+    .btn-xs { padding: 4px 8px; border: none; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .btn-xs-save  { background: #0d7377; color: #fff; }
+    .btn-xs-edit  { background: #e0e4ea; color: #555; }
+    .btn-xs-red   { background: #e74c3c; color: #fff; }
+
+    /* 취소 사유 */
+    .reason-wrap { min-width: 130px; }
+    .reason-input { border: 1px solid #e0e4ea; border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit; width: 118px; background: #fff8f8; }
+    .reason-input:focus { outline: none; border-color: #e74c3c; }
+    .reason-text  { font-size: 12px; color: #c0392b; word-break: break-all; max-width: 130px; }
+
+    /* 액션 버튼 */
+    .btn-del-row { background: #fdecea; color: #c0392b; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-restore  { background: #e8f4f4; color: #0d7377; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+    .empty-msg { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
+
+    /* ── 삭제 확인 모달 ── */
+    .modal-back { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; align-items: center; justify-content: center; }
+    .modal-back.on { display: flex; }
+    .modal-box { background: #fff; border-radius: 16px; padding: 36px 30px; width: 380px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .modal-box .del-icon { font-size: 44px; margin-bottom: 14px; }
+    .modal-box h3 { font-size: 19px; font-weight: 700; color: #0f2b3d; margin-bottom: 8px; }
+    .modal-info { font-size: 15px; font-weight: 700; color: #0f2b3d; margin-bottom: 10px; }
+    .modal-warn { font-size: 13px; color: #c0392b; background: #fdecea; border-radius: 8px; padding: 10px 14px; margin-bottom: 24px; line-height: 1.6; }
+    .modal-btns { display: flex; gap: 10px; justify-content: center; }
+    .btn-cancel-m  { padding: 11px 28px; background: #f0f2f5; color: #555; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-confirm-m { padding: 11px 28px; background: #e74c3c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+    /* ── 토스트 ── */
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: #0f2b3d; color: #fff; padding: 11px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .page-body { padding: 16px 10px; }
+      .toolbar h1 { font-size: 18px; }
+      .search-box input { width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 로그인 화면 ── -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo"><img src="images/bf5e9252c7c01.png" alt="로고" /></div>
+    <h2>🔐 예약명단 관리자 로그인</h2>
+    <div class="lf">
+      <label>이메일</label>
+      <input type="email" id="lEmail" placeholder="관리자 이메일" autocomplete="username" />
+    </div>
+    <div class="lf">
+      <label>비밀번호</label>
+      <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" />
+    </div>
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- ── 관리자 화면 ── -->
+<div id="adminScreen">
+
+  <div class="top-bar">
+    <div class="tl">
+      <img src="images/bf5e9252c7c01.png" alt="로고" />
+      <span>예약명단 관리</span>
+    </div>
+    <div class="tr">
+      <span id="adminEmail" style="opacity:.7; font-size:12px;"></span>
+      <a href="notice.html" class="btn-back">← 공지사항</a>
+      <button class="btn-small btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <div class="toolbar">
+      <h1>📋 예약명단</h1>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="이름·연락처 검색..." />
+      </div>
+      <button class="btn-reload" onclick="loadBookings()">🔄 새로고침</button>
+    </div>
+
+    <!-- 필터 탭 + 통계 -->
+    <div class="filter-row">
+      <button class="filter-btn on"      onclick="setFilter('전체',this)">전체</button>
+      <button class="filter-btn"         onclick="setFilter('대기중',this)">대기중</button>
+      <button class="filter-btn"         onclick="setFilter('확인완료',this)">확인완료</button>
+      <button class="filter-btn"         onclick="setFilter('완료',this)">완료</button>
+      <button class="filter-btn"         onclick="setFilter('취소',this)">취소</button>
+      <button class="filter-btn del-tab" onclick="setFilter('삭제됨',this)">🗑️ 삭제된 명단</button>
+      <div class="stat-chips">
+        <span class="stat-chip chip-total"   id="statTotal">전체 0</span>
+        <span class="stat-chip chip-waiting" id="statWaiting">대기중 0</span>
+        <span class="stat-chip chip-confirm" id="statConfirm">확인완료 0</span>
+        <span class="stat-chip chip-deleted" id="statDeleted">삭제됨 0</span>
+      </div>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-num">#</th>
+            <th>이름</th>
+            <th>연락처</th>
+            <th>희망일자</th>
+            <th>시간대</th>
+            <th>검사항목</th>
+            <th>메모</th>
+            <th>접수일시</th>
+            <th>상태 <small style="font-weight:400;color:#aaa;">(클릭 변경)</small></th>
+            <th>확인 직원</th>
+            <th>취소 사유</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="bookingTableBody">
+          <tr><td colspan="12" class="empty-msg">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── 삭제 확인 모달 ── -->
+<div class="modal-back" id="delModal">
+  <div class="modal-box">
+    <div class="del-icon">⚠️</div>
+    <h3>정말 삭제하시겠습니까?</h3>
+    <p class="modal-info" id="delPreview"></p>
+    <div class="modal-warn">
+      삭제된 명단은 <strong>"삭제된 명단"</strong> 탭에서 확인하거나 복원할 수 있습니다.<br/>
+      단, 최종 복원 전까지는 일반 목록에 표시되지 않습니다.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel-m"  id="delCancel">취소</button>
+      <button class="btn-confirm-m" id="delConfirm">삭제하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let allBookings   = [];
+let currentFilter = '전체';
+let deleteId      = null;
+
+// ── 인증 ─────────────────────────────────────────────────
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw    = document.getElementById('lPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+  } catch(e) {
+    errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+    btn.textContent = '로그인'; btn.disabled = false;
+  }
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').style.display = 'block';
+    document.getElementById('adminEmail').textContent = user.email;
+    loadBookings();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+  }
+});
+document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
+
+// ── 데이터 로드 ───────────────────────────────────────────
+async function loadBookings() {
+  document.getElementById('bookingTableBody').innerHTML =
+    '<tr><td colspan="12" class="empty-msg">불러오는 중...</td></tr>';
+  try {
+    const snap = await db.collection('bookings').orderBy('createdAt','desc').get();
+    allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+  } catch(e) {
+    document.getElementById('bookingTableBody').innerHTML =
+      `<tr><td colspan="12" class="empty-msg" style="color:#c0392b;">불러오지 못했습니다.<br/><small>${e.message}</small></td></tr>`;
+  }
+}
+
+// ── 렌더링 ────────────────────────────────────────────────
+function renderTable() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const isDeletedTab = currentFilter === '삭제됨';
+
+  let list = isDeletedTab
+    ? allBookings.filter(b => b.deleted === true)
+    : allBookings.filter(b => b.deleted !== true);
+
+  if (!isDeletedTab && currentFilter !== '전체')
+    list = list.filter(b => (b.status || '대기중') === currentFilter);
+
+  if (q) list = list.filter(b =>
+    (b.name||'').toLowerCase().includes(q) ||
+    (b.phone||'').replace(/-/g,'').includes(q.replace(/-/g,''))
+  );
+
+  // 통계
+  const live = allBookings.filter(b => !b.deleted);
+  document.getElementById('statTotal').textContent   = `전체 ${live.length}`;
+  document.getElementById('statWaiting').textContent = `대기중 ${live.filter(b=>(b.status||'대기중')==='대기중').length}`;
+  document.getElementById('statConfirm').textContent = `확인완료 ${live.filter(b=>b.status==='확인완료').length}`;
+  document.getElementById('statDeleted').textContent = `삭제됨 ${allBookings.filter(b=>b.deleted).length}`;
+
+  const tbody = document.getElementById('bookingTableBody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-msg">${isDeletedTab ? '삭제된 명단이 없습니다.' : '예약 내역이 없습니다.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((b, i) => {
+    const status  = b.status || '대기중';
+    const checker = b.checker || '';
+    const reason  = b.cancelReason || '';
+    const isCancel  = status === '취소';
+    const isDeleted = b.deleted === true;
+    const recv = b.createdAt
+      ? new Date(b.createdAt.seconds*1000).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '-';
+
+    /* ── 확인 직원 셀 ── */
+    let checkerCell;
+    if (isDeleted) {
+      checkerCell = `<span class="checker-saved">${esc(checker)||'-'}</span>`;
+    } else if (checker) {
+      checkerCell = `<div class="checker-wrap">
+        <span class="checker-saved" id="cks-${b.id}">${esc(checker)}</span>
+        <button class="btn-xs btn-xs-edit" onclick="editChecker('${b.id}')">수정</button>
+      </div>`;
+    } else {
+      checkerCell = `<div class="checker-wrap">
+        <input class="checker-input" id="cki-${b.id}" placeholder="직원 이름" maxlength="10"
+          onkeydown="if(event.key==='Enter')saveChecker('${b.id}')" />
+        <button class="btn-xs btn-xs-save" onclick="saveChecker('${b.id}')">저장</button>
+      </div>`;
+    }
+
+    /* ── 취소 사유 셀 ── */
+    let reasonCell;
+    if (isDeleted) {
+      reasonCell = `<span class="reason-text">${esc(reason)||'-'}</span>`;
+    } else if (!isCancel) {
+      reasonCell = `<span style="color:#ccc;font-size:12px;">-</span>`;
+    } else if (reason) {
+      reasonCell = `<div class="reason-wrap">
+        <span class="reason-text" id="crt-${b.id}">${esc(reason)}</span>
+        <button class="btn-xs btn-xs-edit" style="margin-top:4px;" onclick="editReason('${b.id}')">수정</button>
+      </div>`;
+    } else {
+      reasonCell = `<div class="reason-wrap">
+        <input class="reason-input" id="cri-${b.id}" placeholder="취소 사유" maxlength="50"
+          onkeydown="if(event.key==='Enter')saveReason('${b.id}')" />
+        <button class="btn-xs btn-xs-red" style="margin-top:4px;" onclick="saveReason('${b.id}')">저장</button>
+      </div>`;
+    }
+
+    /* ── 액션 버튼 ── */
+    const actionCell = isDeleted
+      ? `<button class="btn-restore" onclick="restoreBooking('${b.id}')">♻️ 복원</button>`
+      : `<button class="btn-del-row" onclick="openDel('${b.id}','${esc(b.name||'')}','${esc(b.date||'')}')">삭제</button>`;
+
+    return `
+      <tr class="${isDeleted ? 'row-deleted' : ''}">
+        <td class="td-num">${i+1}</td>
+        <td class="td-name">${esc(b.name||'-')}</td>
+        <td class="td-phone">${esc(b.phone||'-')}</td>
+        <td class="td-date">${esc(b.date||'-')}</td>
+        <td class="td-date">${esc(b.time||'-')}</td>
+        <td class="td-service">${esc(b.service||'-')}</td>
+        <td class="td-memo" title="${esc(b.memo||'')}">${esc(b.memo||'-')}</td>
+        <td class="td-recv">${recv}</td>
+        <td>${isDeleted
+          ? `<span class="status-badge s-deleted">삭제됨</span>`
+          : `<span class="status-badge s-${status}" onclick="cycleStatus('${b.id}','${status}')" title="클릭하여 상태 변경">${status}</span>`
+        }</td>
+        <td>${checkerCell}</td>
+        <td>${reasonCell}</td>
+        <td>${actionCell}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── 상태 순환 ─────────────────────────────────────────────
+const statusCycle = ['대기중','확인완료','완료','취소'];
+async function cycleStatus(id, current) {
+  const next = statusCycle[(statusCycle.indexOf(current)+1) % statusCycle.length];
+  try {
+    await db.collection('bookings').doc(id).update({ status: next });
+    const item = allBookings.find(b => b.id === id);
+    if (item) item.status = next;
+    renderTable();
+    showToast(`✅ 상태: ${current} → ${next}`);
+  } catch(e) { alert('상태 변경 오류: '+e.message); }
+}
+
+// ── 확인 직원 ────────────────────────────────────────────
+async function saveChecker(id) {
+  const inp = document.getElementById('cki-'+id);
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); showToast('직원 이름을 입력해 주세요.'); return; }
+  try {
+    await db.collection('bookings').doc(id).update({ checker: name });
+    const item = allBookings.find(b => b.id === id);
+    if (item) item.checker = name;
+    renderTable();
+    showToast(`👤 확인 직원: ${name}`);
+  } catch(e) { alert('저장 오류: '+e.message); }
+}
+function editChecker(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (item) { item._editChecker = true; item.checker = ''; renderTable(); }
+  setTimeout(() => { const inp = document.getElementById('cki-'+id); if(inp) inp.focus(); }, 30);
+}
+
+// ── 취소 사유 ────────────────────────────────────────────
+async function saveReason(id) {
+  const inp = document.getElementById('cri-'+id);
+  if (!inp) return;
+  const reason = inp.value.trim();
+  if (!reason) { inp.focus(); showToast('취소 사유를 입력해 주세요.'); return; }
+  try {
+    await db.collection('bookings').doc(id).update({ cancelReason: reason });
+    const item = allBookings.find(b => b.id === id);
+    if (item) item.cancelReason = reason;
+    renderTable();
+    showToast('📝 취소 사유 저장');
+  } catch(e) { alert('저장 오류: '+e.message); }
+}
+function editReason(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (item) { item.cancelReason = ''; renderTable(); }
+  setTimeout(() => { const inp = document.getElementById('cri-'+id); if(inp) inp.focus(); }, 30);
+}
+
+// ── 검색 & 필터 ───────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', renderTable);
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderTable();
+}
+
+// ── 소프트 삭제 (deleted:true 표시) ──────────────────────
+function openDel(id, name, date) {
+  deleteId = id;
+  document.getElementById('delPreview').textContent = `${name} 님 (희망일: ${date})`;
+  document.getElementById('delModal').classList.add('on');
+}
+document.getElementById('delCancel').addEventListener('click', () => {
+  document.getElementById('delModal').classList.remove('on');
+  deleteId = null;
+});
+document.getElementById('delConfirm').addEventListener('click', async () => {
+  if (!deleteId) return;
+  try {
+    await db.collection('bookings').doc(deleteId).update({
+      deleted: true,
+      deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const item = allBookings.find(b => b.id === deleteId);
+    if (item) item.deleted = true;
+    document.getElementById('delModal').classList.remove('on');
+    renderTable();
+    showToast('🗑️ 삭제됨 — "삭제된 명단" 탭에서 복원 가능');
+  } catch(e) { alert('삭제 오류: '+e.message); }
+  deleteId = null;
+});
+document.getElementById('delModal').addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('on'); deleteId = null; }
+});
+
+// ── 복원 ─────────────────────────────────────────────────
+async function restoreBooking(id) {
+  if (!confirm('이 예약을 복원하시겠습니까?')) return;
+  try {
+    await db.collection('bookings').doc(id).update({ deleted: false, deletedAt: null });
+    const item = allBookings.find(b => b.id === id);
+    if (item) item.deleted = false;
+    renderTable();
+    showToast('♻️ 복원되었습니다.');
+  } catch(e) { alert('복원 오류: '+e.message); }
+}
+
+// ── 토스트 ───────────────────────────────────────────────
+let tt;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(tt);
+  tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

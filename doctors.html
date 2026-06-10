@@ -1,0 +1,575 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>의료진 소개 | 서울퍼스트내과의원</title>
+  <meta name="description" content="서울퍼스트내과의원 의료진 소개 - 소화기내과 분과 전문의 이동원·안진우 원장 학력·경력·수상 내역과 진료시간표 확인." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="multipage.css" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="서울퍼스트내과의원" />
+  <meta property="og:title"       content="의료진 소개 | 서울퍼스트내과의원" />
+  <meta property="og:description" content="소화기내과 분과 전문의 이동원·안진우 원장. 고려대·서울대 의대 출신, 서울대병원 내과 레지던트 수료." />
+  <meta property="og:image"       content="https://www.seoulfirst.co.kr/images/이동원_crop.png" />
+  <meta property="og:url"         content="https://www.seoulfirst.co.kr/doctors.html" />
+  <meta name="twitter:card"       content="summary_large_image" />
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header id="mp-header">
+  <div class="mp-header-top">
+    <div class="container">
+      <a href="tel:0315151500">📞 031-515-1500</a>
+      <span class="sep">|</span>
+      평일 08:30–18:00
+      <span class="sep">|</span>
+      토 08:30–13:30
+      <span class="sep">|</span>
+      일·공휴일 휴진
+    </div>
+  </div>
+  <div class="mp-header-main">
+    <div class="container mp-header-inner">
+      <a href="index.html" class="mp-logo">
+        <img src="images/bf5e9252c7c01.png" alt="서울퍼스트내과 로고" />
+      </a>
+      <nav class="mp-nav" id="mpNav">
+        <div class="mp-nav-item">
+          <a href="hours.html" class="mp-nav-link">병원 이용안내 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="hours.html">진료시간</a>
+            <a href="booking-info.html">예약안내</a>
+            <a href="location.html">오시는 길</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="about.html" class="mp-nav-link active">의료진 소개 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="about.html">인사말</a>
+            <a href="doctors.html" class="active">원장 약력</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="checkup.html" class="mp-nav-link">건강검진 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="general-checkup.html">일반건강공단검진</a>
+            <a href="cancer-checkup.html">5대암 검진</a>
+            <a href="checkup.html">종합패키지 검진</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="facility.html" class="mp-nav-link">시설 및 장비 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="facility.html">내부시설</a>
+            <a href="equipment.html">보유장비</a>
+          </div>
+        </div>
+        <div class="mp-nav-item">
+          <a href="general-medicine.html" class="mp-nav-link">내과 진료</a>
+        </div>
+        <div class="mp-nav-item">
+          <a href="notice.html" class="mp-nav-link">공지사항</a>
+        </div>
+        <div class="mp-nav-item">
+          <a href="health.html" class="mp-nav-link">건강소식 및 블로그 <span class="nav-chevron">▾</span></a>
+          <div class="mp-dropdown">
+            <a href="health.html">건강소식</a>
+            <a href="blog.html">블로그</a>
+          </div>
+        </div>
+        <a href="booking.html" class="mp-nav-link mp-nav-cta">예약하기</a>
+      </nav>
+      <button class="mp-menu-toggle" id="mpMenuToggle" aria-label="메뉴 열기" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== PAGE HERO ===================== -->
+<div class="page-hero">
+  <div class="container">
+    <span class="page-hero-badge">소화기내시경 전문의 2인</span>
+    <h1>원장 약력</h1>
+    <p class="page-hero-breadcrumb">
+      <a href="index.html">홈</a><span>›</span>의료진 소개<span>›</span>원장 약력
+    </p>
+  </div>
+</div>
+
+<style>
+/* ===== 원장 약력 페이지 ===== */
+.dr-tab-nav {
+  border-bottom: 2px solid var(--gray-200);
+  background: var(--white);
+}
+.dr-tab-nav .container { display: flex; }
+.dr-tab-link {
+  display: inline-block;
+  padding: 18px 36px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-500);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  text-decoration: none;
+  transition: color var(--transition), border-color var(--transition);
+}
+.dr-tab-link:hover { color: var(--teal); }
+.dr-tab-link.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+/* 약력 섹션 제목 */
+.dr-page-title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 48px;
+  padding-top: 8px;
+}
+
+/* 의사 구분선 */
+.dr-divider {
+  border: none;
+  border-top: 2px solid var(--gray-200);
+  margin: 56px 0;
+}
+
+/* 약력 레이아웃: 사진 좌 + 내용 우 */
+.dr-profile-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+/* 좌: 사진 + 이름 카드 */
+.dr-photo-col {}
+.dr-photo {
+  width: 100%;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(15,43,61,.15);
+  display: block;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  object-position: top;
+}
+.dr-name-card {
+  margin-top: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--gray-200);
+}
+.dr-role {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+  display: block;
+}
+.dr-name {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 8px;
+  letter-spacing: -.01em;
+}
+.dr-spec {
+  font-size: 13px;
+  color: var(--gray-600);
+  line-height: 1.7;
+}
+
+/* 우: 상세 내용 */
+.dr-detail-col {}
+.dr-section {
+  margin-bottom: 28px;
+}
+.dr-section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--navy);
+  border-left: 4px solid var(--teal);
+  padding-left: 12px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.dr-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dr-list li {
+  position: relative;
+  padding: 5px 0 5px 16px;
+  font-size: 14px;
+  color: var(--gray-700);
+  line-height: 1.75;
+  border-bottom: 1px solid var(--gray-100);
+}
+.dr-list li:last-child { border-bottom: none; }
+.dr-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--teal);
+  font-weight: 700;
+}
+.dr-list li.current { font-weight: 700; color: var(--teal); }
+/* 서울대병원 강조 항목 */
+.dr-list li.dr-highlight {
+  font-weight: 700;
+  color: var(--navy);
+  background: rgba(13,115,119,.06);
+  border-radius: 4px;
+  padding-left: 20px;
+}
+.dr-list li.dr-highlight::before { color: var(--teal); font-size: 15px; }
+/* 수석 뱃지 */
+.dr-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--teal);
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: .03em;
+}
+
+/* 두 컬럼 섹션 그리드 (학력+경력 / 수상+진료분야) */
+.dr-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 40px;
+}
+
+/* ===== 미니 진료시간표 ===== */
+.mini-sched-wrap {
+  overflow-x: auto;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.mini-sched-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 540px;
+}
+.mini-sched-tbl thead th {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px 10px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,.12);
+}
+.mini-sched-tbl thead th:last-child { border-right: none; }
+.mini-sched-tbl thead th.sat-col { background: rgba(13,115,119,.5); }
+.mini-sched-tbl thead th:first-child { text-align: left; padding-left: 20px; }
+.doc-name-cell {
+  background: #f0f8f8;
+  border-right: 1px solid var(--gray-200);
+  padding: 14px 20px;
+  vertical-align: middle;
+  text-align: left;
+  min-width: 110px;
+}
+.mini-role {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  letter-spacing: .04em;
+  margin-bottom: 2px;
+}
+.doc-name-cell strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.div-cell {
+  text-align: center;
+  border-right: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  vertical-align: middle;
+  padding: 8px 6px;
+  min-width: 46px;
+}
+.div-am, .div-pm {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.div-am { background: rgba(13,115,119,.12); color: var(--teal); }
+.div-pm { background: rgba(13,50,110,.10); color: var(--navy); }
+.mini-sched-tbl tbody td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 9px 6px;
+  border-right: 1px solid var(--gray-100);
+  font-size: 15px;
+}
+.mini-sched-tbl tbody td:last-child { border-right: none; background: rgba(13,115,119,.04); }
+.mini-sched-tbl tbody td small { display: block; font-size: 10px; color: var(--gray-400); }
+.am-row td { background: rgba(13,115,119,.025); }
+.pm-row td { background: var(--white); }
+.am-row td:last-child, .pm-row td:last-child { background: rgba(13,115,119,.04); }
+.border-top td { border-top: 2px solid var(--gray-200); }
+.sc-on  { color: var(--teal); font-weight: 700; }
+.sc-off { color: #d44; font-weight: 700; opacity: .85; }
+.sc-none { color: var(--gray-300); font-size: 18px; font-weight: 300; }
+.mini-sched-note {
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.7;
+}
+.mini-sched-note a { color: var(--teal); font-weight: 700; text-decoration: none; }
+
+@media (max-width: 900px) {
+  .dr-profile-layout { grid-template-columns: 1fr; gap: 32px; }
+  .dr-photo { aspect-ratio: 3/4; max-width: 220px; }
+  .dr-detail-grid { grid-template-columns: 1fr; }
+  .dr-tab-link { padding: 14px 20px; font-size: 14px; }
+  .dr-page-title { font-size: 22px; }
+  .mini-sched-tbl { font-size: 12px; }
+}
+</style>
+
+<!-- 탭 네비 -->
+<div class="dr-tab-nav">
+  <div class="container">
+    <a href="about.html" class="dr-tab-link">인사말</a>
+    <a href="doctors.html" class="dr-tab-link active">대표원장 약력</a>
+  </div>
+</div>
+
+<!-- 약력 본문 -->
+<section class="mp-section">
+  <div class="container">
+    <h2 class="dr-page-title">원장 약력</h2>
+
+    <!-- ===== 이동원 대표원장 ===== -->
+    <div class="dr-profile-layout">
+
+      <!-- 좌: 사진 -->
+      <div class="dr-photo-col">
+        <img src="images/이동원_crop.png" alt="대표원장 이동원" class="dr-photo" />
+        <div class="dr-name-card">
+          <span class="dr-role">대표원장</span>
+          <div class="dr-name">이동원</div>
+          <div class="dr-spec">
+            소화기내과 분과 전문의<br />
+            내시경세부 전문의<br />
+            내과학 박사
+          </div>
+        </div>
+      </div>
+
+      <!-- 우: 상세 -->
+      <div class="dr-detail-col">
+        <div class="dr-detail-grid">
+
+          <div>
+            <div class="dr-section">
+              <div class="dr-section-title">학력 및 경력</div>
+              <ul class="dr-list">
+                <li>고려대학교 의과대학 졸업 <span class="dr-badge">수석</span></li>
+                <li>고려대학교 의과대학 내과학 박사</li>
+                <li class="dr-highlight">서울대학교병원 내과 인턴·레지던트 수료</li>
+                <li>서울대학교 의과대학 내과 동문</li>
+                <li>고려대학교 의료원 소화기내과 임상조교수</li>
+                <li class="current">고려대학교 의료원 진료외래교수 (현)</li>
+                <li class="current">서울퍼스트내과의원 대표원장 (현)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <div class="dr-section">
+              <div class="dr-section-title">수상</div>
+              <ul class="dr-list">
+                <li>서울대병원 우수인턴·레지던트 2년 연속 1등</li>
+                <li>IDEN 2017 Best Poster Award</li>
+                <li>대한간암학회 우수 구연상</li>
+                <li>고려대병원 소화기내과 최우수 교원</li>
+                <li>SCI/SCIE 1저자 논문 5편</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <hr class="dr-divider" />
+
+    <!-- ===== 안진우 부원장 ===== -->
+    <div class="dr-profile-layout">
+
+      <!-- 좌: 사진 -->
+      <div class="dr-photo-col">
+        <img src="images/안진우_crop.png" alt="부원장 안진우" class="dr-photo" />
+        <div class="dr-name-card">
+          <span class="dr-role">부원장</span>
+          <div class="dr-name">안진우</div>
+          <div class="dr-spec">
+            소화기내과 분과 전문의<br />
+            내시경세부 전문의<br />
+            의학 석사
+          </div>
+        </div>
+      </div>
+
+      <!-- 우: 상세 -->
+      <div class="dr-detail-col">
+        <div class="dr-detail-grid">
+
+          <div>
+            <div class="dr-section">
+              <div class="dr-section-title">학력 및 경력</div>
+              <ul class="dr-list">
+                <li>서울대학교 의과대학 졸업</li>
+                <li>서울대학교 의과대학 대학원 의학 석사</li>
+                <li class="dr-highlight">서울대학교병원 내과 인턴·레지던트 수료</li>
+                <li>서울대학교 의과대학 내과 동문</li>
+                <li class="dr-highlight">서울대학교병원 소화기내과 임상강사</li>
+                <li class="current">서울퍼스트내과의원 부원장 (현)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <div class="dr-section">
+              <div class="dr-section-title">수상</div>
+              <ul class="dr-list">
+                <li>2022 유럽소화기학회 National Scholar Award 한국대표</li>
+                <li>2023 대한소화기학회 KGFID Award (Best Oral Presentation)</li>
+                <li>SCI/SCIE 1저자 논문 3편</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== 진료 시간표 ===================== -->
+<section class="mp-section mp-section-alt">
+  <div class="container">
+    <div class="section-header" style="margin-top:0;">
+      <span class="section-badge">진료 일정</span>
+      <h2 class="section-title">의료진별 <span class="text-accent">진료 시간표</span></h2>
+    </div>
+    <div class="mini-sched-wrap">
+      <table class="mini-sched-tbl">
+        <thead>
+          <tr>
+            <th>의료진</th>
+            <th>구분</th>
+            <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+            <th class="sat-col">토</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="am-row">
+            <td class="doc-name-cell" rowspan="2">
+              <span class="mini-role">대표원장</span>
+              <strong>이동원</strong>
+            </td>
+            <td class="div-cell"><span class="div-am">오전</span></td>
+            <td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td>
+            <td><span class="sc-on">○</span><small>~13:30</small></td>
+          </tr>
+          <tr class="pm-row">
+            <td class="div-cell"><span class="div-pm">오후</span></td>
+            <td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-off">✕</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td>
+            <td><span class="sc-none">—</span></td>
+          </tr>
+          <tr class="am-row border-top">
+            <td class="doc-name-cell" rowspan="2">
+              <span class="mini-role">부원장</span>
+              <strong>안진우</strong>
+            </td>
+            <td class="div-cell"><span class="div-am">오전</span></td>
+            <td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td><td><span class="sc-on">○</span></td>
+            <td><span class="sc-on">○</span><small>~13:30</small></td>
+          </tr>
+          <tr class="pm-row">
+            <td class="div-cell"><span class="div-pm">오후</span></td>
+            <td><span class="sc-on">○</span></td><td><span class="sc-off">✕</span></td><td><span class="sc-on">○</span></td><td><span class="sc-off">✕</span></td><td><span class="sc-on">○</span></td>
+            <td><span class="sc-none">—</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mini-sched-note">일요일·공휴일 휴진 &nbsp;|&nbsp; 진료 일정은 사전 공지 없이 변경될 수 있습니다. 문의: <a href="tel:0315151500">031-515-1500</a></p>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="mp-footer">
+  <div class="container mp-footer-inner">
+    <div>
+      <img src="images/bf5e9252c7c01.png" alt="서울퍼스트내과 로고" class="mp-footer-logo" />
+      <p class="mp-footer-addr">
+        상호: 서울퍼스트내과의원 | 대표원장: 이동원<br />
+        사업자등록번호: 120-98-28430<br />
+        경기 남양주시 다산중앙로82번안길 118 다산메인타워 3층<br />
+        T. 031-515-1500 | F. 031-515-1501
+      </p>
+      <p class="mp-footer-copy">ⓒ 2025 서울퍼스트내과의원. All rights reserved.</p>
+    </div>
+    <div class="mp-footer-col">
+      <h5>병원 이용안내</h5>
+      <a href="hours.html">진료시간</a>
+      <a href="booking-info.html">예약안내</a>
+      <a href="location.html">오시는 길</a>
+    </div>
+    <div class="mp-footer-col">
+      <h5>진료·검진</h5>
+      <a href="general-medicine.html">내과 진료</a>
+      <a href="services.html">위·대장내시경</a>
+      <a href="general-checkup.html">일반건강공단검진</a>
+      <a href="cancer-checkup.html">5대암 검진</a>
+      <a href="checkup.html">건강검진 패키지</a>
+    </div>
+    <div class="mp-footer-col">
+      <h5>예약·상담</h5>
+      <a href="booking.html">온라인 예약</a>
+      <a href="tel:0315151500">전화 예약</a>
+      <a href="notice.html">공지사항</a>
+      <a href="https://blog.naver.com/dodezi" target="_blank" rel="noopener">건강 블로그</a>
+    </div>
+  </div>
+  <hr class="mp-footer-divider" />
+  <div class="container mp-footer-bottom">
+    <span>ⓒ 2025 서울퍼스트내과의원</span>
+    <span>평일 08:30–18:00 | 토 08:30–13:30 | 일·공휴일 휴진</span>
+  </div>
+</footer>
+
+<div class="mp-floating">
+  <a href="tel:0315151500" class="mp-float-btn call" title="전화하기">📞</a>
+  <a href="booking.html" class="mp-float-btn book" title="예약하기">📅</a>
+  <button class="mp-float-btn top" id="mpScrollTop" title="맨 위로" style="opacity:0;pointer-events:none;">↑</button>
+</div>
+
+<script src="multipage.js"></script>
+</body>
+</html>
