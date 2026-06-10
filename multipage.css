@@ -77,24 +77,26 @@ ul { list-style: none; }
   align-items: center;
   justify-content: space-between;
   height: 120px;
+  max-width: 1600px;
+  padding: 0 40px;
 }
 
 .mp-logo img {
   height: auto;
-  width: 300px;
+  width: 340px;
 }
 
 .mp-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .mp-nav-link {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--gray-700);
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: 8px;
   transition: color var(--transition), background var(--transition);
   white-space: nowrap;
@@ -105,10 +107,10 @@ ul { list-style: none; }
 .mp-nav-cta {
   background: var(--teal);
   color: var(--white) !important;
-  padding: 9px 20px;
+  padding: 11px 24px;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   transition: background var(--transition), transform var(--transition);
 }
 .mp-nav-cta:hover { background: var(--teal-light); transform: translateY(-1px); color: var(--white); }
