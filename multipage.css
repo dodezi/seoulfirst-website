@@ -29,9 +29,10 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font);
+  font-size: 16px;
   color: var(--gray-700);
   background: var(--white);
-  line-height: 1.7;
+  line-height: 1.8;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -58,7 +59,7 @@ ul { list-style: none; }
 .mp-header-top {
   background: var(--navy);
   color: rgba(255,255,255,.85);
-  font-size: 13px;
+  font-size: 14px;
   padding: 7px 0;
   text-align: center;
   letter-spacing: .01em;
@@ -90,7 +91,7 @@ ul { list-style: none; }
 }
 
 .mp-nav-link {
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--gray-700);
   padding: 8px 14px;
@@ -107,7 +108,7 @@ ul { list-style: none; }
   padding: 9px 20px;
   border-radius: 30px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
   transition: background var(--transition), transform var(--transition);
 }
 .mp-nav-cta:hover { background: var(--teal-light); transform: translateY(-1px); color: var(--white); }
@@ -201,7 +202,7 @@ ul { list-style: none; }
 }
 .text-accent { color: var(--teal); }
 .section-desc {
-  font-size: 15px;
+  font-size: 17px;
   color: var(--gray-600);
   line-height: 1.8;
 }
@@ -366,7 +367,7 @@ ul { list-style: none; }
   margin-bottom: 10px;
 }
 .feature-card p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--gray-600);
   line-height: 1.7;
 }
@@ -402,7 +403,7 @@ ul { list-style: none; }
   margin-bottom: 8px;
 }
 .service-card-body p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--gray-600);
   line-height: 1.6;
   margin-bottom: 16px;
@@ -511,7 +512,7 @@ ul { list-style: none; }
   margin-bottom: 20px;
 }
 .greeting-text p {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--gray-600);
   line-height: 1.9;
   margin-bottom: 14px;
@@ -1695,8 +1696,8 @@ ul { list-style: none; }
 }
 .mp-dropdown a {
   display: block;
-  padding: 10px 20px;
-  font-size: 13.5px;
+  padding: 11px 20px;
+  font-size: 15px;
   color: var(--gray-700);
   transition: all var(--transition);
   border-left: 3px solid transparent;
@@ -2068,7 +2069,7 @@ ul { list-style: none; }
   color: var(--teal);
   font-size: 12px;
 }
-.notice-row-title { flex: 1; font-size: 15px; color: var(--gray-700); }
+.notice-row-title { flex: 1; font-size: 16px; color: var(--gray-700); }
 .notice-row-title .pin-label {
   display: inline-block;
   background: var(--teal);
@@ -2109,7 +2110,7 @@ ul { list-style: none; }
 }
 .notice-modal h3 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
 .notice-modal .notice-modal-meta { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--gray-200); }
-.notice-modal .notice-modal-body { font-size: 15px; color: var(--gray-600); line-height: 1.85; white-space: pre-line; }
+.notice-modal .notice-modal-body { font-size: 16px; color: var(--gray-600); line-height: 1.85; white-space: pre-line; }
 
 /* ===== 건강소식 카드 ===== */
 .health-list-wrap { display: flex; flex-direction: column; gap: 24px; }
@@ -2143,9 +2144,9 @@ ul { list-style: none; }
   font-weight: 600;
 }
 .health-date { font-size: 13px; color: var(--gray-400); }
-.health-card-body h3 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
-.health-card-body p { font-size: 14px; color: var(--gray-500); line-height: 1.7; margin-bottom: 12px; }
-.health-read-more { font-size: 13px; color: var(--teal); font-weight: 600; }
+.health-card-body h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.health-card-body p { font-size: 15px; color: var(--gray-500); line-height: 1.8; margin-bottom: 12px; }
+.health-read-more { font-size: 14px; color: var(--teal); font-weight: 600; }
 @media (max-width: 600px) {
   .health-card { flex-direction: column; }
   .health-card-img { flex: 0 0 160px; }
