@@ -1615,8 +1615,8 @@ ul { list-style: none; }
   .mp-nav.open { display: flex; }
   .mp-nav-link { font-size: 22px; padding: 12px 20px; }
   .mp-menu-toggle { display: flex; }
-  .mp-header-inner { height: 80px; padding: 0 18px; }
-  .mp-logo img { width: auto; height: 64px; }
+  .mp-header-inner { height: 68px; padding: 0 18px; }
+  .mp-logo img { width: auto; height: 48px; }
 
   .quick-bar-inner { grid-template-columns: repeat(2, 1fr); }
   .quick-item { border-bottom: 1px solid rgba(255,255,255,.1); }
