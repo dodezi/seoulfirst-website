@@ -3,8 +3,12 @@
 ## 프로젝트 정보
 
 - **GitHub**: https://github.com/dodezi/seoulfirst-website
-- **라이브 사이트**: https://dreamy-granita-8790e2.netlify.app
+- **라이브 사이트(GitHub Pages)**: https://dodezi.github.io/seoulfirst-website/
 - **노트북 파일 경로**: `C:\Users\dodez\Downloads\seoulfirst_multipage\`
+
+> ⚠️ 호스팅은 **GitHub Pages**입니다 (Netlify 아님 — 크레딧 소진으로 이전함).
+> `git push`하면 GitHub Pages가 1~2분 내 자동 배포합니다. 별도 설정 불필요.
+> 이미지/CSS 캐시가 남으면 파일명을 바꾸거나 브라우저 Ctrl+Shift+R로 강력 새로고침.
 
 ## 기술 스택
 
