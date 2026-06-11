@@ -1007,7 +1007,44 @@ ul { list-style: none; }
 .booking-confirm-notice .bcn-text strong { display: block; color: #b5530e; margin-bottom: 3px; font-size: 14px; }
 .booking-confirm-notice .bcn-text b { color: #b5530e; }
 
-.mp-modal-sub { font-size: 13px !important; color: var(--gray-500) !important; margin-top: -10px; }
+.mp-modal-sub { font-size: 13px !important; color: var(--gray-500) !important; margin-top: 4px !important; }
+.mp-modal-icon-warn { color: #e8734a; }
+.modal-hl { color: #d63a1e; }
+.modal-warn-box {
+  text-align: left;
+  background: #fff4ee;
+  border: 1.5px solid #f3b89a;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 6px 0 16px;
+}
+.modal-warn-box .mwb-line {
+  font-size: 14.5px !important;
+  color: #5a3417 !important;
+  line-height: 1.6;
+  margin: 0 0 10px !important;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.modal-warn-box .mwb-line:last-child { margin-bottom: 0 !important; }
+.modal-warn-box .mwb-line b { color: #c0341a; }
+.modal-warn-box .mwb-num {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  background: #e8734a; color: #fff;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.modal-warn-box .mwb-alert {
+  margin-top: 12px !important;
+  padding-top: 12px;
+  border-top: 1px dashed #f3b89a;
+  font-weight: 600;
+  color: #c0341a !important;
+}
+.modal-tel { color: #0d7377; font-weight: 800; text-decoration: underline; }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-group { margin-bottom: 20px; }
