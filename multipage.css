@@ -991,6 +991,24 @@ ul { list-style: none; }
   margin-bottom: 28px;
 }
 
+.booking-confirm-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff6e9;
+  border: 1px solid #f3c98b;
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+.booking-confirm-notice .bcn-icon { font-size: 20px; line-height: 1.5; flex-shrink: 0; }
+.booking-confirm-notice .bcn-text { font-size: 13.5px; line-height: 1.65; color: #6b4a18; }
+.booking-confirm-notice .bcn-text strong { display: block; color: #b5530e; margin-bottom: 3px; font-size: 14px; }
+.booking-confirm-notice .bcn-text b { color: #b5530e; }
+
+.mp-modal-sub { font-size: 13px !important; color: var(--gray-500) !important; margin-top: -10px; }
+
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-group { margin-bottom: 20px; }
 .form-group label {

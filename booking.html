@@ -154,6 +154,16 @@
       <!-- 오른쪽: 폼 -->
       <div class="booking-form-card">
         <h2 class="booking-form-title">온라인으로 간편하게 예약하세요</h2>
+
+        <div class="booking-confirm-notice">
+          <span class="bcn-icon">📞</span>
+          <div class="bcn-text">
+            <strong>이 신청은 ‘예약 요청’이며, 아직 예약이 확정된 것이 아닙니다.</strong>
+            본원에서 <b>확인 전화</b>를 드려 날짜·시간을 최종 조율해야 예약이 완료됩니다.
+            반드시 전화를 받으실 수 있는 연락처를 정확히 남겨 주세요.
+          </div>
+        </div>
+
         <form id="bookingForm" onsubmit="submitBooking(event)">
 
           <div class="form-row">
@@ -220,8 +230,9 @@
           </button>
 
           <p class="form-note">
-            신청 내용을 정리해 보여드립니다. 운영시간 내 확인 후 연락드리며,<br />
-            급하신 경우 <strong>031-515-1500</strong>으로 전화 주세요.
+            ⚠️ 신청만으로는 <strong>예약이 확정되지 않습니다.</strong> 운영시간 내 <strong>확인 전화</strong>로
+            날짜·시간을 정한 뒤 예약이 완료됩니다.<br />
+            급하신 경우 <strong>031-515-1500</strong>으로 바로 전화 주세요.
           </p>
         </form>
       </div>
@@ -307,10 +318,15 @@
 <!-- 예약 완료 모달 -->
 <div class="mp-modal-overlay" id="mpModalOverlay">
   <div class="mp-modal">
-    <div class="mp-modal-icon">✅</div>
-    <h3>예약 신청이 완료되었습니다!</h3>
-    <p>입력하신 연락처로 확인 전화를 드릴 예정입니다.<br />빠른 시간 내에 연락드리겠습니다.</p>
-    <button class="btn btn-primary" onclick="closeModal()">확인</button>
+    <div class="mp-modal-icon">📞</div>
+    <h3>예약 신청이 접수되었습니다</h3>
+    <p>
+      아직 <strong>예약이 확정된 것은 아닙니다.</strong><br />
+      입력하신 연락처로 <strong>본원에서 확인 전화</strong>를 드려<br />
+      날짜·시간을 최종 확정해 드립니다.
+    </p>
+    <p class="mp-modal-sub">전화를 받지 못하시면 예약이 완료되지 않을 수 있으니<br />부재 시 <strong>031-515-1500</strong>으로 다시 연락 부탁드립니다.</p>
+    <button class="btn btn-primary" onclick="closeModal()">확인했습니다</button>
   </div>
 </div>
 
