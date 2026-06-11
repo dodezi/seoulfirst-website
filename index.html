@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -7,8 +7,189 @@
   <meta name="description" content="남양주 다산동 서울퍼스트내과의원 - 소화기내시경 전문의 2인, 5대암 검진, 위·대장내시경, 만성질환 관리. 서울대학교병원 내과동문병원." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="multipage.css" />
+  <style>
+    /* ============================================================
+       index-new.html 전용 스타일 (시안)
+       ============================================================ */
+
+    /* ---------- 1. 히어로: 배경 자동 전환 + 켄번스 효과 ---------- */
+    .hero-slider { position: relative; min-height: 640px; display: flex; align-items: center; overflow: hidden; }
+    .hero-slide {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      opacity: 0; transition: opacity 1.8s ease;
+      transform: scale(1);
+    }
+    .hero-slide.active {
+      opacity: 1;
+      animation: kenburns 9s ease-out forwards;
+    }
+    @keyframes kenburns {
+      from { transform: scale(1); }
+      to   { transform: scale(1.09); }
+    }
+    .hero-slider .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(100deg, rgba(8,28,42,.82) 0%, rgba(8,28,42,.55) 45%, rgba(8,28,42,.25) 100%);
+      z-index: 1;
+    }
+    .hero-slider .container { position: relative; z-index: 2; }
+    .hero-dots {
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 3;
+    }
+    .hero-dot {
+      width: 10px; height: 10px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(255,255,255,.38); transition: all .3s;
+      padding: 0;
+    }
+    .hero-dot.on { background: #fff; width: 30px; border-radius: 6px; }
+
+    .hero-content-new { max-width: 720px; padding: 90px 0; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: #9fd8d3; font-size: 15px; font-weight: 600; letter-spacing: .14em;
+      margin-bottom: 18px; text-transform: uppercase;
+    }
+    .hero-eyebrow::before { content: ""; width: 36px; height: 1.5px; background: #9fd8d3; display: inline-block; }
+    .hero-title-new {
+      font-size: clamp(30px, 4.4vw, 52px); font-weight: 800; color: #fff;
+      line-height: 1.32; letter-spacing: -0.02em; margin-bottom: 20px;
+      text-shadow: 0 2px 24px rgba(0,0,0,.25);
+    }
+    .hero-title-new .accent { color: #6fd6cd; }
+    .hero-desc-new { font-size: clamp(16px, 1.6vw, 19px); color: rgba(255,255,255,.88); line-height: 1.8; margin-bottom: 26px; }
+    .hero-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 34px; }
+    .hero-chip {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28);
+      backdrop-filter: blur(6px);
+      color: #fff; font-size: 14.5px; font-weight: 500;
+      padding: 8px 16px; border-radius: 30px;
+    }
+
+    /* ---------- 2. 동료의사 추천 (REPUTATION) ---------- */
+    .repu-section {
+      position: relative;
+      background:
+        radial-gradient(1100px 480px at 50% -120px, rgba(31,138,128,.10), transparent 60%),
+        linear-gradient(180deg, #f6fafa 0%, #eef4f6 100%);
+      padding: 96px 0 84px;
+      overflow: hidden;
+    }
+    .repu-head { text-align: center; margin-bottom: 52px; padding: 0 20px; }
+    .repu-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .3em; color: var(--teal); text-transform: uppercase; margin-bottom: 14px; display: block; }
+    .repu-title { font-size: clamp(24px, 3.4vw, 40px); font-weight: 800; color: var(--navy); letter-spacing: -0.02em; line-height: 1.35; }
+    .repu-title .hl { color: var(--teal); }
+    .repu-sub { margin-top: 12px; font-size: clamp(15px, 1.5vw, 18px); color: var(--gray-500); }
+    .repu-quote-deco { font-family: 'Noto Serif KR', serif; color: var(--teal); }
+
+    .repu-stage {
+      position: relative; max-width: 1140px; margin: 0 auto; padding: 0 20px;
+      display: grid; grid-template-columns: 360px 1fr; gap: 34px; align-items: stretch;
+    }
+    /* 원장 포트레이트 패널 */
+    .repu-photo {
+      position: relative; border-radius: 20px; overflow: hidden;
+      box-shadow: 0 14px 44px rgba(15,43,61,.16);
+      min-height: 420px;
+      background: #dde7ea;
+    }
+    .repu-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; }
+    .repu-photo .repu-photo-cap {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 48px 24px 20px;
+      background: linear-gradient(to top, rgba(8,28,42,.82), transparent);
+      color: #fff;
+    }
+    .repu-photo .repu-photo-cap strong { font-size: 21px; display: block; }
+    .repu-photo .repu-photo-cap span { font-size: 13.5px; opacity: .85; }
+
+    .repu-card {
+      background: #fff; border-radius: 20px;
+      border: 1px solid rgba(15,43,61,.06);
+      box-shadow: 0 8px 36px rgba(15,43,61,.08);
+      padding: 44px 46px 34px;
+      display: flex; flex-direction: column;
+      position: relative;
+      animation: repuIn .6s cubic-bezier(.22,.8,.3,1);
+    }
+    @keyframes repuIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .repu-num { font-size: 15px; font-weight: 700; color: var(--teal); font-style: italic; margin-bottom: 10px; }
+    .repu-mark { font-family: 'Noto Serif KR', serif; font-size: 34px; color: var(--teal); line-height: 1; margin-bottom: 10px; }
+    .repu-card-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: clamp(19px, 2vw, 25px); font-weight: 700; color: var(--navy);
+      line-height: 1.4; margin-bottom: 14px; letter-spacing: -0.01em;
+    }
+    .repu-quote {
+      font-size: 16px; line-height: 1.85; color: var(--gray-700);
+      display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+      flex: 1;
+    }
+    .repu-quote .em { color: var(--teal); font-weight: 600; }
+    .repu-author {
+      margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--gray-200);
+      font-size: 15px; font-weight: 600; color: var(--navy);
+    }
+    .repu-author small { display: block; font-weight: 400; color: var(--gray-500); font-size: 13.5px; margin-top: 2px; }
+
+    .repu-arrows { display: flex; gap: 10px; position: absolute; right: 34px; bottom: 30px; }
+    .repu-arrow {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: #fff; border: 1px solid rgba(15,43,61,.12);
+      box-shadow: 0 4px 16px rgba(15,43,61,.10);
+      font-size: 19px; color: var(--navy); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .25s;
+    }
+    .repu-arrow:hover { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+    .repu-progress { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 44px; }
+    .repu-counter { font-size: 15px; font-weight: 700; color: var(--navy); font-style: italic; }
+    .repu-counter .total { color: var(--gray-400); font-weight: 500; }
+    .repu-bar { width: 180px; height: 3px; background: rgba(15,43,61,.12); border-radius: 3px; overflow: hidden; }
+    .repu-bar-fill { height: 100%; width: 0%; background: var(--teal); border-radius: 3px; transition: width .45s ease; }
+    .repu-dots { display: flex; gap: 8px; }
+    .repu-dot { width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0; background: rgba(15,43,61,.18); cursor: pointer; transition: all .3s; }
+    .repu-dot.on { background: var(--teal); transform: scale(1.35); }
+    .repu-hint { text-align: center; font-size: 13px; color: var(--gray-400); margin-top: 14px; }
+
+    /* 신뢰 배지 4개 */
+    .repu-badges {
+      max-width: 1140px; margin: 56px auto 0; padding: 0 20px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    .repu-badge {
+      background: #fff; border: 1px solid rgba(15,43,61,.07); border-radius: 14px;
+      padding: 18px 20px; display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 3px 14px rgba(15,43,61,.05);
+    }
+    .repu-badge-icon { font-size: 26px; }
+    .repu-badge strong { display: block; font-size: 15px; color: var(--navy); }
+    .repu-badge span { font-size: 13px; color: var(--gray-500); }
+
+    /* ---------- 반응형 ---------- */
+    @media (max-width: 980px) {
+      .repu-stage { grid-template-columns: 1fr; }
+      .repu-photo { min-height: 0; height: 300px; }
+      .repu-photo img { object-position: center 18%; }
+      .repu-badges { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .hero-slider { min-height: 540px; }
+      .hero-content-new { padding: 70px 0; }
+      .repu-section { padding: 64px 0 56px; }
+      .repu-card { padding: 28px 22px 70px; }
+      .repu-arrows { right: 22px; bottom: 18px; }
+      .repu-badges { grid-template-columns: 1fr; }
+    }
+  </style>
   <!-- OG / SNS -->
   <meta property="og:type"        content="website" />
   <meta property="og:site_name"   content="서울퍼스트내과의원" />
@@ -91,26 +272,30 @@
   </div>
 </header>
 
-<!-- ===================== HERO ===================== -->
-<section class="mp-hero">
-  <div class="mp-hero-bg" style="background-image:url('images/328b947086595.jpg')"></div>
-  <div class="mp-hero-overlay"></div>
+<!-- ===================== HERO (배경 자동 전환) ===================== -->
+<section class="hero-slider" id="heroSlider">
+  <div class="hero-slide active" style="background-image:url('images/328b947086595.jpg')"></div>
+  <div class="hero-slide" style="background-image:url('images/doctor-consult-wide.png')"></div>
+  <div class="hero-slide" style="background-image:url('images/7a871bc97671c.jpg')"></div>
+  <div class="hero-slide" style="background-image:url('images/doctor-endoscopy.png');background-position:center 30%;"></div>
+  <div class="hero-overlay"></div>
+
   <div class="container">
-    <div class="mp-hero-content">
-      <span class="hero-badge-pill">남양주 다산·구리 지역 건강주치의</span>
-      <h1 class="mp-hero-title">
+    <div class="hero-content-new">
+      <span class="hero-eyebrow">남양주 다산·구리 지역 건강주치의</span>
+      <h1 class="hero-title-new">
         동료의사들이 신뢰하고<br />
         찾아오는 병원,<br />
-        <span class="mp-hero-accent">서울퍼스트내과의원</span>
+        <span class="accent">서울퍼스트내과의원</span>
       </h1>
-      <p class="mp-hero-desc">
+      <p class="hero-desc-new">
         5대암 검진부터 위·대장내시경, 만성질환 관리까지<br />
         한 곳에서, 같은 날, 전문적으로 진료합니다.
       </p>
-      <div class="hero-pills">
-        <span class="hero-pill">✅ 소화기내시경 전문의 2인</span>
-        <span class="hero-pill">✅ 서울대학교병원 내과동문병원</span>
-        <span class="hero-pill">✅ 국민건강보험 지정병원</span>
+      <div class="hero-chips">
+        <span class="hero-chip">✓ 소화기내시경 전문의 2인</span>
+        <span class="hero-chip">✓ 서울대학교병원 내과동문병원</span>
+        <span class="hero-chip">✓ 국민건강보험 지정병원</span>
       </div>
       <div class="mp-hero-btns">
         <a href="booking.html" class="btn btn-primary">온라인 예약하기</a>
@@ -118,6 +303,8 @@
       </div>
     </div>
   </div>
+
+  <div class="hero-dots" id="heroDots"></div>
 </section>
 
 <!-- ===================== QUICK BAR ===================== -->
@@ -154,86 +341,39 @@
   </div>
 </div>
 
-<!-- ===================== 모바일 전용 홈 ===================== -->
-<div class="mobile-home">
+<!-- ===================== 동료의사 추천 (REPUTATION) ===================== -->
+<section class="repu-section">
+  <div class="repu-head">
+    <span class="repu-eyebrow">Reputation</span>
+    <h2 class="repu-title">동료 의사들이 <span class="hl">먼저 추천</span>하는 의사<br />
+      <span style="font-size:.62em;font-weight:600;color:var(--gray-700);">서울퍼스트내과 이동원 원장</span>
+    </h2>
+    <p class="repu-sub"><span class="repu-quote-deco">“</span> 좋은 의사는 환자가 찾고, 뛰어난 의사는 의사가 추천합니다. <span class="repu-quote-deco">”</span></p>
+  </div>
 
-  <!-- 병원 강점 3줄 -->
-  <div class="mh-strengths">
-    <div class="mh-strength-item">
-      <span class="mh-s-icon">🏥</span>
-      <div>
-        <strong>소화기내시경 전문의 2인</strong>
-        <span>전문의가 직접 검사·진료</span>
+  <div class="repu-stage">
+    <div class="repu-photo">
+      <img src="images/doctor-portrait.png" alt="서울퍼스트내과 대표원장 이동원" />
+      <div class="repu-photo-cap">
+        <strong>이동원 대표원장</strong>
+        <span>소화기내과 분과 전문의 · 내과학 박사 · 고려대 의대 수석졸업</span>
       </div>
     </div>
-    <div class="mh-strength-item">
-      <span class="mh-s-icon">🎓</span>
-      <div>
-        <strong>서울대학교병원 내과동문병원</strong>
-        <span>대학병원 수준의 전문 진료</span>
-      </div>
-    </div>
-    <div class="mh-strength-item">
-      <span class="mh-s-icon">🔬</span>
-      <div>
-        <strong>국가검진 지정 의료기관</strong>
-        <span>5대암 검진·건강검진 패키지</span>
-      </div>
+    <div id="repuCardWrap" style="position:relative;display:flex;">
+      <!-- 추천글 카드는 JS가 렌더링 -->
     </div>
   </div>
 
-  <!-- 핵심 바로가기 버튼 3개 -->
-  <div class="mh-nav-section">
-    <p class="mh-nav-label">바로가기</p>
-    <div class="mh-nav-grid">
-      <a href="doctors.html" class="mh-nav-card">
-        <span class="mh-nav-icon">👨‍⚕️</span>
-        <strong>의료진 소개</strong>
-        <span>원장 약력·진료 철학</span>
-        <span class="mh-nav-arrow">→</span>
-      </a>
-      <a href="services.html" class="mh-nav-card">
-        <span class="mh-nav-icon">🔭</span>
-        <strong>검진 및 검사 안내</strong>
-        <span>내시경·초음파·암검진</span>
-        <span class="mh-nav-arrow">→</span>
-      </a>
-      <a href="booking.html" class="mh-nav-card mh-nav-card-accent">
-        <span class="mh-nav-icon">📅</span>
-        <strong>예약 안내</strong>
-        <span>온라인 예약 신청</span>
-        <span class="mh-nav-arrow">→</span>
-      </a>
-    </div>
+  <div class="repu-progress">
+    <span class="repu-counter"><span id="repuCur">01</span> <span class="total">/ 06</span></span>
+    <div class="repu-bar"><div class="repu-bar-fill" id="repuBar"></div></div>
+    <div class="repu-dots" id="repuDots"></div>
   </div>
+  <p class="repu-hint">마우스를 올리면 슬라이드가 멈춥니다</p>
+</section>
 
-  <!-- 진료시간 + 위치 -->
-  <div class="mh-info-section">
-    <div class="mh-info-card">
-      <div class="mh-info-title">🕐 진료시간</div>
-      <table class="mh-hours-table">
-        <tr><td>평일</td><td>08:30 – 18:00</td></tr>
-        <tr><td>토요일</td><td>08:30 – 13:30</td></tr>
-        <tr class="mh-closed"><td>일·공휴일</td><td>휴진</td></tr>
-      </table>
-      <p class="mh-hours-note">※ 수요일 오후·화·목 오후 일부 의사 휴진</p>
-    </div>
-    <div class="mh-info-card">
-      <div class="mh-info-title">📍 오시는 길</div>
-      <p class="mh-addr">경기 남양주시 다산중앙로82번안길 118<br/>다산메인타워 3층</p>
-      <a href="location.html" class="mh-map-btn">지도 보기 →</a>
-    </div>
-    <div class="mh-info-card mh-call-card">
-      <div class="mh-info-title">📞 전화 예약·문의</div>
-      <a href="tel:0315151500" class="mh-tel">031-515-1500</a>
-      <p style="font-size:13px;color:#aaa;margin-top:4px;">FAX. 031-515-1501</p>
-    </div>
-  </div>
-
-</div><!-- /mobile-home -->
-
-<!-- ===================== 병원 강점 3개 (데스크탑) ===================== -->
-<section class="mp-section desktop-only">
+<!-- ===================== 병원 강점 3개 ===================== -->
+<section class="mp-section">
   <div class="container">
     <div class="section-header">
       <span class="section-badge">병원소개</span>
@@ -261,7 +401,7 @@
 </section>
 
 <!-- ===================== 주요 서비스 4개 ===================== -->
-<section class="mp-section mp-section-alt desktop-only">
+<section class="mp-section mp-section-alt">
   <div class="container">
     <div class="section-header">
       <span class="section-badge">주요 서비스</span>
@@ -306,7 +446,7 @@
 </section>
 
 <!-- ===================== 의료진 간략 ===================== -->
-<section class="mp-section desktop-only">
+<section class="mp-section">
   <div class="container">
     <div class="section-header">
       <span class="section-badge">의료진 소개</span>
@@ -350,7 +490,7 @@
 </section>
 
 <!-- ===================== 예약 CTA ===================== -->
-<section class="cta-banner desktop-only">
+<section class="cta-banner">
   <div class="container">
     <h2>내시경·초음파·건강검진 예약</h2>
     <p>소화기내시경 전문의에게 직접 검사받고, 당일 결과를 확인하세요.</p>
@@ -393,7 +533,7 @@
       <a href="booking.html">온라인 예약</a>
       <a href="tel:0315151500">전화 예약</a>
       <a href="notice.html">공지사항</a>
-      <a href="https://blog.naver.com/dodezi" target="_blank" rel="noopener">건강 블로그</a>
+      <a href="https://blog.naver.com/dodezi" target="_blank" rel="noopener">블로그</a>
     </div>
   </div>
   <hr class="mp-footer-divider" />
@@ -403,7 +543,6 @@
   </div>
 </footer>
 
-<!-- Floating buttons -->
 <div class="mp-floating">
   <a href="tel:0315151500" class="mp-float-btn call" title="전화하기">📞</a>
   <a href="booking.html" class="mp-float-btn book" title="예약하기">📅</a>
@@ -411,5 +550,113 @@
 </div>
 
 <script src="multipage.js"></script>
+<script>
+/* ===================== 1. 히어로 배경 슬라이더 ===================== */
+(function () {
+  const slides = document.querySelectorAll('#heroSlider .hero-slide');
+  const dotsWrap = document.getElementById('heroDots');
+  let cur = 0, timer;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'hero-dot' + (i === 0 ? ' on' : '');
+    d.setAttribute('aria-label', (i + 1) + '번 배경');
+    d.addEventListener('click', () => { go(i); restart(); });
+    dotsWrap.appendChild(d);
+  });
+  const dots = dotsWrap.querySelectorAll('.hero-dot');
+
+  function go(i) {
+    slides[cur].classList.remove('active');
+    dots[cur].classList.remove('on');
+    cur = (i + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    dots[cur].classList.add('on');
+  }
+  function restart() { clearInterval(timer); timer = setInterval(() => go(cur + 1), 7000); }
+  restart();
+})();
+
+/* ===================== 2. 동료의사 추천 캐러셀 ===================== */
+(function () {
+  const QUOTES = [
+    {
+      title: '최고의 진료역량을 갖춘 의사',
+      body: '함께 일하고 있을 때 가장 능력있는 의사이자 인간적으로도 신뢰할 수 있는 친구입니다. <span class="em">특히 소화기와 심장 분야에 대해서는 최고의 진료역량</span>을 가지고 있습니다.',
+      name: '조민수 부교수', org: '서울아산병원 심장내과'
+    },
+    {
+      title: '평생 주치의로 추천합니다',
+      body: '참된 진료와 평생 주치의를 원하신다면, 이동원 원장님을 끊임없이 신뢰하며 진료 및 검사에 적극 동참한다면, <span class="em">환자분들의 건강은 저절로 따라오리라</span> 생각됩니다.',
+      name: '최정완 교수', org: '고려대학교병원 소화기내과'
+    },
+    {
+      title: '의사들이 더 신뢰하는 실력',
+      body: '<span class="em">의대 수석 출신 이동원 원장님의 실력은 의사들이 더 신뢰합니다.</span> 진정성 있는 최고의 진료를 만나보십시오.',
+      name: '민경서 병원장', org: '시흥베드로병원'
+    },
+    {
+      title: '믿고 맡기는 실력파',
+      body: '믿고 맡기는 실력파 이동원 원장님, <span class="em">한결같이 최고의 진료를 추구하는 모습</span>에는 늘 감명을 받습니다. 소신이 가득 담긴 진료로 병원을 찾는 모든 환자분들과 함께 건강하시길 바랍니다.',
+      name: '차명진 교수', org: '서울아산병원 심장내과'
+    },
+    {
+      title: '남양주 의료를 책임질 병원',
+      body: '최고의 진료를 위해 항상 최선을 다하는 이동원 원장님, <span class="em">남양주 지역의 의료를 든든히 책임지는 병원</span>이 되기를 바랍니다.',
+      name: '최선미 교수', org: '서울대학교병원 호흡기내과'
+    },
+    {
+      title: '남양주의 축복이 될 병원',
+      body: '서울대병원 전공의 때부터 항상 귀감이 되었던 이동원 원장님의 개원을 진심으로 축하합니다. <span class="em">서울퍼스트내과가 남양주의 축복이 될 것이라 확신합니다.</span>',
+      name: '이민호 부교수', org: '순천향대학교 심장내과'
+    }
+  ];
+
+  const wrap = document.getElementById('repuCardWrap');
+  const curEl = document.getElementById('repuCur');
+  const barEl = document.getElementById('repuBar');
+  const dotsWrap = document.getElementById('repuDots');
+  const N = QUOTES.length;
+  let cur = 0, timer;
+
+  QUOTES.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'repu-dot' + (i === 0 ? ' on' : '');
+    d.setAttribute('aria-label', (i + 1) + '번 추천글');
+    d.addEventListener('click', () => { cur = i; render(); restart(); });
+    dotsWrap.appendChild(d);
+  });
+
+  function render() {
+    const q = QUOTES[cur];
+    wrap.innerHTML = `
+      <div class="repu-card" style="flex:1;">
+        <div class="repu-num">${String(cur + 1).padStart(2, '0')}</div>
+        <div class="repu-mark">“</div>
+        <div class="repu-card-title">${q.title}</div>
+        <p class="repu-quote">${q.body}</p>
+        <div class="repu-author">${q.name}<small>${q.org}</small></div>
+        <div class="repu-arrows">
+          <button class="repu-arrow" id="repuPrev" aria-label="이전 추천글">‹</button>
+          <button class="repu-arrow" id="repuNext" aria-label="다음 추천글">›</button>
+        </div>
+      </div>`;
+    document.getElementById('repuPrev').addEventListener('click', () => { cur = (cur - 1 + N) % N; render(); restart(); });
+    document.getElementById('repuNext').addEventListener('click', () => { cur = (cur + 1) % N; render(); restart(); });
+    curEl.textContent = String(cur + 1).padStart(2, '0');
+    barEl.style.width = ((cur + 1) / N * 100) + '%';
+    dotsWrap.querySelectorAll('.repu-dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  }
+
+  function restart() { clearInterval(timer); timer = setInterval(() => { cur = (cur + 1) % N; render(); }, 6000); }
+
+  const section = document.querySelector('.repu-section');
+  section.addEventListener('mouseenter', () => clearInterval(timer));
+  section.addEventListener('mouseleave', restart);
+
+  render();
+  restart();
+})();
+</script>
 </body>
 </html>
