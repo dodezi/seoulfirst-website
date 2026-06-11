@@ -25,17 +25,27 @@
 ### 2단계: GitHub API로 health-posts.json 업데이트
 
 아래 Python 스크립트를 작성하고 실행하세요. `new_post` 부분을 1단계에서 생성한 내용으로 채우세요.
-GitHub 토큰은 `C:\github-token.txt` 파일에서 읽습니다.
+GitHub 토큰은 현재 사용자 홈 폴더(`C:\Users\현재사용자\github-token.txt`)에서 자동으로 읽습니다.
+→ 노트북·병원 PC 어디서 실행해도 사용자명에 상관없이 동작합니다.
 
 ```python
 import urllib.request
 import json
 import base64
 import ssl
+import os
+import sys
 from datetime import datetime
 
-# 토큰을 별도 파일에서 읽기
-with open("C:/Users/dodez/github-token.txt", "r") as f:
+# 윈도우 콘솔(cp949) 한글·특수문자 출력 오류 방지
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+# 토큰을 현재 사용자 홈 폴더의 github-token.txt에서 읽기 (PC 무관 자동 경로)
+token_path = os.path.join(os.path.expanduser("~"), "github-token.txt")
+with open(token_path, "r") as f:
     GITHUB_TOKEN = f.read().strip()
 
 REPO = "dodezi/seoulfirst-website"
@@ -94,9 +104,13 @@ github_api("PUT", FILE_PATH, {
     "sha": sha
 })
 
-print(f"✅ 발행 완료! ID: {new_id}, 제목: {new_post['title']}")
+print(f"[발행 완료] ID: {new_id}, 제목: {new_post['title']}")
 ```
+
+> 참고: 이 스킬은 GitHub API로 `health-posts.json`만 안전하게 추가합니다.
+> git 명령이나 다른 파일 수정이 전혀 없으므로, 병원 PC에 git이 없어도 동작하며
+> 다른 작업 내용을 덮어쓸 위험이 없습니다.
 
 ### 3단계: 확인
 
-업로드 완료 후 https://dreamy-granita-8790e2.netlify.app/health.html 에서 새 글이 보이는지 확인하세요. (Netlify 자동 배포 2~3분 소요)
+업로드 완료 후 https://dodezi.github.io/seoulfirst-website/health.html 에서 새 글이 보이는지 확인하세요. (GitHub Pages 자동 배포 1~2분 소요)
