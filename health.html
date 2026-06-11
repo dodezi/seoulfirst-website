@@ -115,6 +115,8 @@
       <p style="text-align:center;color:#888;padding:40px;">건강소식을 불러오는 중입니다...</p>
     </div>
 
+    <div class="health-pagination" id="health-pagination"></div>
+
   </div>
 </section>
 
@@ -180,19 +182,26 @@
 
 <script src="multipage.js"></script>
 <script>
+const POSTS_PER_PAGE = 8;
+let allPosts = [];
+let currentPage = 1;
+
 async function loadPosts() {
   try {
     const res = await fetch('health-posts.json?v=' + Date.now());
-    const posts = await res.json();
-    renderPosts(posts);
+    allPosts = await res.json();
+    renderPage(1);
   } catch(e) {
     document.getElementById('health-list').innerHTML = '<p style="text-align:center;color:#888;padding:40px;">건강소식을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.</p>';
   }
 }
-function renderPosts(posts) {
+function renderPage(page) {
+  currentPage = page;
   const container = document.getElementById('health-list');
-  if (!posts.length) { container.innerHTML = '<p style="text-align:center;color:#888;padding:40px;">등록된 건강소식이 없습니다.</p>'; return; }
-  container.innerHTML = posts.map(p => `
+  if (!allPosts.length) { container.innerHTML = '<p style="text-align:center;color:#888;padding:40px;">등록된 건강소식이 없습니다.</p>'; return; }
+  const start = (page - 1) * POSTS_PER_PAGE;
+  const pagePosts = allPosts.slice(start, start + POSTS_PER_PAGE);
+  container.innerHTML = pagePosts.map(p => `
     <a href="health-post.html?id=${p.id}" class="health-card">
       ${p.image ? `<div class="health-card-img" style="background-image:url('${p.image}')"></div>` : '<div class="health-card-img health-card-img-empty"></div>'}
       <div class="health-card-body">
@@ -206,6 +215,20 @@ function renderPosts(posts) {
       </div>
     </a>
   `).join('');
+  renderPagination();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function renderPagination() {
+  const totalPages = Math.ceil(allPosts.length / POSTS_PER_PAGE);
+  const el = document.getElementById('health-pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  if (currentPage > 1) html += `<button class="page-btn" onclick="renderPage(${currentPage - 1})">← 이전</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="renderPage(${i})">${i}</button>`;
+  }
+  if (currentPage < totalPages) html += `<button class="page-btn" onclick="renderPage(${currentPage + 1})">다음 →</button>`;
+  el.innerHTML = html;
 }
 loadPosts();
 </script>

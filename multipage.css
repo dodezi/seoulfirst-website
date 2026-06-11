@@ -1908,11 +1908,13 @@ ul { list-style: none; }
 .notice-title-text { color: var(--gray-700); font-weight: 500; }
 .notice-title-text:hover { color: var(--teal); }
 .notice-date { font-size: 13px; color: var(--gray-400); white-space: nowrap; }
-.notice-pagination {
+.notice-pagination,
+.health-pagination {
   display: flex;
   justify-content: center;
   gap: 6px;
   margin-top: 32px;
+  flex-wrap: wrap;
 }
 .page-btn {
   width: 36px; height: 36px;
