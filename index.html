@@ -213,6 +213,8 @@
       .repu-card { padding: 28px 22px 70px; }
       .repu-arrows { right: 22px; bottom: 18px; }
       .repu-badges { grid-template-columns: 1fr; }
+      /* 모바일: 의사가 사진 오른쪽에 있어 중앙 크롭 시 얼굴이 잘림 → 오른쪽으로 이동 */
+      .hero-slide.slide-consult { background-position: 78% center; }
     }
   </style>
   <!-- OG / SNS -->
@@ -300,7 +302,7 @@
 <!-- ===================== HERO (배경 자동 전환) ===================== -->
 <section class="hero-slider" id="heroSlider">
   <div class="hero-slide active" style="background-image:url('images/328b947086595.jpg')"></div>
-  <div class="hero-slide" style="background-image:url('images/doctor-consult-wide.png')"></div>
+  <div class="hero-slide slide-consult" style="background-image:url('images/doctor-consult-wide.png')"></div>
   <div class="hero-slide" style="background-image:url('images/7a871bc97671c.jpg')"></div>
   <div class="hero-slide" style="background-image:url('images/doctor-endoscopy.png');background-position:center 30%;"></div>
   <div class="hero-overlay"></div>
