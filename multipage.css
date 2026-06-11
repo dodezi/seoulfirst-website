@@ -1617,8 +1617,8 @@ ul { list-style: none; }
   .mp-nav.open { display: flex; }
   .mp-nav-link { font-size: 20px; padding: 10px 20px; }
   .mp-menu-toggle { display: flex; }
-  .mp-header-inner { height: 84px; padding: 0 18px; }
-  .mp-logo img { width: auto; height: 68px; }
+  .mp-header-inner { height: 60px; padding: 0 18px; }
+  .mp-logo img { width: auto; height: 50px; }
   .mp-hero-btns { display: none; }
 
   /* 모바일 히어로: 빈 공간 축소 */
