@@ -1608,16 +1608,22 @@ ul { list-style: none; }
     background: var(--white);
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 96px 20px 40px;
+    overflow-y: auto;
     z-index: 1050;
   }
   .mp-nav.open { display: flex; }
-  .mp-nav-link { font-size: 22px; padding: 12px 20px; }
+  .mp-nav-link { font-size: 20px; padding: 10px 20px; }
   .mp-menu-toggle { display: flex; }
-  .mp-header-inner { height: 76px; padding: 0 18px; }
-  .mp-logo img { width: auto; height: 60px; }
+  .mp-header-inner { height: 84px; padding: 0 18px; }
+  .mp-logo img { width: auto; height: 68px; }
   .mp-hero-btns { display: none; }
+
+  /* 모바일 히어로: 빈 공간 축소 */
+  .mp-hero { min-height: auto; }
+  .mp-hero-content { padding: 40px 0 48px; }
 
   .quick-bar-inner { grid-template-columns: repeat(2, 1fr); }
   .quick-item { border-bottom: 1px solid rgba(255,255,255,.1); }
