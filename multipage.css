@@ -82,8 +82,8 @@ ul { list-style: none; }
 }
 
 .mp-logo img {
-  height: auto;
-  width: 340px;
+  width: auto;
+  height: 52px;
 }
 
 .mp-nav {
@@ -1505,7 +1505,7 @@ ul { list-style: none; }
   grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: 40px;
 }
-.mp-footer-logo { height: 40px; width: auto; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: .85; }
+.mp-footer-logo { height: 30px; width: auto; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: .85; }
 .mp-footer-addr { font-size: 13px; line-height: 1.9; margin-bottom: 12px; }
 .mp-footer-copy { font-size: 12px; opacity: .4; }
 .mp-footer-col h5 {
@@ -1617,8 +1617,8 @@ ul { list-style: none; }
   .mp-nav.open { display: flex; }
   .mp-nav-link { font-size: 20px; padding: 10px 20px; }
   .mp-menu-toggle { display: flex; }
-  .mp-header-inner { height: 60px; padding: 0 18px; }
-  .mp-logo img { width: auto; height: 50px; }
+  .mp-header-inner { height: 54px; padding: 0 18px; }
+  .mp-logo img { width: auto; height: 32px; }
   .mp-hero-btns { display: none; }
 
   /* 모바일 히어로: 빈 공간 축소 */
