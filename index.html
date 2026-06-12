@@ -183,10 +183,17 @@
     .mh-repu-card {
       background: #fff; border: 1px solid rgba(15,43,61,.07); border-radius: 16px;
       box-shadow: 0 6px 22px rgba(15,43,61,.07);
-      padding: 22px 20px 20px; min-height: 178px;
+      padding: 18px 20px 20px;
       display: flex; flex-direction: column;
-      animation: repuIn .5s cubic-bezier(.22,.8,.3,1);
     }
+    .mh-repu-doc { display: flex; align-items: center; gap: 13px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--gray-200); }
+    .mh-repu-doc img {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      object-position: center 20%; flex-shrink: 0; box-shadow: 0 3px 10px rgba(15,43,61,.14);
+    }
+    .mh-repu-doc-cap strong { display: block; font-size: 15px; font-weight: 700; color: var(--navy); }
+    .mh-repu-doc-cap span { display: block; font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+    .mh-repu-body { min-height: 150px; display: flex; flex-direction: column; animation: repuIn .5s cubic-bezier(.22,.8,.3,1); }
     .mh-repu-mark { font-family: 'Noto Serif KR', serif; font-size: 30px; color: var(--teal); line-height: .6; margin-bottom: 8px; }
     .mh-repu-quote { font-size: 15px; line-height: 1.75; color: var(--gray-700); flex: 1; }
     .mh-repu-quote .em { color: var(--teal); font-weight: 600; }
@@ -372,8 +379,17 @@
   <!-- 동료의사 추천 (간단 버전) -->
   <div class="mh-repu">
     <p class="mh-repu-label">동료 의사들이 먼저 추천하는 의사</p>
-    <div class="mh-repu-card" id="mhRepuCard">
-      <!-- JS가 렌더링 -->
+    <div class="mh-repu-card">
+      <div class="mh-repu-doc">
+        <img src="images/doctor-portrait.png" alt="서울퍼스트내과 대표원장 이동원" />
+        <div class="mh-repu-doc-cap">
+          <strong>이동원 대표원장</strong>
+          <span>소화기내과 분과 전문의 · 내과학 박사</span>
+        </div>
+      </div>
+      <div class="mh-repu-body" id="mhRepuCard">
+        <!-- JS가 렌더링 -->
+      </div>
     </div>
     <div class="mh-repu-dots" id="mhRepuDots"></div>
   </div>
