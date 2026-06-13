@@ -793,29 +793,130 @@
 })();
 </script>
 
-<!-- ===================== 휴진 팝업 ===================== -->
-<div id="holidayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);">
-    <div style="font-size:2rem;margin-bottom:8px;">🏥</div>
-    <h2 id="holidayTitle" style="font-size:1.2rem;color:#c0392b;margin:0 0 14px;"></h2>
-    <p id="holidayMessage" style="font-size:1.05rem;line-height:1.7;color:#333;margin:0 0 24px;"></p>
-    <button onclick="document.getElementById('holidayOverlay').style.display='none'"
-      style="background:#1a4fa0;color:#fff;border:none;border-radius:8px;padding:12px 32px;font-size:1rem;cursor:pointer;font-weight:600;">
-      확인
-    </button>
+<!-- ===================== 휴진 팝업 (우측 상단 카드) ===================== -->
+<style>
+  #holidayCard {
+    position: fixed; top: 92px; right: 24px; z-index: 9000;
+    width: 320px; max-width: calc(100vw - 32px);
+    background: #fff; border-radius: 18px; overflow: hidden;
+    box-shadow: 0 16px 48px rgba(8,28,42,.28);
+    transform: translateX(120%); opacity: 0;
+    transition: transform .55s cubic-bezier(.22,.9,.3,1), opacity .55s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #holidayCard.show { transform: translateX(0); opacity: 1; }
+  .hcard-top {
+    position: relative;
+    background: linear-gradient(135deg, #c0392b 0%, #e25141 55%, #d94c3d 100%);
+    padding: 22px 22px 46px; color: #fff;
+    overflow: hidden;
+  }
+  /* 태극 모티프 장식 원 */
+  .hcard-top::before,
+  .hcard-top::after {
+    content: ""; position: absolute; border-radius: 50%;
+  }
+  .hcard-top::before { width: 120px; height: 120px; background: rgba(255,255,255,.10); top: -42px; right: -30px; }
+  .hcard-top::after  { width: 70px;  height: 70px;  background: rgba(255,255,255,.08); bottom: -20px; left: -18px; }
+  .hcard-flag { font-size: 1.5rem; margin-bottom: 6px; position: relative; }
+  .hcard-badge {
+    display: inline-block; background: rgba(255,255,255,.22);
+    border: 1px solid rgba(255,255,255,.35);
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    padding: 4px 12px; border-radius: 20px; position: relative;
+  }
+  .hcard-close {
+    position: absolute; top: 12px; right: 14px;
+    background: rgba(255,255,255,.18); border: none; color: #fff;
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+    font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .hcard-close:hover { background: rgba(255,255,255,.34); }
+  /* 달력 카드 (헤더와 본문 사이에 걸침) */
+  .hcard-cal {
+    position: relative; margin: -32px auto 0; width: 76px;
+    background: #fff; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 6px 18px rgba(8,28,42,.18); text-align: center;
+  }
+  .hcard-cal-m { background: #c0392b; color: #fff; font-size: 12px; font-weight: 700; padding: 4px 0; letter-spacing: .05em; }
+  .hcard-cal-d { font-size: 30px; font-weight: 800; color: #c0392b; padding: 6px 0 8px; line-height: 1; }
+  .hcard-body { padding: 14px 22px 20px; text-align: center; }
+  .hcard-title { font-size: 1.15rem; font-weight: 800; color: #1a2b3c; margin: 6px 0 8px; }
+  .hcard-msg { font-size: .98rem; line-height: 1.6; color: #4a5763; margin: 0 0 18px; white-space: pre-line; }
+  .hcard-actions { display: flex; gap: 8px; }
+  .hcard-btn {
+    flex: 1; border: none; border-radius: 10px; padding: 11px 0;
+    font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: filter .2s, background .2s;
+  }
+  .hcard-btn-primary { background: #1a4fa0; color: #fff; }
+  .hcard-btn-primary:hover { filter: brightness(1.08); }
+  .hcard-btn-ghost { background: #f0f2f5; color: #6b7682; }
+  .hcard-btn-ghost:hover { background: #e4e7eb; }
+  @media (max-width: 768px) {
+    #holidayCard { top: auto; bottom: 88px; right: 12px; left: 12px; width: auto; }
+  }
+</style>
+<div id="holidayCard" role="dialog" aria-label="휴진 안내">
+  <div class="hcard-top">
+    <button class="hcard-close" id="hcardClose" aria-label="닫기">×</button>
+    <div class="hcard-flag" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 100 100" style="vertical-align:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));">
+        <circle cx="50" cy="50" r="48" fill="#fff"/>
+        <path d="M50 4a46 46 0 0 1 0 92 23 23 0 0 1 0-46 23 23 0 0 0 0-46z" fill="#cd2e3a"/>
+        <path d="M50 96a46 46 0 0 1 0-92 23 23 0 0 1 0 46 23 23 0 0 0 0 46z" fill="#0047a0"/>
+      </svg>
+    </div>
+    <span class="hcard-badge" id="hcardBadge">공휴일 휴진 안내</span>
+  </div>
+  <div class="hcard-cal">
+    <div class="hcard-cal-m" id="hcardCalM">7월</div>
+    <div class="hcard-cal-d" id="hcardCalD">17</div>
+  </div>
+  <div class="hcard-body">
+    <h2 class="hcard-title" id="holidayTitle">휴진 안내</h2>
+    <p class="hcard-msg" id="holidayMessage"></p>
+    <div class="hcard-actions">
+      <button class="hcard-btn hcard-btn-ghost" id="hcardHideToday">오늘 하루 그만 보기</button>
+      <button class="hcard-btn hcard-btn-primary" id="hcardConfirm">확인</button>
+    </div>
   </div>
 </div>
 <script>
 (function(){
+  var KEY = 'holidayHideUntil';
+  var card = document.getElementById('holidayCard');
+
+  // "오늘 하루 그만 보기" 했으면 오늘은 표시 안 함
+  var hideUntil = localStorage.getItem(KEY);
+  var todayStr = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  if (hideUntil === todayStr) return;
+
   fetch('holiday-notice.json?v=' + Date.now())
     .then(function(r){ return r.json(); })
     .then(function(d){
       if(!d.active) return;
       document.getElementById('holidayTitle').textContent = d.title || '휴진 안내';
       document.getElementById('holidayMessage').textContent = d.message || '';
-      document.getElementById('holidayOverlay').style.display = 'flex';
+      if (d.badge) document.getElementById('hcardBadge').textContent = d.badge;
+      // 날짜(YYYY-MM-DD)에서 달력 표시 채우기
+      if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
+        var p = d.date.split('-');
+        document.getElementById('hcardCalM').textContent = parseInt(p[1],10) + '월';
+        document.getElementById('hcardCalD').textContent = parseInt(p[2],10);
+      }
+      setTimeout(function(){ card.classList.add('show'); }, 600);
     })
     .catch(function(){});
+
+  function close(){ card.classList.remove('show'); }
+  document.getElementById('hcardClose').addEventListener('click', close);
+  document.getElementById('hcardConfirm').addEventListener('click', close);
+  document.getElementById('hcardHideToday').addEventListener('click', function(){
+    localStorage.setItem(KEY, todayStr);
+    close();
+  });
 })();
 </script>
 </body>
