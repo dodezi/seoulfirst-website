@@ -414,7 +414,7 @@
 
 <!-- ===================== 휴진 팝업 ===================== -->
 <div id="holidayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);position:relative;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);">
     <div style="font-size:2rem;margin-bottom:8px;">🏥</div>
     <h2 id="holidayTitle" style="font-size:1.2rem;color:#c0392b;margin:0 0 14px;"></h2>
     <p id="holidayMessage" style="font-size:1.05rem;line-height:1.7;color:#333;margin:0 0 24px;"></p>
@@ -432,8 +432,7 @@
       if(!d.active) return;
       document.getElementById('holidayTitle').textContent = d.title || '휴진 안내';
       document.getElementById('holidayMessage').textContent = d.message || '';
-      var el = document.getElementById('holidayOverlay');
-      el.style.display = 'flex';
+      document.getElementById('holidayOverlay').style.display = 'flex';
     })
     .catch(function(){});
 })();
