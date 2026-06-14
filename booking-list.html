@@ -205,6 +205,24 @@
     .cal-more { font-size: 10px; color: #999; padding: 1px 6px; }
     .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
+    /* ── 컴팩트 월간 달력 (명단 위) ── */
+    #miniSchedule { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 14px 16px 16px; margin-bottom: 18px; }
+    .mini-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+    .mini-label { font-size: 15px; font-weight: 700; color: #0f2b3d; }
+    .mini-nav { display: flex; align-items: center; gap: 8px; margin: 0 auto; }
+    .mini-title { font-size: 15px; font-weight: 700; color: #0f2b3d; min-width: 110px; text-align: center; }
+    .cal-nav.mini { width: 28px; height: 28px; font-size: 14px; }
+    .cal-today-btn.mini { padding: 5px 11px; font-size: 12px; }
+    .mini-collapse { background: #eef2f6; color: #555; border: none; border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    /* 컴팩트 그리드: 셀 작게 */
+    .cal-grid.mini { box-shadow: none; border: 1px solid #eef0f3; }
+    .cal-grid.mini .cal-dow span { padding: 6px 0; font-size: 11px; }
+    .cal-grid.mini .cal-cell { min-height: 66px; padding: 4px; }
+    .cal-grid.mini .cal-daynum { font-size: 11px; margin-bottom: 2px; }
+    .cal-grid.mini .cal-event { font-size: 10px; padding: 2px 4px; margin-bottom: 2px; border-left-width: 2px; }
+    .cal-grid.mini .cal-event .ev-svc { display: none; }   /* 컴팩트에선 검사항목 줄 생략 (툴팁으로 확인) */
+    .cal-grid.mini .cal-more { font-size: 9px; }
+
     @media (max-width: 600px) {
       .page-body { padding: 16px 10px; }
       .toolbar h1 { font-size: 18px; }
@@ -263,6 +281,28 @@
 
     <!-- ════════ 목록 뷰 ════════ -->
     <div id="listView">
+
+    <!-- 컴팩트 월간 달력 (확정 일정 미리보기) -->
+    <div id="miniSchedule">
+      <div class="mini-head">
+        <span class="mini-label">🗓️ 확정 일정</span>
+        <div class="mini-nav">
+          <button class="cal-nav mini" onclick="calPrev()">‹</button>
+          <span class="mini-title" id="calTitleMini"></span>
+          <button class="cal-nav mini" onclick="calNext()">›</button>
+          <button class="cal-today-btn mini" onclick="calToday()">오늘</button>
+        </div>
+        <button class="mini-collapse" id="miniCollapseBtn" onclick="toggleMini()">접기 ▲</button>
+      </div>
+      <div id="miniGridWrap">
+        <div class="cal-grid mini">
+          <div class="cal-dow">
+            <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+          </div>
+          <div class="cal-body" id="calBodyMini"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- 필터 탭 + 통계 -->
     <div class="filter-row">
@@ -453,7 +493,7 @@ async function loadBookings() {
     const snap = await db.collection('bookings').orderBy('createdAt','desc').get();
     allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTable();
-    if (currentView === 'calendar') renderCalendar();
+    renderCalendars();
   } catch(e) {
     document.getElementById('bookingTableBody').innerHTML =
       `<tr><td colspan="13" class="empty-msg" style="color:#c0392b;">불러오지 못했습니다.<br/><small>${e.message}</small></td></tr>`;
@@ -790,15 +830,14 @@ function toggleView() {
   const btn = document.getElementById('btnCalToggle');
   btn.textContent = isCal ? '📋 목록 보기' : '📅 일정표 보기';
   btn.classList.toggle('on', isCal);
-  if (isCal) renderCalendar();
+  renderCalendars();
 }
-function calPrev()  { calMonth--; if (calMonth < 0)  { calMonth = 11; calYear--; } renderCalendar(); }
-function calNext()  { calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; } renderCalendar(); }
-function calToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); renderCalendar(); }
+function calPrev()  { calMonth--; if (calMonth < 0)  { calMonth = 11; calYear--; } renderCalendars(); }
+function calNext()  { calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; } renderCalendars(); }
+function calToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); renderCalendars(); }
 
-function renderCalendar() {
-  document.getElementById('calTitle').textContent = `${calYear}년 ${calMonth+1}월`;
-
+// 현재 calYear/calMonth 기준 월 그리드 HTML 생성. maxEvents = 셀당 표시할 최대 일정 수
+function buildMonthGrid(maxEvents) {
   // 확정 검사일이 있는, 삭제되지 않은 예약만
   const events = {};   // 'yyyy-mm-dd' → [booking,...]
   allBookings.forEach(b => {
@@ -826,14 +865,14 @@ function renderCalendar() {
     totalEvents += list.length;
 
     let evHtml = '';
-    list.slice(0, 4).forEach(b => {
+    list.slice(0, maxEvents).forEach(b => {
       const st = b.status || '확인완료';
       const t  = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span> ` : '';
       const svcFull  = b.service ? ' · ' + esc(b.service) : '';
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
       evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
-    if (list.length > 4) evHtml += `<div class="cal-more">+${list.length - 4}건 더</div>`;
+    if (list.length > maxEvents) evHtml += `<div class="cal-more">+${list.length - maxEvents}건 더</div>`;
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}">
       <div class="cal-daynum ${dnClass}">${d}</div>
@@ -845,21 +884,50 @@ function renderCalendar() {
   const rem = (7 - (totalCells % 7)) % 7;
   for (let i = 0; i < rem; i++) html += `<div class="cal-cell empty"></div>`;
 
-  document.getElementById('calBody').innerHTML = html;
-  document.getElementById('calEmptyNote').style.display = totalEvents === 0 ? 'block' : 'none';
+  return { html, totalEvents };
 }
 
-// 달력 이벤트 클릭 → 목록 뷰로 전환하고 해당 예약 검색
+// 큰 달력 + 명단 위 컴팩트 달력을 함께 렌더링
+function renderCalendars() {
+  const title = `${calYear}년 ${calMonth+1}월`;
+  // 큰 달력
+  const big = buildMonthGrid(4);
+  const calBody = document.getElementById('calBody');
+  if (calBody) {
+    document.getElementById('calTitle').textContent = title;
+    calBody.innerHTML = big.html;
+    document.getElementById('calEmptyNote').style.display = big.totalEvents === 0 ? 'block' : 'none';
+  }
+  // 컴팩트 달력 (명단 위)
+  const mini = buildMonthGrid(3);
+  const miniBody = document.getElementById('calBodyMini');
+  if (miniBody) {
+    document.getElementById('calTitleMini').textContent = title;
+    miniBody.innerHTML = mini.html;
+  }
+}
+
+// 컴팩트 달력 접기/펴기
+function toggleMini() {
+  const wrap = document.getElementById('miniGridWrap');
+  const btn  = document.getElementById('miniCollapseBtn');
+  const hidden = wrap.style.display === 'none';
+  wrap.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '접기 ▲' : '펼치기 ▼';
+}
+
+// 달력 이벤트 클릭 → 목록에서 해당 예약 검색 (큰 달력이면 목록으로 전환)
 function jumpToBooking(id) {
   const b = allBookings.find(x => x.id === id);
   if (!b) return;
-  toggleView();  // 목록으로
+  if (currentView === 'calendar') toggleView();  // 큰 달력 → 목록
   document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('on'));
   document.querySelector('.filter-btn').classList.add('on');
   currentFilter = '전체';
   const si = document.getElementById('searchInput');
   si.value = b.name || '';
   renderTable();
+  si.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ── 토스트 ───────────────────────────────────────────────
@@ -871,19 +939,29 @@ function showToast(msg) {
   tt = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// 확정 시간 15분 단위 드롭다운 옵션 (오전 우선)
+// 확정 시간 15분 단위 드롭다운 옵션 (오전 8시 ~ 오후 5시)
 function timeSlotOptions(selected) {
   selected = selected || '';
-  let html = '<option value="">-- 시간 --</option>';
-  for (let h = 6; h <= 21; h++) {
+  const fmt = (h, m) => {
+    const ap  = h < 12 ? '오전' : '오후';
+    const h12 = (h % 12 === 0) ? 12 : (h % 12);
+    return `${ap} ${h12}:${String(m).padStart(2,'0')}`;
+  };
+  const slots = [];
+  for (let h = 8; h <= 17; h++) {
     for (let m = 0; m < 60; m += 15) {
-      const v   = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-      const ap  = h < 12 ? '오전' : '오후';
-      const h12 = (h % 12 === 0) ? 12 : (h % 12);
-      const label = `${ap} ${h12}:${String(m).padStart(2,'0')}`;
-      html += `<option value="${v}"${v === selected ? ' selected' : ''}>${label}</option>`;
+      if (h === 17 && m > 0) break;          // 오후 5:00 까지만
+      slots.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
     }
   }
+  // 기존에 범위 밖 시간으로 확정된 건은 그 값을 유지해 표시
+  if (selected && !slots.includes(selected)) slots.unshift(selected);
+
+  let html = '<option value="">-- 시간 --</option>';
+  slots.forEach(v => {
+    const [h, m] = v.split(':').map(Number);
+    html += `<option value="${v}"${v === selected ? ' selected' : ''}>${fmt(h, m)}</option>`;
+  });
   return html;
 }
 
