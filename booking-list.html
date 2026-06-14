@@ -151,6 +151,7 @@
     .conf-input:focus { outline: none; border-color: #0d7377; background: #fff; }
     .conf-input.cd { width: 116px; }
     .conf-input.ct { width: 80px; }
+    .conf-input.cs { width: 100%; margin-top: 1px; }
     .td-source-tag { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; color: #8e44ad; background: #f3e8fb; padding: 1px 6px; border-radius: 10px; vertical-align: middle; }
 
     /* ── 추가 입력 모달 ── */
@@ -193,11 +194,14 @@
     .cal-cell.today .cal-daynum { color: #0d7377; }
     .cal-daynum.sun { color: #e74c3c; }
     .cal-daynum.sat { color: #2980b9; }
-    .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
+    .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
     .cal-event.ev-확인완료 { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
     .cal-event.ev-완료 { background: #f0f0f0; color: #777; border-left-color: #aaa; }
-    .cal-event.ev-취소 { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; text-decoration: line-through; }
+    .cal-event.ev-취소 { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; }
+    .cal-event.ev-취소 .ev-main { text-decoration: line-through; }
+    .cal-event .ev-main { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-event .ev-time { font-weight: 700; }
+    .cal-event .ev-svc { font-size: 10px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-more { font-size: 10px; color: #999; padding: 1px 6px; }
     .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
@@ -378,8 +382,8 @@
           <input type="date" id="aConfDate" />
         </div>
         <div class="ff">
-          <label>확정 시간</label>
-          <input type="time" id="aConfTime" />
+          <label>확정 시간 <small style="color:#999;font-weight:400;">(15분 단위)</small></label>
+          <input type="time" id="aConfTime" step="900" />
         </div>
       </div>
     </div>
@@ -547,8 +551,9 @@ function renderTable() {
       confCell = `<div class="conf-wrap">
         <div class="conf-row">
           <input type="date" class="conf-input cd" id="cfd-${b.id}" />
-          <input type="time" class="conf-input ct" id="cft-${b.id}" />
+          <input type="time" class="conf-input ct" id="cft-${b.id}" step="900" />
         </div>
+        <input type="text" class="conf-input cs" id="cfx-${b.id}" placeholder="확정 검사항목" maxlength="40" value="${esc(b.service||'')}" />
         <button class="btn-xs btn-xs-save" onclick="saveConf('${b.id}')">확정 저장</button>
       </div>`;
     }
@@ -690,11 +695,13 @@ async function saveConf(id) {
   const di = document.getElementById('cfd-'+id);
   const ti = document.getElementById('cft-'+id);
   if (!di) return;
+  const si = document.getElementById('cfx-'+id);
   const date = di.value;            // yyyy-mm-dd
   const time = ti ? ti.value : '';  // HH:MM
+  const service = si ? si.value.trim() : '';
   if (!date) { di.focus(); showToast('확정 검사일을 선택해 주세요.'); return; }
   try {
-    const upd = { confirmedDate: date, confirmedTime: time || '' };
+    const upd = { confirmedDate: date, confirmedTime: time || '', service: service };
     // 확정일을 저장하면 상태가 대기중인 경우 '확인완료'로 올림
     const item0 = allBookings.find(b => b.id === id);
     if (item0 && (item0.status || '대기중') === '대기중') upd.status = '확인완료';
@@ -821,8 +828,9 @@ function renderCalendar() {
     list.slice(0, 4).forEach(b => {
       const st = b.status || '확인완료';
       const t  = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span> ` : '';
-      const svc = b.service ? ' · ' + esc(b.service) : '';
-      evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svc} (${st})" onclick="jumpToBooking('${b.id}')">${t}${esc(b.name||'-')}</div>`;
+      const svcFull  = b.service ? ' · ' + esc(b.service) : '';
+      const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
+      evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
     if (list.length > 4) evHtml += `<div class="cal-more">+${list.length - 4}건 더</div>`;
 
@@ -860,6 +868,12 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(tt);
   tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// 캘린더용 검사항목 짧은 요약 (긴 이름은 잘라서 …)
+function shortSvc(s) {
+  s = String(s).trim();
+  return s.length > 12 ? s.slice(0, 12) + '…' : s;
 }
 
 function esc(s) {
