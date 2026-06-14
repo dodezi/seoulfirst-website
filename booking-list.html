@@ -150,7 +150,7 @@
     .conf-input { border: 1px solid #e0e4ea; border-radius: 6px; padding: 4px 6px; font-size: 12px; font-family: inherit; background: #f8fafc; }
     .conf-input:focus { outline: none; border-color: #0d7377; background: #fff; }
     .conf-input.cd { width: 116px; }
-    .conf-input.ct { width: 80px; }
+    .conf-input.ct { width: 104px; }
     .conf-input.cs { width: 100%; margin-top: 1px; }
     .td-source-tag { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; color: #8e44ad; background: #f3e8fb; padding: 1px 6px; border-radius: 10px; vertical-align: middle; }
 
@@ -383,7 +383,7 @@
         </div>
         <div class="ff">
           <label>확정 시간 <small style="color:#999;font-weight:400;">(15분 단위)</small></label>
-          <input type="time" id="aConfTime" step="900" />
+          <select id="aConfTime"></select>
         </div>
       </div>
     </div>
@@ -551,7 +551,7 @@ function renderTable() {
       confCell = `<div class="conf-wrap">
         <div class="conf-row">
           <input type="date" class="conf-input cd" id="cfd-${b.id}" />
-          <input type="time" class="conf-input ct" id="cft-${b.id}" step="900" />
+          <select class="conf-input ct" id="cft-${b.id}">${timeSlotOptions(b.confirmedTime || '09:00')}</select>
         </div>
         <input type="text" class="conf-input cs" id="cfx-${b.id}" placeholder="확정 검사항목" maxlength="40" value="${esc(b.service||'')}" />
         <button class="btn-xs btn-xs-save" onclick="saveConf('${b.id}')">확정 저장</button>
@@ -728,8 +728,9 @@ function editConf(id) {
 
 // ── 직접 추가 ─────────────────────────────────────────────
 function openAdd() {
-  ['aName','aPhone','aDate','aTime','aService','aConfDate','aConfTime','aMemo']
+  ['aName','aPhone','aDate','aTime','aService','aConfDate','aMemo']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('aConfTime').innerHTML = timeSlotOptions('09:00'); // 기본 오전 9시
   document.getElementById('addError').textContent = '';
   document.getElementById('addModal').classList.add('on');
   setTimeout(() => document.getElementById('aName').focus(), 50);
@@ -764,7 +765,7 @@ async function saveAdd() {
       memo: memo || '',
       status: cDate ? '확인완료' : '대기중',
       confirmedDate: cDate || '',
-      confirmedTime: cTime || '',
+      confirmedTime: cDate ? (cTime || '') : '',
       source: '직접입력',
       deleted: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -868,6 +869,22 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(tt);
   tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// 확정 시간 15분 단위 드롭다운 옵션 (오전 우선)
+function timeSlotOptions(selected) {
+  selected = selected || '';
+  let html = '<option value="">-- 시간 --</option>';
+  for (let h = 6; h <= 21; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const v   = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      const ap  = h < 12 ? '오전' : '오후';
+      const h12 = (h % 12 === 0) ? 12 : (h % 12);
+      const label = `${ap} ${h12}:${String(m).padStart(2,'0')}`;
+      html += `<option value="${v}"${v === selected ? ' selected' : ''}>${label}</option>`;
+    }
+  }
+  return html;
 }
 
 // 캘린더용 검사항목 짧은 요약 (긴 이름은 잘라서 …)
