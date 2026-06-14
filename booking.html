@@ -173,7 +173,7 @@
             </div>
             <div class="form-group">
               <label>연락처 <span class="required">*</span></label>
-              <input type="tel" name="phone" placeholder="010-0000-0000" required />
+              <input type="tel" name="phone" id="phoneInput" placeholder="010-0000-0000" inputmode="numeric" maxlength="13" required />
             </div>
           </div>
 
@@ -354,6 +354,20 @@ document.getElementById('mpModalOverlay').addEventListener('click', function(e) 
   if (e.target === this) closeModal();
 });
 
+// ── 연락처 자동 포맷 (숫자만 입력해도 010-0000-0000 형식) ──
+function formatPhone(v) {
+  const d = String(v).replace(/\D/g, '').slice(0, 11);
+  if (d.length < 4) return d;
+  if (d.length < 8) return d.slice(0,3) + '-' + d.slice(3);
+  return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+}
+const phoneInputEl = document.getElementById('phoneInput');
+if (phoneInputEl) {
+  phoneInputEl.addEventListener('input', function() {
+    this.value = formatPhone(this.value);
+  });
+}
+
 // ── 예약 폼 제출 ──────────────────────────────────────────
 function submitBooking(event) {
   event.preventDefault();
@@ -361,7 +375,7 @@ function submitBooking(event) {
   const data  = new FormData(form);
 
   const name    = data.get('name').trim();
-  const phone   = data.get('phone').trim();
+  const phone   = formatPhone(data.get('phone').trim());
   const service = data.get('service');
   const date    = data.get('date');
 

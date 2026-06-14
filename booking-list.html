@@ -85,7 +85,7 @@
     tbody td { padding: 11px 12px; font-size: 13px; color: #333; vertical-align: middle; }
     .td-num  { color: #aaa; font-size: 12px; width: 36px; text-align: center; }
     .td-name { font-weight: 600; white-space: nowrap; }
-    .td-phone { font-family: monospace; font-size: 13px; color: #0d7377; white-space: nowrap; }
+    .td-phone { font-size: 16px; font-weight: 800; color: #0a5c5f; letter-spacing: .3px; white-space: nowrap; }
     .td-date  { font-size: 13px; white-space: nowrap; }
     .td-recv  { font-size: 11px; color: #aaa; white-space: nowrap; }
     .td-service { font-size: 12px; max-width: 120px; }
@@ -631,7 +631,7 @@ function renderTable() {
       <tr class="${isDeleted ? 'row-deleted' : ''}">
         <td class="td-num">${i+1}</td>
         <td class="td-name">${esc(b.name||'-')}${srcTag}</td>
-        <td class="td-phone">${esc(b.phone||'-')}</td>
+        <td class="td-phone">${esc(formatPhone(b.phone))}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
         <td class="td-service">${esc(b.service||'-')}</td>
@@ -1022,6 +1022,14 @@ function timeSlotOptions(selected) {
 function shortSvc(s) {
   s = String(s).trim();
   return s.length > 12 ? s.slice(0, 12) + '…' : s;
+}
+
+// 연락처 표시 포맷 (010-0000-0000)
+function formatPhone(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (d.length === 11) return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+  if (d.length === 10) return d.slice(0,3) + '-' + d.slice(3,6) + '-' + d.slice(6);
+  return v || '-';   // 형식 불명확하면 원본 그대로
 }
 
 function esc(s) {
