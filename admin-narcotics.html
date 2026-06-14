@@ -256,6 +256,81 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
 }
 #toast.show { opacity: 1; transform: translateY(0); }
 
+/* ── 📱 모바일 (세로 카드형 입력) ── */
+@media screen and (max-width: 768px) {
+  body { font-size: 15px; }
+
+  /* 헤더 */
+  #header { height: auto; min-height: 50px; padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  .header-sep, .header-title { display: none; }
+  .logo { font-size: 16px; }
+  #header .btn { padding: 7px 11px; font-size: 12px; }
+  #header .btn-io { display: none; }   /* 내보내기·가져오기는 모바일에서 숨김 */
+
+  /* 툴바 */
+  #toolbar { padding: 8px 12px; gap: 10px; }
+  #month-display { font-size: 17px; min-width: 84px; }
+  .btn-add { padding: 10px 18px; font-size: 15px; }
+
+  /* 표 → 카드 전환 */
+  #table-wrap { margin: 10px; border: none; box-shadow: none; background: transparent; overflow: visible; }
+  #main-table thead { display: none; }
+  #main-table, #main-table tbody, #main-table tr { display: block; width: 100%; }
+
+  /* 날짜 그룹 헤더 (밴드) */
+  .date-group-row { display: block; }
+  .date-group-row td { display: block; border-radius: 8px; }
+
+  /* 빈 상태 */
+  .empty-row td { display: block; }
+
+  /* 데이터 행 = 카드 */
+  #main-table tr.row-saved, #main-table tr.row-editing {
+    border: 1px solid var(--border); border-radius: 12px;
+    margin: 0 0 12px; padding: 4px 0; background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  #main-table tr.row-editing { background: var(--row-editing); border-color: var(--accent); }
+
+  /* 카드 안 각 칸: 항목명(왼쪽) + 값/입력란(오른쪽) */
+  #main-table tr.row-saved td, #main-table tr.row-editing td {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 9px 14px !important;
+    border: none !important; border-bottom: 1px solid #f0f2f5 !important;
+  }
+  #main-table tr.row-saved td:last-child,
+  #main-table tr.row-editing td:last-child { border-bottom: none !important; }
+  #main-table tr.row-saved td.row-num,
+  #main-table tr.row-editing td.row-num { display: none !important; }
+
+  /* 항목명 라벨 */
+  #main-table tr.row-saved td::before,
+  #main-table tr.row-editing td::before {
+    content: attr(data-label);
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    flex: 0 0 auto; white-space: nowrap;
+  }
+  #main-table td.cell-actions::before { display: none; }
+
+  /* 입력란·값 오른쪽 정렬, 글자 16px (iOS 자동 확대 방지) */
+  .cell-input {
+    flex: 1 1 auto; width: auto; text-align: right !important;
+    font-size: 16px; padding: 8px 4px; background: #f8fafc; border-radius: 6px;
+  }
+  .cell-input[type=date] { min-width: 0; }
+  .cell-input:focus { background: #fff3e0; }
+  .cell-text { padding: 0 !important; flex: 1 1 auto; text-align: right; font-size: 15px; }
+  td.amp-td { background: transparent !important; }
+  .cell-amp { font-size: 14px; }
+
+  /* 액션 버튼: 카드 하단 가로 꽉 차게 */
+  #main-table td.cell-actions { padding: 12px 14px !important; gap: 10px; }
+  .act-btn { flex: 1 1 0; padding: 13px 0; font-size: 15px; }
+
+  /* 월 합계 */
+  #month-summary { margin: 12px 10px 24px; padding: 14px 16px; }
+}
+
 /* ── 인쇄 ── */
 @media print {
   @page { size: A4 portrait; margin: 10mm 8mm; }
@@ -823,16 +898,16 @@ function render() {
         const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
         html += `<tr class="row-editing" data-id="${r.id}">
           <td class="row-num">${rowNum}</td>
-          <td><input class="cell-input" type="date" data-field="date" value="${esc(r.date)}"></td>
-          <td><input class="cell-input" type="text" data-field="chartNo" value="${esc(r.chartNo)}" placeholder="환자번호"></td>
-          <td><input class="cell-input" type="text" data-field="name" value="${esc(r.name)}" placeholder="홍길동"></td>
-          <td><input class="cell-input" type="number" data-field="midaDose" value="${esc(r.midaDose)}" placeholder="0.0" step="0.1" min="0" style="text-align:right" oninput="updateAmp('${r.id}','mida',this.value)"></td>
-          <td><input class="cell-input" type="text" data-field="midaLot" value="${esc(r.midaLot)}" placeholder="LOT번호"></td>
-          <td class="amp-td"><span class="cell-amp${r.midaDose===''?' empty':''}" id="amp-mida-${r.id}">${midaAmp}</span></td>
-          <td><input class="cell-input" type="number" data-field="propDose" value="${esc(r.propDose)}" placeholder="0.0" step="0.5" min="0" style="text-align:right" oninput="updateAmp('${r.id}','prop',this.value)"></td>
-          <td><input class="cell-input" type="text" data-field="propLot" value="${esc(r.propLot)}" placeholder="LOT번호"></td>
-          <td class="amp-td"><span class="cell-amp${r.propDose===''?' empty':''}" id="amp-prop-${r.id}">${propAmp}</span></td>
-          <td><input class="cell-input" type="text" data-field="memo" value="${esc(r.memo)}" placeholder="비고"></td>
+          <td data-label="시술일"><input class="cell-input" type="date" data-field="date" value="${esc(r.date)}"></td>
+          <td data-label="환자번호"><input class="cell-input" type="text" data-field="chartNo" value="${esc(r.chartNo)}" placeholder="환자번호"></td>
+          <td data-label="성명"><input class="cell-input" type="text" data-field="name" value="${esc(r.name)}" placeholder="홍길동"></td>
+          <td data-label="미다졸람 mL"><input class="cell-input" type="number" data-field="midaDose" value="${esc(r.midaDose)}" placeholder="0.0" step="0.1" min="0" style="text-align:right" oninput="updateAmp('${r.id}','mida',this.value)"></td>
+          <td data-label="미다졸람 제품번호"><input class="cell-input" type="text" data-field="midaLot" value="${esc(r.midaLot)}" placeholder="LOT번호"></td>
+          <td class="amp-td" data-label="미다졸람 amp"><span class="cell-amp${r.midaDose===''?' empty':''}" id="amp-mida-${r.id}">${midaAmp}</span></td>
+          <td data-label="프로포폴 mL"><input class="cell-input" type="number" data-field="propDose" value="${esc(r.propDose)}" placeholder="0.0" step="0.5" min="0" style="text-align:right" oninput="updateAmp('${r.id}','prop',this.value)"></td>
+          <td data-label="프로포폴 제품번호"><input class="cell-input" type="text" data-field="propLot" value="${esc(r.propLot)}" placeholder="LOT번호"></td>
+          <td class="amp-td" data-label="프로포폴 amp"><span class="cell-amp${r.propDose===''?' empty':''}" id="amp-prop-${r.id}">${propAmp}</span></td>
+          <td data-label="비고"><input class="cell-input" type="text" data-field="memo" value="${esc(r.memo)}" placeholder="비고"></td>
           <td class="cell-actions">
             <button class="act-btn act-save"   onclick="saveRow('${r.id}')">💾 저장</button>
             <button class="act-btn act-cancel" onclick="cancelEdit('${r.id}')">취소</button>
@@ -845,16 +920,16 @@ function render() {
         const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
         html += `<tr class="row-saved" data-id="${r.id}">
           <td class="row-num">${rowNum}</td>
-          <td class="cell-text" style="color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00').toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '—'}</td>
-          <td class="cell-text">${esc(r.chartNo)||'<span style="color:var(--muted)">—</span>'}</td>
-          <td class="cell-text"><b>${esc(r.name)||'<span style="color:var(--muted)">—</span>'}</b></td>
-          <td class="cell-text num">${midaVal}</td>
-          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.midaLot)||'—'}</td>
-          <td class="amp-td"><span class="cell-amp${r.midaDose===''?' empty':''}">${midaAmp}</span></td>
-          <td class="cell-text num">${propVal}</td>
-          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.propLot)||'—'}</td>
-          <td class="amp-td"><span class="cell-amp${r.propDose===''?' empty':''}">${propAmp}</span></td>
-          <td class="cell-text" style="color:var(--muted);font-size:12px">${esc(r.memo)||''}</td>
+          <td class="cell-text" data-label="시술일" style="color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00').toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '—'}</td>
+          <td class="cell-text" data-label="환자번호">${esc(r.chartNo)||'<span style="color:var(--muted)">—</span>'}</td>
+          <td class="cell-text" data-label="성명"><b>${esc(r.name)||'<span style="color:var(--muted)">—</span>'}</b></td>
+          <td class="cell-text num" data-label="미다졸람 mL">${midaVal}</td>
+          <td class="cell-text" data-label="미다졸람 제품번호" style="font-size:12px;color:var(--muted)">${esc(r.midaLot)||'—'}</td>
+          <td class="amp-td" data-label="미다졸람 amp"><span class="cell-amp${r.midaDose===''?' empty':''}">${midaAmp}</span></td>
+          <td class="cell-text num" data-label="프로포폴 mL">${propVal}</td>
+          <td class="cell-text" data-label="프로포폴 제품번호" style="font-size:12px;color:var(--muted)">${esc(r.propLot)||'—'}</td>
+          <td class="amp-td" data-label="프로포폴 amp"><span class="cell-amp${r.propDose===''?' empty':''}">${propAmp}</span></td>
+          <td class="cell-text" data-label="비고" style="color:var(--muted);font-size:12px">${esc(r.memo)||''}</td>
           <td class="cell-actions">
             <button class="act-btn act-edit" onclick="editRow('${r.id}')">✏️ 수정</button>
             <button class="act-btn act-del"  onclick="askDelete('${r.id}')">🗑 삭제</button>
