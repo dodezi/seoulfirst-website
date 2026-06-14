@@ -94,8 +94,8 @@
     /* 상태 배지 */
     .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; user-select: none; }
     .s-대기중   { background: #fff3e0; color: #e67e22; }
-    .s-확인완료 { background: #e8f8e8; color: #27ae60; }
-    .s-완료     { background: #f0f0f0; color: #888; }
+    .s-확정 { background: #e8f8e8; color: #27ae60; }
+    .s-검사완료     { background: #f0f0f0; color: #888; }
     .s-취소     { background: #fdecea; color: #c0392b; }
     .s-deleted  { background: #f0f0f0; color: #bbb; font-size: 11px; cursor: default; }
 
@@ -197,8 +197,8 @@
     .cal-daynum.sun { color: #e74c3c; }
     .cal-daynum.sat { color: #2980b9; }
     .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
-    .cal-event.ev-확인완료 { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
-    .cal-event.ev-완료 { background: #f0f0f0; color: #777; border-left-color: #aaa; }
+    .cal-event.ev-확정 { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
+    .cal-event.ev-검사완료 { background: #f0f0f0; color: #777; border-left-color: #aaa; }
     .cal-event.ev-취소 { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; }
     .cal-event.ev-취소 .ev-main { text-decoration: line-through; }
     .cal-event .ev-main { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -320,14 +320,14 @@
     <div class="filter-row">
       <button class="filter-btn on"      onclick="setFilter('전체',this)">전체</button>
       <button class="filter-btn"         onclick="setFilter('대기중',this)">대기중</button>
-      <button class="filter-btn"         onclick="setFilter('확인완료',this)">확인완료</button>
-      <button class="filter-btn"         onclick="setFilter('완료',this)">완료</button>
+      <button class="filter-btn"         onclick="setFilter('확정',this)">확정</button>
+      <button class="filter-btn"         onclick="setFilter('검사완료',this)">검사완료</button>
       <button class="filter-btn"         onclick="setFilter('취소',this)">취소</button>
       <button class="filter-btn del-tab" onclick="setFilter('삭제됨',this)">🗑️ 삭제된 명단</button>
       <div class="stat-chips">
         <span class="stat-chip chip-total"   id="statTotal">전체 0</span>
         <span class="stat-chip chip-waiting" id="statWaiting">대기중 0</span>
-        <span class="stat-chip chip-confirm" id="statConfirm">확인완료 0</span>
+        <span class="stat-chip chip-confirm" id="statConfirm">확정 0</span>
         <span class="stat-chip chip-deleted" id="statDeleted">삭제됨 0</span>
       </div>
     </div>
@@ -545,7 +545,7 @@ function renderTable() {
   const live = allBookings.filter(b => !b.deleted);
   document.getElementById('statTotal').textContent   = `전체 ${live.length}`;
   document.getElementById('statWaiting').textContent = `대기중 ${live.filter(b=>(b.status||'대기중')==='대기중').length}`;
-  document.getElementById('statConfirm').textContent = `확인완료 ${live.filter(b=>b.status==='확인완료').length}`;
+  document.getElementById('statConfirm').textContent = `확정 ${live.filter(b=>b.status==='확정').length}`;
   document.getElementById('statDeleted').textContent = `삭제됨 ${allBookings.filter(b=>b.deleted).length}`;
 
   const tbody = document.getElementById('bookingTableBody');
@@ -652,7 +652,7 @@ function renderTable() {
 }
 
 // ── 상태 순환 ─────────────────────────────────────────────
-const statusCycle = ['대기중','확인완료','완료','취소'];
+const statusCycle = ['대기중','확정','검사완료','취소'];
 async function cycleStatus(id, current) {
   const next = statusCycle[(statusCycle.indexOf(current)+1) % statusCycle.length];
   try {
@@ -766,9 +766,9 @@ async function saveConf(id) {
   if (!date) { di.focus(); showToast('확정 검사일을 선택해 주세요.'); return; }
   try {
     const upd = { confirmedDate: date, confirmedTime: time || '', service: service };
-    // 확정일을 저장하면 상태가 대기중인 경우 '확인완료'로 올림
+    // 확정일을 저장하면 상태가 대기중인 경우 '확정'로 올림
     const item0 = allBookings.find(b => b.id === id);
-    if (item0 && (item0.status || '대기중') === '대기중') upd.status = '확인완료';
+    if (item0 && (item0.status || '대기중') === '대기중') upd.status = '확정';
     await db.collection('bookings').doc(id).update(upd);
     if (item0) Object.assign(item0, upd);
     renderTable();
@@ -827,7 +827,7 @@ async function saveAdd() {
       time: time || '',
       service: service || '',
       memo: memo || '',
-      status: cDate ? '확인완료' : '대기중',
+      status: cDate ? '확정' : '대기중',
       confirmedDate: cDate || '',
       confirmedTime: cDate ? (cTime || '') : '',
       source: '직접입력',
@@ -890,7 +890,7 @@ function buildMonthGrid(maxEvents) {
 
     let evHtml = '';
     list.slice(0, maxEvents).forEach(b => {
-      const st = b.status || '확인완료';
+      const st = b.status || '확정';
       const t  = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span> ` : '';
       const svcFull  = b.service ? ' · ' + esc(b.service) : '';
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
@@ -946,7 +946,7 @@ function openDayDetail(dateStr) {
   document.getElementById('dayModalSub').textContent = `확정 검사 예약 ${list.length}건`;
   document.getElementById('dayModalList').innerHTML = list.length
     ? list.map(b => {
-        const st = b.status || '확인완료';
+        const st = b.status || '확정';
         return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
           <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
           <span class="day-name">${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
