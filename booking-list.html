@@ -137,10 +137,76 @@
     #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: #0f2b3d; color: #fff; padding: 11px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── 직접 추가 / 일정표 버튼 ── */
+    .btn-add  { padding: 8px 16px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-cal  { padding: 8px 16px; background: #2c3e6b; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-cal.on { background: #0d7377; }
+
+    /* ── 확정 검사일시 셀 ── */
+    .conf-saved { font-size: 13px; font-weight: 700; color: #1b5e8a; white-space: nowrap; }
+    .conf-none  { color: #ccc; font-size: 12px; }
+    .conf-wrap  { display: flex; flex-direction: column; gap: 4px; min-width: 138px; }
+    .conf-row   { display: flex; gap: 4px; }
+    .conf-input { border: 1px solid #e0e4ea; border-radius: 6px; padding: 4px 6px; font-size: 12px; font-family: inherit; background: #f8fafc; }
+    .conf-input:focus { outline: none; border-color: #0d7377; background: #fff; }
+    .conf-input.cd { width: 116px; }
+    .conf-input.ct { width: 80px; }
+    .td-source-tag { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; color: #8e44ad; background: #f3e8fb; padding: 1px 6px; border-radius: 10px; vertical-align: middle; }
+
+    /* ── 추가 입력 모달 ── */
+    .form-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 600; align-items: center; justify-content: center; padding: 20px; }
+    .form-modal.on { display: flex; }
+    .form-box { background: #fff; border-radius: 16px; padding: 30px 28px; width: 460px; max-width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .form-box h3 { font-size: 19px; font-weight: 700; color: #0f2b3d; margin-bottom: 6px; }
+    .form-box .sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+    .ff { margin-bottom: 13px; }
+    .ff label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .ff label .req { color: #e74c3c; }
+    .ff input, .ff select, .ff textarea { width: 100%; padding: 9px 12px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .ff input:focus, .ff select:focus, .ff textarea:focus { outline: none; border-color: #0d7377; }
+    .ff textarea { resize: vertical; min-height: 52px; }
+    .ff-grid { display: flex; gap: 10px; }
+    .ff-grid > .ff { flex: 1; }
+    .conf-section { background: #f4f8fb; border: 1px solid #e3edf4; border-radius: 10px; padding: 14px 14px 4px; margin: 6px 0 16px; }
+    .conf-section .cs-title { font-size: 12px; font-weight: 700; color: #1b5e8a; margin-bottom: 10px; }
+    .form-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+    .btn-form-cancel { padding: 11px 22px; background: #f0f2f5; color: #555; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-form-save   { padding: 11px 26px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    /* ── 달력(일정표) 뷰 ── */
+    #calendarView { display: none; }
+    .cal-head { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 16px; }
+    .cal-head .cal-title { font-size: 20px; font-weight: 700; color: #0f2b3d; min-width: 160px; text-align: center; }
+    .cal-nav { width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid #dde1e7; background: #fff; cursor: pointer; font-size: 16px; font-weight: 700; color: #0d7377; }
+    .cal-today-btn { padding: 7px 14px; border-radius: 8px; border: 1.5px solid #dde1e7; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: #555; }
+    .cal-grid { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
+    .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: #f8fafc; border-bottom: 1px solid #e8ecf0; }
+    .cal-dow span { padding: 10px 0; text-align: center; font-size: 12px; font-weight: 700; color: #666; }
+    .cal-dow span.sun { color: #e74c3c; }
+    .cal-dow span.sat { color: #2980b9; }
+    .cal-body { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal-cell { min-height: 110px; border-right: 1px solid #f0f2f4; border-bottom: 1px solid #f0f2f4; padding: 6px; position: relative; }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-cell.empty { background: #fafbfc; }
+    .cal-cell.today { background: #f0fbfb; }
+    .cal-daynum { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; }
+    .cal-cell.today .cal-daynum { color: #0d7377; }
+    .cal-daynum.sun { color: #e74c3c; }
+    .cal-daynum.sat { color: #2980b9; }
+    .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
+    .cal-event.ev-확인완료 { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
+    .cal-event.ev-완료 { background: #f0f0f0; color: #777; border-left-color: #aaa; }
+    .cal-event.ev-취소 { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; text-decoration: line-through; }
+    .cal-event .ev-time { font-weight: 700; }
+    .cal-more { font-size: 10px; color: #999; padding: 1px 6px; }
+    .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
     @media (max-width: 600px) {
       .page-body { padding: 16px 10px; }
       .toolbar h1 { font-size: 18px; }
       .search-box input { width: 140px; }
+      .form-box { width: 100%; }
+      .cal-cell { min-height: 80px; }
     }
   </style>
 </head>
@@ -186,8 +252,13 @@
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="이름·연락처 검색..." />
       </div>
+      <button class="btn-add" onclick="openAdd()">➕ 직접 추가</button>
+      <button class="btn-cal" id="btnCalToggle" onclick="toggleView()">📅 일정표 보기</button>
       <button class="btn-reload" onclick="loadBookings()">🔄 새로고침</button>
     </div>
+
+    <!-- ════════ 목록 뷰 ════════ -->
+    <div id="listView">
 
     <!-- 필터 탭 + 통계 -->
     <div class="filter-row">
@@ -218,6 +289,7 @@
             <th>검사항목</th>
             <th>메모</th>
             <th>접수일시</th>
+            <th>✅ 확정 검사일시</th>
             <th>상태 <small style="font-weight:400;color:#aaa;">(클릭 변경)</small></th>
             <th>확인 직원</th>
             <th>취소 사유</th>
@@ -225,9 +297,28 @@
           </tr>
         </thead>
         <tbody id="bookingTableBody">
-          <tr><td colspan="12" class="empty-msg">불러오는 중...</td></tr>
+          <tr><td colspan="13" class="empty-msg">불러오는 중...</td></tr>
         </tbody>
       </table>
+    </div>
+
+    </div><!-- /listView -->
+
+    <!-- ════════ 달력(일정표) 뷰 ════════ -->
+    <div id="calendarView">
+      <div class="cal-head">
+        <button class="cal-nav" onclick="calPrev()">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="cal-nav" onclick="calNext()">›</button>
+        <button class="cal-today-btn" onclick="calToday()">오늘</button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-dow">
+          <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+        </div>
+        <div class="cal-body" id="calBody"></div>
+      </div>
+      <div class="cal-empty-note" id="calEmptyNote" style="display:none;">이 달에는 확정된 검사 예약이 없습니다.</div>
     </div>
 
   </div>
@@ -250,12 +341,72 @@
   </div>
 </div>
 
+<!-- ── 직접 추가 모달 ── -->
+<div class="form-modal" id="addModal">
+  <div class="form-box">
+    <h3>➕ 예약 직접 추가</h3>
+    <p class="sub">전화·외래 내원 환자의 검진 예약을 직접 등록합니다.</p>
+
+    <div class="ff">
+      <label>이름 <span class="req">*</span></label>
+      <input type="text" id="aName" placeholder="환자 이름" maxlength="20" />
+    </div>
+    <div class="ff">
+      <label>연락처 <span class="req">*</span></label>
+      <input type="tel" id="aPhone" placeholder="010-0000-0000" maxlength="20" />
+    </div>
+    <div class="ff-grid">
+      <div class="ff">
+        <label>희망일자</label>
+        <input type="date" id="aDate" />
+      </div>
+      <div class="ff">
+        <label>희망 시간대</label>
+        <input type="text" id="aTime" placeholder="예: 오전 / 14:00" maxlength="20" />
+      </div>
+    </div>
+    <div class="ff">
+      <label>검사항목</label>
+      <input type="text" id="aService" placeholder="예: 위내시경, 종합검진" maxlength="40" />
+    </div>
+
+    <div class="conf-section">
+      <div class="cs-title">✅ 확정 검사일시 (선택 — 이미 정해졌다면 입력)</div>
+      <div class="ff-grid">
+        <div class="ff">
+          <label>확정 검사일</label>
+          <input type="date" id="aConfDate" />
+        </div>
+        <div class="ff">
+          <label>확정 시간</label>
+          <input type="time" id="aConfTime" />
+        </div>
+      </div>
+    </div>
+
+    <div class="ff">
+      <label>메모</label>
+      <textarea id="aMemo" placeholder="특이사항 (선택)" maxlength="200"></textarea>
+    </div>
+    <div id="addError" style="color:#c0392b;font-size:13px;min-height:18px;margin-bottom:6px;"></div>
+
+    <div class="form-btns">
+      <button class="btn-form-cancel" onclick="closeAdd()">취소</button>
+      <button class="btn-form-save" id="btnAddSave" onclick="saveAdd()">등록하기</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 let allBookings   = [];
 let currentFilter = '전체';
 let deleteId      = null;
+let currentView   = 'list';            // 'list' | 'calendar'
+const calRef      = new Date();         // 달력 기준 월
+let calYear       = calRef.getFullYear();
+let calMonth      = calRef.getMonth();  // 0-based
 
 // ── 인증 ─────────────────────────────────────────────────
 document.getElementById('btnLogin').addEventListener('click', doLogin);
@@ -293,14 +444,15 @@ document.getElementById('btnLogout').addEventListener('click', () => auth.signOu
 // ── 데이터 로드 ───────────────────────────────────────────
 async function loadBookings() {
   document.getElementById('bookingTableBody').innerHTML =
-    '<tr><td colspan="12" class="empty-msg">불러오는 중...</td></tr>';
+    '<tr><td colspan="13" class="empty-msg">불러오는 중...</td></tr>';
   try {
     const snap = await db.collection('bookings').orderBy('createdAt','desc').get();
     allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTable();
+    if (currentView === 'calendar') renderCalendar();
   } catch(e) {
     document.getElementById('bookingTableBody').innerHTML =
-      `<tr><td colspan="12" class="empty-msg" style="color:#c0392b;">불러오지 못했습니다.<br/><small>${e.message}</small></td></tr>`;
+      `<tr><td colspan="13" class="empty-msg" style="color:#c0392b;">불러오지 못했습니다.<br/><small>${e.message}</small></td></tr>`;
   }
 }
 
@@ -330,7 +482,7 @@ function renderTable() {
 
   const tbody = document.getElementById('bookingTableBody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="12" class="empty-msg">${isDeletedTab ? '삭제된 명단이 없습니다.' : '예약 내역이 없습니다.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-msg">${isDeletedTab ? '삭제된 명단이 없습니다.' : '예약 내역이 없습니다.'}</td></tr>`;
     return;
   }
 
@@ -380,6 +532,29 @@ function renderTable() {
       </div>`;
     }
 
+    /* ── 확정 검사일시 셀 ── */
+    const cd = b.confirmedDate || '';
+    const ct = b.confirmedTime || '';
+    let confCell;
+    if (isDeleted) {
+      confCell = cd ? `<span class="conf-saved">${esc(cd)}${ct ? ' '+esc(ct) : ''}</span>` : `<span class="conf-none">-</span>`;
+    } else if (cd) {
+      confCell = `<div class="conf-wrap">
+        <span class="conf-saved" id="cfs-${b.id}">📅 ${esc(cd)}${ct ? ' &nbsp;'+esc(ct) : ''}</span>
+        <button class="btn-xs btn-xs-edit" onclick="editConf('${b.id}')">수정</button>
+      </div>`;
+    } else {
+      confCell = `<div class="conf-wrap">
+        <div class="conf-row">
+          <input type="date" class="conf-input cd" id="cfd-${b.id}" />
+          <input type="time" class="conf-input ct" id="cft-${b.id}" />
+        </div>
+        <button class="btn-xs btn-xs-save" onclick="saveConf('${b.id}')">확정 저장</button>
+      </div>`;
+    }
+
+    const srcTag = b.source === '직접입력' ? `<span class="td-source-tag">직접</span>` : '';
+
     /* ── 액션 버튼 ── */
     const actionCell = isDeleted
       ? `<button class="btn-restore" onclick="restoreBooking('${b.id}')">♻️ 복원</button>`
@@ -388,13 +563,14 @@ function renderTable() {
     return `
       <tr class="${isDeleted ? 'row-deleted' : ''}">
         <td class="td-num">${i+1}</td>
-        <td class="td-name">${esc(b.name||'-')}</td>
+        <td class="td-name">${esc(b.name||'-')}${srcTag}</td>
         <td class="td-phone">${esc(b.phone||'-')}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
         <td class="td-service">${esc(b.service||'-')}</td>
         <td class="td-memo" title="${esc(b.memo||'')}">${esc(b.memo||'-')}</td>
         <td class="td-recv">${recv}</td>
+        <td>${confCell}</td>
         <td>${isDeleted
           ? `<span class="status-badge s-deleted">삭제됨</span>`
           : `<span class="status-badge s-${status}" onclick="cycleStatus('${b.id}','${status}')" title="클릭하여 상태 변경">${status}</span>`
@@ -507,6 +683,174 @@ async function restoreBooking(id) {
     renderTable();
     showToast('♻️ 복원되었습니다.');
   } catch(e) { alert('복원 오류: '+e.message); }
+}
+
+// ── 확정 검사일시 ─────────────────────────────────────────
+async function saveConf(id) {
+  const di = document.getElementById('cfd-'+id);
+  const ti = document.getElementById('cft-'+id);
+  if (!di) return;
+  const date = di.value;            // yyyy-mm-dd
+  const time = ti ? ti.value : '';  // HH:MM
+  if (!date) { di.focus(); showToast('확정 검사일을 선택해 주세요.'); return; }
+  try {
+    const upd = { confirmedDate: date, confirmedTime: time || '' };
+    // 확정일을 저장하면 상태가 대기중인 경우 '확인완료'로 올림
+    const item0 = allBookings.find(b => b.id === id);
+    if (item0 && (item0.status || '대기중') === '대기중') upd.status = '확인완료';
+    await db.collection('bookings').doc(id).update(upd);
+    if (item0) Object.assign(item0, upd);
+    renderTable();
+    showToast(`✅ 확정 검사일: ${date}${time ? ' '+time : ''}`);
+  } catch(e) { alert('저장 오류: '+e.message); }
+}
+function editConf(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (!item) return;
+  const oldDate = item.confirmedDate || '';
+  const oldTime = item.confirmedTime || '';
+  item.confirmedDate = '';
+  renderTable();
+  setTimeout(() => {
+    const di = document.getElementById('cfd-'+id);
+    const ti = document.getElementById('cft-'+id);
+    if (di) { di.value = oldDate; di.focus(); }
+    if (ti) ti.value = oldTime;
+  }, 30);
+}
+
+// ── 직접 추가 ─────────────────────────────────────────────
+function openAdd() {
+  ['aName','aPhone','aDate','aTime','aService','aConfDate','aConfTime','aMemo']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('addError').textContent = '';
+  document.getElementById('addModal').classList.add('on');
+  setTimeout(() => document.getElementById('aName').focus(), 50);
+}
+function closeAdd() { document.getElementById('addModal').classList.remove('on'); }
+document.getElementById('addModal').addEventListener('click', function(e){
+  if (e.target === this) closeAdd();
+});
+
+async function saveAdd() {
+  const name    = document.getElementById('aName').value.trim();
+  const phone   = document.getElementById('aPhone').value.trim();
+  const date    = document.getElementById('aDate').value;
+  const time    = document.getElementById('aTime').value.trim();
+  const service = document.getElementById('aService').value.trim();
+  const cDate   = document.getElementById('aConfDate').value;
+  const cTime   = document.getElementById('aConfTime').value;
+  const memo    = document.getElementById('aMemo').value.trim();
+  const err     = document.getElementById('addError');
+  err.textContent = '';
+  if (!name)  { err.textContent = '이름을 입력해 주세요.';  document.getElementById('aName').focus();  return; }
+  if (!phone) { err.textContent = '연락처를 입력해 주세요.'; document.getElementById('aPhone').focus(); return; }
+
+  const btn = document.getElementById('btnAddSave');
+  btn.textContent = '등록 중...'; btn.disabled = true;
+  try {
+    const doc = {
+      name, phone,
+      date: date || '',
+      time: time || '',
+      service: service || '',
+      memo: memo || '',
+      status: cDate ? '확인완료' : '대기중',
+      confirmedDate: cDate || '',
+      confirmedTime: cTime || '',
+      source: '직접입력',
+      deleted: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection('bookings').add(doc);
+    closeAdd();
+    showToast(`➕ ${name} 님 예약이 등록되었습니다.`);
+    await loadBookings();
+  } catch(e) {
+    err.textContent = '등록 오류: ' + e.message;
+  } finally {
+    btn.textContent = '등록하기'; btn.disabled = false;
+  }
+}
+
+// ── 뷰 전환 (목록 ↔ 일정표) ───────────────────────────────
+function toggleView() {
+  currentView = currentView === 'list' ? 'calendar' : 'list';
+  const isCal = currentView === 'calendar';
+  document.getElementById('listView').style.display     = isCal ? 'none'  : 'block';
+  document.getElementById('calendarView').style.display = isCal ? 'block' : 'none';
+  const btn = document.getElementById('btnCalToggle');
+  btn.textContent = isCal ? '📋 목록 보기' : '📅 일정표 보기';
+  btn.classList.toggle('on', isCal);
+  if (isCal) renderCalendar();
+}
+function calPrev()  { calMonth--; if (calMonth < 0)  { calMonth = 11; calYear--; } renderCalendar(); }
+function calNext()  { calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; } renderCalendar(); }
+function calToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); renderCalendar(); }
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = `${calYear}년 ${calMonth+1}월`;
+
+  // 확정 검사일이 있는, 삭제되지 않은 예약만
+  const events = {};   // 'yyyy-mm-dd' → [booking,...]
+  allBookings.forEach(b => {
+    if (b.deleted) return;
+    if (!b.confirmedDate) return;
+    const [y, m] = b.confirmedDate.split('-').map(Number);
+    if (y !== calYear || (m-1) !== calMonth) return;
+    (events[b.confirmedDate] = events[b.confirmedDate] || []).push(b);
+  });
+
+  const firstDow   = new Date(calYear, calMonth, 1).getDay();   // 0=일
+  const daysInMon  = new Date(calYear, calMonth+1, 0).getDate();
+  const todayStr   = new Date().toISOString().slice(0,10);
+
+  let html = '';
+  for (let i = 0; i < firstDow; i++) html += `<div class="cal-cell empty"></div>`;
+
+  let totalEvents = 0;
+  for (let d = 1; d <= daysInMon; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = (firstDow + d - 1) % 7;
+    const dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    const isToday = dateStr === todayStr;
+    const list = (events[dateStr] || []).sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+    totalEvents += list.length;
+
+    let evHtml = '';
+    list.slice(0, 4).forEach(b => {
+      const st = b.status || '확인완료';
+      const t  = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span> ` : '';
+      const svc = b.service ? ' · ' + esc(b.service) : '';
+      evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svc} (${st})" onclick="jumpToBooking('${b.id}')">${t}${esc(b.name||'-')}</div>`;
+    });
+    if (list.length > 4) evHtml += `<div class="cal-more">+${list.length - 4}건 더</div>`;
+
+    html += `<div class="cal-cell${isToday ? ' today' : ''}">
+      <div class="cal-daynum ${dnClass}">${d}</div>
+      ${evHtml}
+    </div>`;
+  }
+  // 마지막 주 빈칸 채우기
+  const totalCells = firstDow + daysInMon;
+  const rem = (7 - (totalCells % 7)) % 7;
+  for (let i = 0; i < rem; i++) html += `<div class="cal-cell empty"></div>`;
+
+  document.getElementById('calBody').innerHTML = html;
+  document.getElementById('calEmptyNote').style.display = totalEvents === 0 ? 'block' : 'none';
+}
+
+// 달력 이벤트 클릭 → 목록 뷰로 전환하고 해당 예약 검색
+function jumpToBooking(id) {
+  const b = allBookings.find(x => x.id === id);
+  if (!b) return;
+  toggleView();  // 목록으로
+  document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('on'));
+  document.querySelector('.filter-btn').classList.add('on');
+  currentFilter = '전체';
+  const si = document.getElementById('searchInput');
+  si.value = b.name || '';
+  renderTable();
 }
 
 // ── 토스트 ───────────────────────────────────────────────
