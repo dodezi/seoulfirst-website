@@ -202,8 +202,18 @@
     .cal-event .ev-main { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-event .ev-time { font-weight: 700; }
     .cal-event .ev-svc { font-size: 10px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cal-more { font-size: 10px; color: #999; padding: 1px 6px; }
+    .cal-more { font-size: 10px; color: #0d7377; padding: 1px 6px; cursor: pointer; font-weight: 700; border-radius: 4px; }
+    .cal-more:hover { background: #e8f4f4; text-decoration: underline; }
+    .cal-daynum.clickable { cursor: pointer; display: inline-block; border-radius: 5px; padding: 0 4px; }
+    .cal-daynum.clickable:hover { background: #e8f4f4; }
     .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+    /* ── 날짜 상세 모달 행 ── */
+    .day-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid #f0f2f4; cursor: pointer; border-radius: 8px; transition: background .12s; }
+    .day-row:hover { background: #f4f8fb; }
+    .day-row .day-time { font-weight: 700; color: #1b5e8a; font-size: 14px; min-width: 48px; }
+    .day-row .day-name { font-weight: 700; color: #1e2a38; white-space: nowrap; }
+    .day-row .day-svc { flex: 1; font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ── 컴팩트 월간 달력 (명단 위) ── */
     #miniSchedule { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 14px 16px 16px; margin-bottom: 18px; }
@@ -381,6 +391,18 @@
     <div class="modal-btns">
       <button class="btn-cancel-m"  id="delCancel">취소</button>
       <button class="btn-confirm-m" id="delConfirm">삭제하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 날짜별 확정 일정 상세 모달 ── -->
+<div class="form-modal" id="dayModal">
+  <div class="form-box" style="width:420px;">
+    <h3 id="dayModalTitle">📅 일정</h3>
+    <p class="sub" id="dayModalSub">확정 검사 예약</p>
+    <div id="dayModalList"></div>
+    <div class="form-btns" style="margin-top:18px;">
+      <button class="btn-form-cancel" onclick="closeDayDetail()">닫기</button>
     </div>
   </div>
 </div>
@@ -872,10 +894,14 @@ function buildMonthGrid(maxEvents) {
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
       evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
-    if (list.length > maxEvents) evHtml += `<div class="cal-more">+${list.length - maxEvents}건 더</div>`;
+    if (list.length > maxEvents) evHtml += `<div class="cal-more" onclick="openDayDetail('${dateStr}')">+${list.length - maxEvents}건 더 보기</div>`;
+
+    // 일정이 있는 날은 날짜 숫자 클릭으로 그날 전체 보기
+    const dnClick = list.length ? ` onclick="openDayDetail('${dateStr}')" title="${list.length}건 전체 보기"` : '';
+    const dnPtr   = list.length ? ' clickable' : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}">
-      <div class="cal-daynum ${dnClass}">${d}</div>
+      <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}</div>
       ${evHtml}
     </div>`;
   }
@@ -906,6 +932,33 @@ function renderCalendars() {
     miniBody.innerHTML = mini.html;
   }
 }
+
+// 특정 날짜의 확정 예약 전체를 팝업으로 표시
+function openDayDetail(dateStr) {
+  const list = allBookings
+    .filter(b => !b.deleted && b.confirmedDate === dateStr)
+    .sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dow = ['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
+  document.getElementById('dayModalTitle').textContent = `📅 ${m}월 ${d}일 (${dow})`;
+  document.getElementById('dayModalSub').textContent = `확정 검사 예약 ${list.length}건`;
+  document.getElementById('dayModalList').innerHTML = list.length
+    ? list.map(b => {
+        const st = b.status || '확인완료';
+        return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
+          <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
+          <span class="day-name">${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
+          <span class="day-svc">${esc(b.service||'')}</span>
+          <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
+        </div>`;
+      }).join('')
+    : `<div style="padding:20px;text-align:center;color:#aaa;">확정된 예약이 없습니다.</div>`;
+  document.getElementById('dayModal').classList.add('on');
+}
+function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); }
+document.getElementById('dayModal').addEventListener('click', function(e){
+  if (e.target === this) closeDayDetail();
+});
 
 // 컴팩트 달력 접기/펴기
 function toggleMini() {
