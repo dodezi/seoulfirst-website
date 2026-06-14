@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울퍼스트내과 의료관리시스템</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Malgun Gothic','맑은 고딕', sans-serif;
+  background: linear-gradient(135deg, #1a3a5c 0%, #2980b9 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.container {
+  text-align: center;
+  padding: 40px 20px;
+}
+.logo {
+  color: white;
+  margin-bottom: 48px;
+}
+.logo h1 {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+.logo h1 span { color: #5dade2; }
+.logo p {
+  font-size: 13px;
+  opacity: 0.5;
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+.cards {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 260px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .2s, box-shadow .2s;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.25);
+}
+.card .icon {
+  font-size: 52px;
+  line-height: 1;
+}
+.card h2 {
+  font-size: 17px;
+  font-weight: 900;
+  color: #1a3a5c;
+  line-height: 1.4;
+}
+.card p {
+  font-size: 12px;
+  color: #7f8c8d;
+  line-height: 1.6;
+}
+.card .badge {
+  background: #ecf3f9;
+  color: #2980b9;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+.card.narcotics .badge { background: #fdebd0; color: #e67e22; }
+.card.booking .badge { background: #d5f5e3; color: #27ae60; }
+.footer {
+  margin-top: 40px;
+  color: rgba(255,255,255,.35);
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <h1>서울<span>퍼스트</span>내과</h1>
+    <p>SEOUL FIRST INTERNAL MEDICINE CLINIC</p>
+  </div>
+
+  <div class="cards">
+    <a class="card" href="admin-checkup.html">
+      <div class="icon">🏥</div>
+      <h2>종합건강검진<br>결과보고서</h2>
+      <p>검진 결과 입력 및 AI 변환,<br>인쇄용 보고서 출력</p>
+      <div class="badge">Comprehensive Checkup</div>
+    </a>
+
+    <a class="card narcotics" href="admin-narcotics.html">
+      <div class="icon">💉</div>
+      <h2>마약·향정신성<br>의약품 기록지</h2>
+      <p>수면내시경 시 미다졸람·프로포폴<br>사용 기록 및 월별 관리</p>
+      <div class="badge">Narcotics Record</div>
+    </a>
+
+    <a class="card booking" href="booking-list.html">
+      <div class="icon">📅</div>
+      <h2>온라인<br>예약 명단</h2>
+      <p>홈페이지 온라인 예약<br>신청 명단 확인</p>
+      <div class="badge">Booking List</div>
+    </a>
+  </div>
+
+  <div class="footer">다산동 서울퍼스트내과의원</div>
+</div>
+</body>
+</html>

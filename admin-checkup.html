@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울퍼스트내과 종합건강검진 관리시스템</title>
+<style>
+:root {
+  --primary: #1a3a5c;
+  --accent: #2980b9;
+  --light: #ecf3f9;
+  --border: #c8daea;
+  --text: #2c3e50;
+  --muted: #7f8c8d;
+  --success: #27ae60;
+  --warn: #e67e22;
+  --danger: #e74c3c;
+  --sidebar-w: 280px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f0f4f8; color:var(--text); font-size:14px; height:100vh; overflow:hidden; }
+
+/* ──── 앱 레이아웃 ──── */
+#app { display:flex; height:100vh; }
+
+/* ──── 사이드바 ──── */
+#sidebar {
+  width: var(--sidebar-w);
+  background: var(--primary);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 18px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.15);
+}
+.clinic-name { font-size:16px; font-weight:900; letter-spacing:-0.5px; }
+.clinic-name span { color:#5dade2; }
+.clinic-sub { font-size:10px; opacity:.5; margin-top:2px; }
+.sidebar-actions { padding:12px; display:flex; flex-direction:column; gap:6px; }
+.btn-new {
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius:6px;
+  padding:10px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  text-align:center;
+  transition:.2s;
+}
+.btn-new:hover { background:#1e8449; }
+.search-box {
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:5px;
+  padding:7px 10px;
+  color:white;
+  font-size:13px;
+  width:100%;
+  font-family:inherit;
+}
+.search-box::placeholder { color:rgba(255,255,255,.4); }
+.search-box:focus { outline:none; border-color:rgba(255,255,255,.5); }
+
+/* 연월 트리 */
+#patient-tree {
+  flex:1;
+  overflow-y:auto;
+  padding: 4px 0 16px;
+}
+#patient-tree::-webkit-scrollbar { width:5px; }
+#patient-tree::-webkit-scrollbar-thumb { background:rgba(255,255,255,.2); border-radius:3px; }
+
+.year-group { margin-bottom:2px; }
+.year-label {
+  padding:8px 16px 4px;
+  font-size:11px;
+  font-weight:700;
+  color:rgba(255,255,255,.5);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.month-group { margin-bottom:1px; }
+.month-label {
+  padding:5px 16px 3px 24px;
+  font-size:11px;
+  color:rgba(255,255,255,.4);
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.month-count {
+  background:rgba(255,255,255,.15);
+  border-radius:8px;
+  padding:1px 5px;
+  font-size:10px;
+}
+.patient-item {
+  padding:8px 16px 8px 28px;
+  cursor:pointer;
+  border-left:3px solid transparent;
+  transition:.15s;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.patient-item:hover { background:rgba(255,255,255,.08); }
+.patient-item.active {
+  background:rgba(41,128,185,.35);
+  border-left-color:#5dade2;
+}
+.patient-item .pt-name { font-size:13px; font-weight:600; flex:1; }
+.patient-item .pt-meta { font-size:10px; color:rgba(255,255,255,.45); }
+.patient-item .pt-avatar {
+  width:28px; height:28px;
+  background:rgba(255,255,255,.15);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700;
+  flex-shrink:0;
+}
+
+.sidebar-footer {
+  padding:10px 12px;
+  border-top:1px solid rgba(255,255,255,.1);
+  display:flex; gap:6px;
+}
+.btn-sm-outline {
+  flex:1;
+  background:transparent;
+  border:1px solid rgba(255,255,255,.25);
+  color:rgba(255,255,255,.7);
+  border-radius:4px;
+  padding:5px 4px;
+  font-size:11px;
+  cursor:pointer;
+  transition:.2s;
+  font-family:inherit;
+}
+.btn-sm-outline:hover { border-color:rgba(255,255,255,.6); color:white; }
+
+/* ──── 메인 영역 ──── */
+#main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* 메인 상단바 */
+#topbar {
+  background:white;
+  border-bottom:2px solid var(--border);
+  padding:0 24px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  height:52px;
+  flex-shrink:0;
+}
+#topbar h2 { font-size:15px; color:var(--primary); flex:1; }
+.btn {
+  padding:7px 14px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:600;
+  transition:.2s;
+  font-family:inherit;
+}
+.btn-primary { background:var(--accent); color:white; }
+.btn-primary:hover { background:#1f6fa0; }
+.btn-success { background:var(--success); color:white; }
+.btn-success:hover { background:#1e8449; }
+.btn-warn { background:var(--warn); color:white; }
+.btn-warn:hover { background:#d35400; }
+.btn-danger { background:var(--danger); color:white; }
+.btn-danger:hover { background:#c0392b; }
+.btn-light { background:#f0f0f0; color:var(--text); }
+.btn-light:hover { background:#e0e0e0; }
+
+/* 컨텐츠 스크롤 영역 */
+#content { flex:1; overflow-y:auto; padding:0; }
+
+/* ──── 빈 화면 ──── */
+#empty-state {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  color:var(--muted);
+  gap:12px;
+}
+#empty-state .icon { font-size:64px; opacity:.3; }
+#empty-state h3 { font-size:18px; color:#aaa; }
+#empty-state p { font-size:13px; }
+
+/* ──── 환자 편집 화면 ──── */
+#editor { display:none; }
+
+/* 환자 정보 헤더 */
+.patient-header {
+  background: var(--primary);
+  color:white;
+  padding:20px 24px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.patient-avatar-lg {
+  width:52px; height:52px;
+  background:rgba(255,255,255,.15);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:900;
+  flex-shrink:0;
+}
+.patient-header-info { flex:1; }
+.patient-header-info h2 { font-size:20px; font-weight:900; }
+.patient-header-info .meta { font-size:12px; opacity:.6; margin-top:3px; }
+
+/* 환자 정보 입력 */
+.info-section {
+  background:var(--light);
+  border-bottom:2px solid var(--border);
+  padding:14px 24px;
+}
+.info-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+  gap:10px;
+}
+.info-field label {
+  display:block;
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:3px;
+  font-weight:700;
+}
+.info-field input, .info-field select {
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:6px 9px;
+  font-size:13px;
+  font-family:inherit;
+  background:white;
+}
+.info-field input:focus, .info-field select:focus { outline:none; border-color:var(--accent); }
+
+/* 탭 */
+.tabs {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  background:white;
+  border-bottom:2px solid var(--border);
+  flex-shrink:0;
+}
+.tab-btn {
+  padding:12px 8px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-size:13px;
+  color:var(--muted);
+  border-bottom:3px solid transparent;
+  margin-bottom:-2px;
+  transition:.2s;
+  text-align:center;
+  font-family:inherit;
+}
+.tab-btn:hover { color:var(--accent); background:var(--light); }
+.tab-btn.active { color:var(--primary); font-weight:700; border-bottom-color:var(--accent); }
+
+.tab-content { display:none; padding:20px 24px; }
+.tab-content.active { display:block; }
+
+/* 검사 섹션 */
+.exam-section {
+  margin-bottom:22px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.exam-header {
+  background:var(--primary);
+  color:white;
+  padding:9px 14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.exam-header h3 { flex:1; font-size:14px; }
+.exam-body { padding:14px; }
+.input-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:700px){.input-row{grid-template-columns:1fr;}}
+.input-group label {
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:5px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+textarea.raw-input {
+  width:100%;
+  min-height:100px;
+  border:1px solid var(--border);
+  border-radius:5px;
+  padding:9px;
+  font-size:12px;
+  font-family:'Consolas',monospace;
+  resize:vertical;
+  background:#fafbfc;
+}
+textarea.raw-input:focus { outline:none; border-color:var(--accent); }
+.result-box {
+  width:100%;
+  min-height:100px;
+  border:1px solid #b2d8b2;
+  border-radius:5px;
+  padding:9px;
+  font-size:13px;
+  line-height:1.7;
+  background:#f0faf0;
+  color:#1a4a1a;
+  white-space:pre-wrap;
+}
+.result-box.empty { color:#adb5bd; font-style:italic; background:#fafbfc; border-color:var(--border); }
+.result-box.loading { color:var(--muted); font-style:italic; background:#f8f9fa; border-color:var(--border); }
+.action-row { margin-top:8px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.btn-xs { padding:4px 10px; font-size:12px; }
+.lang-badge { font-size:10px; padding:2px 7px; border-radius:8px; font-weight:700; }
+.lang-ko { background:#ddf0dd; color:#1a6a1a; }
+.lang-en { background:#dde8f0; color:#1a3a6a; }
+
+/* 종합소견 */
+.summary-box { border:2px solid var(--primary); border-radius:8px; overflow:hidden; }
+.summary-textarea {
+  width:100%;
+  min-height:200px;
+  border:none;
+  padding:14px;
+  font-size:13px;
+  font-family:inherit;
+  resize:none;
+  line-height:1.8;
+  overflow:hidden;
+}
+.summary-textarea:focus { outline:none; }
+.fu-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* 서명 */
+.sig-area { margin-top:20px; padding-top:14px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
+.sig-block { text-align:center; }
+.sig-line { border-bottom:1px solid #333; width:200px; height:38px; }
+.sig-name { margin-top:5px; font-size:13px; }
+.sig-clinic { font-size:11px; color:var(--muted); }
+
+/* ──── 인쇄 레이아웃 ──── */
+@media print {
+  body { background:white; font-size:10pt; overflow:visible; height:auto; }
+  #sidebar, #topbar, .action-row, .sidebar-actions, .sidebar-footer { display:none !important; }
+  #app { display:block; height:auto; }
+  #main { overflow:visible; height:auto; }
+  #content { overflow:visible; height:auto; }
+  #editor { display:block !important; }
+  #empty-state { display:none !important; }
+
+  /* 인쇄 헤더 */
+  .print-report-header {
+    display:flex !important;
+    background:#1a3a5c !important;
+    print-color-adjust:exact;
+    color:white;
+    padding:14px 20px;
+    align-items:center;
+    gap:16px;
+  }
+  .patient-header { display:none; }
+  .info-section { padding:6px 16px; background:var(--light) !important; print-color-adjust:exact; }
+  .tabs { display:none; }
+  .tab-content { display:block !important; padding:8px 16px; }
+  .tab-content + .tab-content { page-break-before:always; }
+  .exam-section { break-inside:avoid; margin-bottom:14px; }
+  .exam-header { background:#1a3a5c !important; print-color-adjust:exact; padding:6px 10px; }
+  .exam-body { padding:8px 10px; }
+  .summary-textarea { border:none; padding:6px 0; min-height:auto; }
+  .fu-grid { grid-template-columns:1fr 1fr; }
+
+  /* 인쇄: 원문 + 소견 세로로 배치 */
+  .input-row { grid-template-columns:1fr; gap:8px; }
+
+  /* 원문 영역 — textarea 숨기고 print-raw div로 대체 */
+  textarea.raw-input { display:none !important; }
+  .print-raw {
+    display:block !important;
+    border:1px solid #999;
+    background:#fff;
+    border-radius:4px;
+    padding:8px 12px;
+    font-size:11pt;
+    font-family:'Courier New',monospace;
+    color:#000;
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.65;
+  }
+
+  /* 종합소견 영역 — textarea 숨기고 print-summary div로 대체
+     (textarea는 인쇄 시 보이는 높이만큼만 출력되어 내용이 잘림) */
+  .summary-textarea { display:none !important; }
+  .print-summary {
+    display:block !important;
+    padding:6px 2px;
+    font-size:11pt;
+    line-height:1.8;
+    color:#000;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+
+  /* 소견 영역 — "AI 변환 결과" 레이블 숨기고 "검사 소견"으로 대체 */
+  .input-group:last-child > label { display:none; }
+  .input-group:last-child::before {
+    content:'검사 소견';
+    display:block;
+    font-size:10pt;
+    font-weight:700;
+    color:#1a3a5c;
+    margin-bottom:4px;
+    border-left:3px solid #2980b9;
+    padding-left:6px;
+  }
+  .result-box {
+    min-height:20px; border:none;
+    background:transparent; padding:2px 0;
+    font-size:10pt; line-height:1.7;
+  }
+  .result-box.empty { display:none; }
+
+  /* JS가 붙여주는 클래스 — 내용 없는 섹션 통째로 숨김 */
+  .exam-section.print-hide { display:none !important; }
+}
+
+/* 인쇄 헤더 (화면에선 숨김) */
+.print-report-header { display:none; }
+/* 인쇄용 원문 div (화면에선 숨김) */
+.print-raw { display:none; }
+/* 인쇄용 종합소견 div (화면에선 숨김) */
+.print-summary { display:none; }
+
+/* ──── 모달 ──── */
+.modal-overlay {
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.5);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background:white;
+  border-radius:10px;
+  padding:26px;
+  max-width:420px;
+  width:90%;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);
+}
+.modal h2 { color:var(--primary); margin-bottom:10px; }
+.modal p { color:var(--muted); font-size:13px; line-height:1.6; margin-bottom:14px; }
+.modal input, .modal select {
+  width:100%;
+  padding:9px;
+  border:1px solid var(--border);
+  border-radius:5px;
+  font-size:14px;
+  margin-bottom:10px;
+  font-family:inherit;
+}
+.modal input:focus, .modal select:focus { outline:none; border-color:var(--accent); }
+.modal-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+
+/* 저장 알림 토스트 */
+#toast {
+  position:fixed;
+  bottom:24px; right:24px;
+  background:#2c3e50;
+  color:white;
+  padding:10px 18px;
+  border-radius:8px;
+  font-size:13px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:.3s;
+  z-index:999;
+  pointer-events:none;
+}
+#toast.show { opacity:1; transform:translateY(0); }
+
+/* 통계 뱃지 */
+.stat-bar {
+  padding:6px 16px;
+  background:rgba(255,255,255,.07);
+  font-size:11px;
+  color:rgba(255,255,255,.5);
+  border-top:1px solid rgba(255,255,255,.1);
+  display:flex;
+  gap:12px;
+}
+.stat-bar span b { color:rgba(255,255,255,.8); }
+
+/* 빈 트리 */
+.empty-tree {
+  padding:20px 16px;
+  text-align:center;
+  color:rgba(255,255,255,.3);
+  font-size:12px;
+  line-height:1.8;
+}
+
+/* 체크아이템 */
+.check-item { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); }
+.check-item input { cursor:pointer; }
+.divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+</style>
+</head>
+<body>
+
+<!-- ── 관리자 로그인 게이트 ── -->
+<style>
+#authGate { position: fixed; inset: 0; background: linear-gradient(135deg,#1a3a5c,#2980b9); display: flex; align-items: center; justify-content: center; z-index: 100000; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; }
+#authGate.hidden { display: none; }
+#authGate .auth-box { background:#fff; border-radius:16px; padding:40px 36px; width:340px; box-shadow:0 12px 48px rgba(0,0,0,.3); }
+#authGate h2 { font-size:20px; font-weight:800; text-align:center; color:#0f2b3d; margin-bottom:4px; }
+#authGate .auth-sub { font-size:12px; color:#7f8c8d; text-align:center; margin-bottom:24px; }
+#authGate .auth-f { margin-bottom:14px; }
+#authGate .auth-f label { display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:5px; }
+#authGate .auth-f input { width:100%; padding:11px 14px; border:1.5px solid #dde1e7; border-radius:8px; font-size:15px; font-family:inherit; }
+#authGate .auth-f input:focus { outline:none; border-color:#2980b9; }
+#authGate #btnLogin { width:100%; padding:13px; background:#2980b9; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; margin-top:8px; font-family:inherit; }
+#authGate #btnLogin:disabled { opacity:.6; cursor:default; }
+#authGate #loginError { color:#c0392b; font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
+</style>
+<div id="authGate">
+  <div class="auth-box">
+    <h2>🔐 관리자 로그인</h2>
+    <p class="auth-sub">서울퍼스트내과 · 종합검진 결과보고서</p>
+    <div class="auth-f">
+      <label>이메일</label>
+      <input type="email" id="lEmail" placeholder="관리자 이메일" autocomplete="username" />
+    </div>
+    <div class="auth-f">
+      <label>비밀번호</label>
+      <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" />
+    </div>
+    <button id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ──── 사이드바 ──── -->
+<div id="sidebar">
+  <div class="sidebar-header" style="cursor:pointer;" onclick="location.href='admin.html'" title="홈으로">
+    <div class="clinic-name">서울<span>퍼스트</span>내과</div>
+    <div class="clinic-sub">종합건강검진 관리시스템</div>
+  </div>
+
+  <div class="sidebar-actions">
+    <button class="btn-new" onclick="newPatient()">＋ 새 검진 환자 등록</button>
+    <input class="search-box" type="text" id="search-input" placeholder="🔍 환자 이름 검색..." oninput="renderTree()">
+  </div>
+
+  <div id="patient-tree">
+    <div class="empty-tree">등록된 환자가 없습니다.<br>위 버튼으로 새 환자를 등록하세요.</div>
+  </div>
+
+  <div id="stat-bar" class="stat-bar" style="display:none">
+    <span>총 <b id="stat-total">0</b>명</span>
+    <span>올해 <b id="stat-year">0</b>명</span>
+  </div>
+
+  <!-- Drive 동기화 상태 표시 -->
+  <div id="drive-status" style="padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:6px;border-top:1px solid rgba(255,255,255,.1);">
+    <span id="drive-dot" style="width:8px;height:8px;border-radius:50%;background:#e74c3c;flex-shrink:0;"></span>
+    <span id="drive-label" style="color:rgba(255,255,255,.5);">데이터 파일 미연결</span>
+  </div>
+  <div style="padding:0 12px 8px;">
+    <button class="btn-sm-outline" style="width:100%;font-size:11px;padding:6px;" onclick="connectDataFile()">📁 Drive 데이터 파일 연결</button>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn-sm-outline" onclick="location.href='admin.html'">🏠 홈</button>
+    <button class="btn-sm-outline" onclick="showApiModal()">🔑 API키</button>
+    <button class="btn-sm-outline" onclick="exportData()">📤 백업</button>
+    <button class="btn-sm-outline" onclick="importData()">📥 복원</button>
+    <button class="btn-sm-outline" id="logoutBtn" style="display:none;">🔓 로그아웃</button>
+  </div>
+</div>
+
+<!-- ──── 메인 ──── -->
+<div id="main">
+
+  <!-- 상단바 -->
+  <div id="topbar">
+    <h2 id="topbar-title">서울퍼스트내과 종합검진 관리시스템</h2>
+    <div id="topbar-btns" style="display:none; gap:8px;">
+      <select id="lang-select" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:13px;font-family:inherit;">
+        <option value="ko">🇰🇷 한국어</option>
+        <option value="en">🇺🇸 English</option>
+      </select>
+      <button class="btn btn-primary" onclick="translateAll()">⚡ 전체 AI 변환</button>
+      <button class="btn btn-light" id="btn-edit-mode" onclick="enterEditMode()" style="border:1px solid #ccc;">✏️ 수정</button>
+      <button class="btn btn-success" id="btn-save" onclick="savePatient()" style="display:none;">💾 저장</button>
+      <button class="btn btn-light" id="btn-cancel-edit" onclick="cancelEditMode()" style="display:none;border:1px solid #ccc;">취소</button>
+      <button class="btn btn-warn" onclick="window.print()">🖨 인쇄/PDF</button>
+      <button class="btn btn-danger btn-xs" onclick="deletePatient()" title="삭제">🗑</button>
+    </div>
+  </div>
+
+  <!-- 콘텐츠 -->
+  <div id="content">
+
+    <!-- 빈 화면 -->
+    <div id="empty-state">
+      <div class="icon">🏥</div>
+      <h3>서울퍼스트내과 검진관리시스템</h3>
+      <p>좌측에서 환자를 선택하거나 새 환자를 등록하세요.</p>
+    </div>
+
+    <!-- 편집 화면 -->
+    <div id="editor">
+
+      <!-- 인쇄 전용 헤더 -->
+      <div class="print-report-header">
+        <div>
+          <div style="font-size:22px;font-weight:900;letter-spacing:-1px;">서울<span style="color:#5dade2">퍼스트</span>내과</div>
+          <div style="font-size:10px;opacity:.5;margin-top:2px;">Seoul First Internal Medicine Clinic</div>
+        </div>
+        <div style="flex:1;padding-left:16px;">
+          <div style="font-size:17px;font-weight:700;" id="print-title">종합건강검진 결과보고서</div>
+          <div style="font-size:11px;opacity:.6;">Comprehensive Health Examination Report</div>
+        </div>
+        <div style="text-align:right;font-size:11px;opacity:.7;">
+          <div>다산동 서울퍼스트내과의원</div>
+          <div id="print-date" style="margin-top:3px;"></div>
+        </div>
+      </div>
+
+      <!-- 환자 헤더 (화면용) -->
+      <div class="patient-header" id="pt-display-header">
+        <div class="patient-avatar-lg" id="pt-avatar-lg">?</div>
+        <div class="patient-header-info">
+          <h2 id="pt-display-name">새 환자</h2>
+          <div class="meta" id="pt-display-meta"></div>
+        </div>
+        <div id="edit-mode-badge" style="display:none;background:rgba(255,200,0,.25);border:1px solid rgba(255,200,0,.5);color:#ffe066;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;margin-left:auto;">✏️ 수정 중</div>
+      </div>
+
+      <!-- 환자 정보 입력 -->
+      <div class="info-section">
+        <div class="info-grid">
+          <div class="info-field">
+            <label>성명 / Name</label>
+            <input type="text" id="pt-name" placeholder="홍길동" oninput="updateHeader();markEditing()">
+          </div>
+          <div class="info-field">
+            <label>생년월일 / DOB</label>
+            <input type="text" id="pt-dob" placeholder="1970-01-01" oninput="updateHeader();markEditing()">
+          </div>
+          <div class="info-field">
+            <label>성별 / Sex</label>
+            <select id="pt-sex" oninput="updateHeader();markEditing()">
+              <option value="남/M">남 / M</option>
+              <option value="여/F">여 / F</option>
+            </select>
+          </div>
+          <div class="info-field">
+            <label>검진일 / Exam Date</label>
+            <input type="date" id="pt-date" oninput="updateHeader();markEditing()">
+          </div>
+          <div class="info-field">
+            <label>검진번호 / Chart No.</label>
+            <input type="text" id="pt-chartno" placeholder="2025-001" oninput="markEditing()">
+          </div>
+          <div class="info-field">
+            <label>판독의 / Physician</label>
+            <input type="text" id="pt-doctor" placeholder="원장 OOO" oninput="updateSigName();markEditing()">
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭 -->
+      <div class="tabs" id="exam-tabs">
+        <button class="tab-btn active" onclick="showTab('endoscopy',this)">🔭 내시경</button>
+        <button class="tab-btn" onclick="showTab('ultrasound',this)">🫀 초음파</button>
+        <button class="tab-btn" onclick="showTab('xray',this)">🩻 영상검사</button>
+        <button class="tab-btn" onclick="showTab('summary',this)">📋 종합소견</button>
+      </div>
+
+      <!-- ── 내시경 탭 ── -->
+      <div id="tab-endoscopy" class="tab-content active">
+
+        <div class="exam-section">
+          <div class="exam-header">
+            <h3>🔭 위내시경 (EGD)</h3>
+          </div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문 (붙여넣기)</label>
+                <textarea class="raw-input" id="raw-egd" placeholder="예) Esophagus: No specific finding. Stomach: Erythematous antral gastritis. H.pylori RUT negative."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-egd" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-egd">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('egd')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('egd')">초기화</button>
+              <div class="check-item"><input type="checkbox" id="check-hp"><label for="check-hp">헬리코박터 검사 시행</label></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header">
+            <h3>🔭 대장내시경 (Colonoscopy)</h3>
+          </div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문 (붙여넣기)</label>
+                <textarea class="raw-input" id="raw-colo" placeholder="예) Colon: 5mm tubular adenoma at sigmoid, removed by cold snare polypectomy. No other finding."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-colo" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-colo">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('colo')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('colo')">초기화</button>
+              <div class="check-item"><input type="checkbox" id="check-poly"><label for="check-poly">용종 절제술 시행</label></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── 초음파 탭 ── -->
+      <div id="tab-ultrasound" class="tab-content">
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🫀 복부초음파 (Abdominal US)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-abd" placeholder="예) Liver: Mild fatty liver. GB: Small stones. Pancreas/Spleen/Kidneys: Normal."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-abd" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-abd">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('abd')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('abd')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🫀 갑상선초음파 (Thyroid US)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-thy" placeholder="예) Both thyroid lobes: normal size and echogenicity. No definite nodule."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-thy" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-thy">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('thy')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('thy')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🫀 유방초음파 (Breast US)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-bst" placeholder="예) Both breasts: No suspicious mass. BI-RADS 1. No abnormal axillary lymph nodes."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-bst" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-bst">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('bst')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('bst')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🫀 경동맥초음파 (Carotid US)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-car" placeholder="예) Bilateral carotid arteries: No significant plaque. IMT 0.6mm (normal)."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-car" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-car">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('car')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('car')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🫀 심장초음파 (Echocardiography)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-echo" placeholder="예) LV: Normal size and wall motion. EF 65%. Mild MR. No pericardial effusion."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-echo" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-echo">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('echo')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('echo')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── 영상검사 탭 ── -->
+      <div id="tab-xray" class="tab-content">
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🩻 흉부 X-ray (CXR)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-cxr" placeholder="예) Heart size: Normal. Lungs: Clear. No active pulmonary infiltration. No pleural effusion."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-cxr" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-cxr">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('cxr')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('cxr')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🩻 유방촬영 (Mammography)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-mam" placeholder="예) Breast density: Heterogeneously dense (C). No suspicious mass or microcalcification. BI-RADS 1."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-mam" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-mam">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('mam')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('mam')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section">
+          <div class="exam-header"><h3>🩻 골밀도 (DEXA / BMD)</h3></div>
+          <div class="exam-body">
+            <div class="input-row">
+              <div class="input-group">
+                <label>판독문 원문</label>
+                <textarea class="raw-input" id="raw-bmd" placeholder="예) L1-L4: T-score -1.2 (Osteopenia). Left femur neck: T-score -0.9 (Normal)."></textarea>
+              </div>
+              <div class="input-group">
+                <label>AI 변환 결과 <span id="lang-label-bmd" class="lang-badge lang-ko">한국어</span></label>
+                <div class="result-box empty" id="result-bmd">변환 결과가 여기에 나타납니다.</div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary btn-xs" onclick="translateSection('bmd')">⚡ AI 변환</button>
+              <button class="btn btn-light btn-xs" onclick="clearSection('bmd')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── 종합소견 탭 ── -->
+      <div id="tab-summary" class="tab-content">
+
+        <div class="summary-box">
+          <div class="exam-header">
+            <h3>📋 종합소견 및 권고사항</h3>
+          </div>
+          <div style="padding:12px;">
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-xs" onclick="autoSummary()">⚡ AI 종합소견 자동 생성</button>
+              <button class="btn btn-light btn-xs" onclick="document.getElementById('summary-text').value=''">초기화</button>
+            </div>
+            <textarea class="summary-textarea" id="summary-text" placeholder="종합소견을 직접 입력하거나, 위 버튼으로 AI 자동 생성하세요."></textarea>
+          </div>
+        </div>
+
+        <div class="sig-area">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <div class="sig-name" id="sig-name">원장 OOO</div>
+            <div class="sig-clinic">서울퍼스트내과의원</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 하단 저장 버튼 (인쇄 시 숨김) -->
+      <div class="action-row" style="padding:16px 24px;background:white;border-top:2px solid var(--border);justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="translateAll()">⚡ 전체 AI 변환</button>
+        <button class="btn btn-success" onclick="savePatient()">💾 저장</button>
+        <button class="btn btn-warn" onclick="window.print()">🖨 인쇄/PDF</button>
+      </div>
+
+    </div><!-- #editor -->
+  </div><!-- #content -->
+</div><!-- #main -->
+</div><!-- #app -->
+
+<!-- 토스트 -->
+<div id="toast">✅ 저장되었습니다.</div>
+
+<!-- API 키 모달 -->
+<div class="modal-overlay" id="api-modal">
+  <div class="modal">
+    <h2>🔑 Anthropic API 키 설정</h2>
+    <p>AI 변환 기능에 사용됩니다. 이 기기의 브라우저에만 저장되며 외부로 전송되지 않습니다.<br>
+    키 발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
+    <input type="password" id="api-key-input" placeholder="sk-ant-api03-...">
+    <div class="modal-btns">
+      <button class="btn btn-light" onclick="closeApiModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h2>🗑 환자 삭제</h2>
+    <p id="delete-msg">이 환자의 모든 검진 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+    <div class="modal-btns">
+      <button class="btn btn-light" onclick="closeDeleteModal()">취소</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<!-- 숨겨진 파일 입력 (import용) -->
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ──── Firebase 초기화 ────
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+  authDomain: "seoulfirst-ba9d4.firebaseapp.com",
+  projectId: "seoulfirst-ba9d4",
+  storageBucket: "seoulfirst-ba9d4.firebasestorage.app",
+  messagingSenderId: "702099053597",
+  appId: "1:702099053597:web:27efd596ee2156a8fefaf4",
+  measurementId: "G-TYXZ511SVG"
+};
+firebase.initializeApp(firebaseConfig);
+const fsdb = firebase.firestore();
+const COLLECTION = 'checkup_patients';
+const auth = firebase.auth();
+
+// ── 관리자 로그인 게이트 ──
+let _secureStarted = false;
+function startSecureData() {
+  if (_secureStarted) return;
+  _secureStarted = true;
+  loadFromFirestore().then(() => startRealtimeSync());
+  if (!apiKey) setTimeout(showApiModal, 600);
+}
+function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw    = document.getElementById('lPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  auth.signInWithEmailAndPassword(email, pw).catch(() => {
+    errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+    btn.textContent = '로그인'; btn.disabled = false;
+  });
+}
+auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('authGate');
+  const lo   = document.getElementById('logoutBtn');
+  if (user) {
+    if (gate) gate.classList.add('hidden');
+    if (lo) { lo.style.display = ''; lo.title = user.email + ' — 로그아웃'; }
+    startSecureData();
+  } else {
+    if (gate) gate.classList.remove('hidden');
+    if (lo) lo.style.display = 'none';
+  }
+});
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+
+// ──── 데이터 스토어 ────
+const STORE_KEY = 'sf_patients';
+const API_KEY_STORE = 'sf_api_key';
+
+let db = loadDb();
+let currentId = null;
+let apiKey = localStorage.getItem(API_KEY_STORE) || '';
+let currentLang = 'ko';
+let editingPatient = false;
+
+// ──── Drive 파일 동기화 (File System Access API) ────
+let _dataFileHandle = null;  // 현재 연결된 파일 핸들
+
+// IndexedDB에 파일 핸들 저장/로드
+function openIdb() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('sf_fsa', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e);
+  });
+}
+async function saveHandleToIdb(handle) {
+  const idb = await openIdb();
+  return new Promise((res, rej) => {
+    const tx = idb.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(handle, 'dataFile');
+    tx.oncomplete = res; tx.onerror = rej;
+  });
+}
+async function loadHandleFromIdb() {
+  const idb = await openIdb();
+  return new Promise((res) => {
+    const tx = idb.transaction('handles', 'readonly');
+    const req = tx.objectStore('handles').get('dataFile');
+    req.onsuccess = e => res(e.target.result || null);
+    req.onerror = () => res(null);
+  });
+}
+
+// Drive 상태 UI 업데이트
+function setDriveStatus(connected, label) {
+  const dot = document.getElementById('drive-dot');
+  const lbl = document.getElementById('drive-label');
+  if (dot) dot.style.background = connected ? '#27ae60' : '#e74c3c';
+  if (lbl) lbl.textContent = label;
+}
+
+// 파일에서 데이터 읽기
+async function readFromFile(handle) {
+  const file = await handle.getFile();
+  const text = await file.text();
+  return JSON.parse(text || '{}');
+}
+
+// 파일에 데이터 쓰기
+async function writeToFile(handle, data) {
+  const writable = await handle.createWritable();
+  await writable.write(JSON.stringify(data, null, 2));
+  await writable.close();
+}
+
+// 시작 시 자동 연결 시도
+async function initDataFile() {
+  if (!window.showOpenFilePicker) return; // 지원 안 하는 브라우저
+  const handle = await loadHandleFromIdb();
+  if (!handle) return;
+  try {
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      _dataFileHandle = handle;
+      const fileData = await readFromFile(handle);
+      if (Object.keys(fileData).length > 0) {
+        db = fileData;
+        localStorage.setItem(STORE_KEY, JSON.stringify(db));
+        renderTree();
+      }
+      const fname = handle.name;
+      setDriveStatus(true, `📁 ${fname} 연결됨`);
+    } else if (perm === 'prompt') {
+      // 권한 재요청 필요 → 버튼 클릭 유도
+      setDriveStatus(false, '클릭하여 파일 재연결');
+      // 자동 재연결 시도 (사용자 제스처 필요하므로 안내만)
+      _dataFileHandle = handle; // 핸들은 저장해두고 버튼 클릭 때 권한 요청
+      const btn = document.querySelector('[onclick="connectDataFile()"]');
+      if (btn) btn.textContent = '🔄 Drive 파일 재연결 (클릭)';
+    }
+  } catch { /* 파일 없어진 경우 등 */ }
+}
+
+// 사용자가 "Drive 데이터 파일 연결" 버튼 클릭
+async function connectDataFile() {
+  if (!window.showOpenFilePicker) {
+    alert('이 기능은 Chrome/Edge 브라우저에서만 지원됩니다.');
+    return;
+  }
+
+  // 이미 핸들이 있으면 권한만 다시 요청
+  if (_dataFileHandle) {
+    try {
+      const perm = await _dataFileHandle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') {
+        const fileData = await readFromFile(_dataFileHandle);
+        if (Object.keys(fileData).length > 0) {
+          if (Object.keys(db).length > 0 &&
+              !confirm(`파일에 저장된 데이터(${Object.keys(fileData).length}명)를 불러오면 현재 화면의 데이터와 합쳐집니다. 계속하시겠습니까?`)) return;
+          db = { ...db, ...fileData };
+          localStorage.setItem(STORE_KEY, JSON.stringify(db));
+          renderTree();
+        }
+        setDriveStatus(true, `📁 ${_dataFileHandle.name} 연결됨`);
+        const btn = document.querySelector('[onclick="connectDataFile()"]');
+        if (btn) btn.textContent = '📁 Drive 데이터 파일 연결';
+        showToast('✅ Drive 파일 연결 완료! 자동 저장이 활성화됩니다.');
+        return;
+      }
+    } catch {}
+  }
+
+  try {
+    // 새 파일 선택 또는 생성
+    const choice = confirm(
+      '데이터 파일 선택\n\n' +
+      '✅ 확인 → 기존 파일 열기 (다른 컴퓨터에서 저장한 데이터 파일)\n' +
+      '❌ 취소 → 새 파일 만들기 (처음 설정하는 경우)'
+    );
+
+    let handle;
+    if (choice) {
+      // 기존 파일 열기
+      [handle] = await window.showOpenFilePicker({
+        types: [{ description: '검진 데이터', accept: { 'application/json': ['.json'] } }],
+        startIn: 'documents'
+      });
+    } else {
+      // 새 파일 만들기
+      handle = await window.showSaveFilePicker({
+        suggestedName: '서울퍼스트_검진데이터.json',
+        types: [{ description: '검진 데이터', accept: { 'application/json': ['.json'] } }],
+        startIn: 'documents'
+      });
+      // 현재 데이터로 초기화
+      await writeToFile(handle, db);
+    }
+
+    _dataFileHandle = handle;
+    await saveHandleToIdb(handle);
+
+    // 기존 파일이면 데이터 불러오기
+    if (choice) {
+      const fileData = await readFromFile(handle);
+      db = { ...db, ...fileData };
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+      renderTree();
+    }
+
+    setDriveStatus(true, `📁 ${handle.name} 연결됨`);
+    showToast(`✅ "${handle.name}" 연결 완료! 이제 저장할 때마다 자동으로 파일에 기록됩니다.`);
+  } catch (e) {
+    if (e.name !== 'AbortError') alert('파일 연결 중 오류: ' + e.message);
+  }
+}
+
+function loadDb() {
+  try {
+    return JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+  } catch { return {}; }
+}
+
+// ──── Firestore 저장 (현재 환자 1명) ────
+async function saveDb() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(db));
+
+  // Firestore에 현재 환자 저장
+  if (currentId && db[currentId]) {
+    try {
+      await fsdb.collection(COLLECTION).doc(currentId).set(db[currentId]);
+      const now = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+      setDriveStatus(true, `☁️ Firestore 저장 완료 (${now})`);
+    } catch(e) {
+      setDriveStatus(false, '⚠️ Firestore 저장 실패: ' + e.message);
+    }
+  }
+
+  // Drive 파일에도 저장 (있는 경우)
+  if (_dataFileHandle) {
+    try {
+      const perm = await _dataFileHandle.queryPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') await _dataFileHandle.requestPermission({ mode: 'readwrite' });
+      await writeToFile(_dataFileHandle, db);
+    } catch(e) { /* 무시 */ }
+  }
+}
+
+// ──── Firestore 전체 로드 (앱 시작시) ────
+async function loadFromFirestore() {
+  try {
+    setDriveStatus(false, '☁️ Firestore에서 불러오는 중...');
+    const snapshot = await fsdb.collection(COLLECTION).get();
+    const firestoreData = {};
+    snapshot.forEach(doc => {
+      firestoreData[doc.id] = { id: doc.id, ...doc.data() };
+    });
+    if (Object.keys(firestoreData).length > 0) {
+      db = firestoreData;
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+      renderTree();
+    }
+    setDriveStatus(true, `☁️ Firestore 연결됨 (${Object.keys(db).length}명)`);
+  } catch(e) {
+    setDriveStatus(false, '⚠️ Firestore 연결 실패');
+  }
+}
+
+// ──── Firestore 실시간 동기화 ────
+function startRealtimeSync() {
+  fsdb.collection(COLLECTION).onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'added' || change.type === 'modified') {
+        const patient = { id: change.doc.id, ...change.doc.data() };
+        db[patient.id] = patient;
+      } else if (change.type === 'removed') {
+        delete db[change.doc.id];
+      }
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    // 현재 열려있는 환자가 다른 컴퓨터에서 수정됐으면 화면 갱신
+    if (currentId && db[currentId]) {
+      // 사이드바만 갱신 (입력 중인 내용 보호)
+    }
+    renderTree();
+    const now = new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    setDriveStatus(true, `☁️ 실시간 동기화 중 (${now})`);
+  }, err => {
+    setDriveStatus(false, '⚠️ 동기화 오류: ' + err.message);
+  });
+}
+
+// ──── 섹션 정의 ────
+const SECTIONS = ['egd','colo','abd','thy','bst','car','echo','cxr','mam','bmd'];
+const SECTION_NAMES_KO = {
+  egd:'위내시경', colo:'대장내시경', abd:'복부초음파',
+  thy:'갑상선초음파', bst:'유방초음파', car:'경동맥초음파',
+  echo:'심장초음파', cxr:'흉부 X-ray', mam:'유방촬영(맘모)', bmd:'골밀도검사'
+};
+const SECTION_NAMES_EN = {
+  egd:'EGD', colo:'Colonoscopy', abd:'Abdominal Ultrasound',
+  thy:'Thyroid Ultrasound', bst:'Breast Ultrasound', car:'Carotid Artery Ultrasound',
+  echo:'Echocardiography', cxr:'Chest X-ray', mam:'Mammography', bmd:'Bone Mineral Density'
+};
+
+// ──── UUID 생성 ────
+function uuid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// ──── 연월 추출 ────
+function getYearMonth(dateStr) {
+  if (!dateStr) return { year:'미지정', month:'미지정' };
+  const d = new Date(dateStr);
+  if (isNaN(d)) return { year:'미지정', month:'미지정' };
+  return {
+    year: d.getFullYear() + '년',
+    month: (d.getMonth()+1) + '월'
+  };
+}
+
+// ──── 사이드바 트리 렌더링 ────
+function renderTree() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  const tree = document.getElementById('patient-tree');
+  const patients = Object.values(db);
+
+  // 검색 필터
+  const filtered = query
+    ? patients.filter(p => p.name && p.name.toLowerCase().includes(query))
+    : patients;
+
+  if (filtered.length === 0) {
+    tree.innerHTML = `<div class="empty-tree">${query ? '검색 결과가 없습니다.' : '등록된 환자가 없습니다.<br>위 버튼으로 새 환자를 등록하세요.'}</div>`;
+    document.getElementById('stat-bar').style.display = 'none';
+    return;
+  }
+
+  // 연/월 그룹화
+  const groups = {};
+  filtered.sort((a,b) => (b.examDate||'').localeCompare(a.examDate||'')).forEach(p => {
+    const {year, month} = getYearMonth(p.examDate);
+    if (!groups[year]) groups[year] = {};
+    if (!groups[year][month]) groups[year][month] = [];
+    groups[year][month].push(p);
+  });
+
+  let html = '';
+  Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(year => {
+    html += `<div class="year-group"><div class="year-label">${year}</div>`;
+    Object.keys(groups[year]).sort((a,b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      return isNaN(na) || isNaN(nb) ? a.localeCompare(b) : nb - na;
+    }).forEach(month => {
+      const pts = groups[year][month];
+      html += `<div class="month-group">
+        <div class="month-label">📅 ${month} <span class="month-count">${pts.length}</span></div>`;
+      pts.forEach(p => {
+        const active = p.id === currentId ? ' active' : '';
+        const initial = p.name ? p.name[0] : '?';
+        const age = p.dob ? calcAge(p.dob) + '세' : '';
+        const sex = p.sex ? p.sex.split('/')[0] : '';
+        const isEditing = p.id === currentId && editingPatient;
+        const statusBadge = p.id === currentId
+          ? isEditing
+            ? `<span style="font-size:10px;background:rgba(255,200,0,.3);color:#ffe066;border-radius:4px;padding:1px 5px;margin-left:4px;">수정중</span>`
+            : `<span style="font-size:10px;background:rgba(39,174,96,.3);color:#aef5c8;border-radius:4px;padding:1px 5px;margin-left:4px;">완료</span>`
+          : '';
+        html += `<div class="patient-item${active}" onclick="openPatient('${p.id}')">
+          <div class="pt-avatar">${initial}</div>
+          <div style="flex:1;min-width:0">
+            <div class="pt-name" style="display:flex;align-items:center;">${p.name || '(이름 없음)'}${statusBadge}</div>
+            <div class="pt-meta">${[age, sex, p.chartNo].filter(Boolean).join(' · ')}</div>
+          </div>
+          <button onclick="event.stopPropagation();openPatient('${p.id}');enterEditMode();" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:4px;padding:3px 7px;font-size:11px;cursor:pointer;flex-shrink:0;font-family:inherit;">✏️</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+
+  tree.innerHTML = html;
+
+  // 통계
+  const statBar = document.getElementById('stat-bar');
+  statBar.style.display = 'flex';
+  document.getElementById('stat-total').textContent = patients.length;
+  const thisYear = new Date().getFullYear();
+  document.getElementById('stat-year').textContent =
+    patients.filter(p => p.examDate && p.examDate.startsWith(String(thisYear))).length;
+}
+
+function calcAge(dob) {
+  const today = new Date();
+  const birth = new Date(dob);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return isNaN(age) ? '' : age;
+}
+
+// ──── 새 환자 등록 ────
+function newPatient() {
+  const id = uuid();
+  db[id] = {
+    id, name:'', dob:'', sex:'남/M', examDate:'', chartNo:'', doctor:'',
+    exams: Object.fromEntries(SECTIONS.map(s => [s, {raw:'', result:''}])),
+    checkHp: false, checkPoly: false,
+    summary:'',
+    fuEgd:'', fuColo:'', fuUs:'', fuOther:'',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+  };
+  saveDb();
+  openPatient(id);
+  renderTree();
+  enterEditMode();
+  // 이름 필드에 포커스
+  setTimeout(() => document.getElementById('pt-name').focus(), 100);
+}
+
+// ──── 환자 열기 ────
+function openPatient(id) {
+  currentId = id;
+  const p = db[id];
+  if (!p) return;
+
+  // 화면 전환
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('editor').style.display = 'block';
+  document.getElementById('topbar-btns').style.display = 'flex';
+  document.getElementById('topbar-title').textContent = p.name ? p.name + ' 검진 결과' : '새 환자 등록';
+
+  // 환자 정보 채우기
+  document.getElementById('pt-name').value = p.name || '';
+  document.getElementById('pt-dob').value = p.dob || '';
+  document.getElementById('pt-sex').value = p.sex || '남/M';
+  document.getElementById('pt-date').value = p.examDate || '';
+  document.getElementById('pt-chartno').value = p.chartNo || '';
+  document.getElementById('pt-doctor').value = p.doctor || '';
+
+  // 검사 결과 채우기
+  SECTIONS.forEach(s => {
+    const raw = document.getElementById('raw-' + s);
+    const res = document.getElementById('result-' + s);
+    if (raw) raw.value = p.exams?.[s]?.raw || '';
+    if (res) {
+      const text = p.exams?.[s]?.result || '';
+      res.textContent = text || '변환 결과가 여기에 나타납니다.';
+      res.className = 'result-box' + (text ? '' : ' empty');
+    }
+  });
+
+  // 체크박스
+  if (document.getElementById('check-hp')) document.getElementById('check-hp').checked = p.checkHp || false;
+  if (document.getElementById('check-poly')) document.getElementById('check-poly').checked = p.checkPoly || false;
+
+  // 종합소견
+  const summaryEl = document.getElementById('summary-text');
+  summaryEl.value = p.summary || '';
+  setTimeout(() => autoResizeTextarea(summaryEl), 50);
+
+  updateHeader();
+  updateSigName();
+  renderTree();
+  setReadonlyMode();
+
+  // 첫 번째 탭으로 이동
+  showTab('endoscopy', document.querySelector('.tab-btn'));
+}
+
+// ──── 현재 입력 → 데이터 수집 ────
+function collectData() {
+  const p = db[currentId];
+  if (!p) return;
+  p.name = document.getElementById('pt-name').value.trim();
+  p.dob = document.getElementById('pt-dob').value;
+  const sexEl = document.getElementById('pt-sex');
+  if (sexEl) { sexEl.removeAttribute('disabled'); p.sex = sexEl.value; }
+  p.examDate = document.getElementById('pt-date').value;
+  p.chartNo = document.getElementById('pt-chartno').value.trim();
+  p.doctor = document.getElementById('pt-doctor').value.trim();
+  SECTIONS.forEach(s => {
+    if (!p.exams) p.exams = {};
+    if (!p.exams[s]) p.exams[s] = {};
+    p.exams[s].raw = document.getElementById('raw-' + s)?.value || '';
+    const res = document.getElementById('result-' + s);
+    p.exams[s].result = (res && !res.classList.contains('empty')) ? res.textContent : '';
+  });
+  p.checkHp = document.getElementById('check-hp')?.checked || false;
+  p.checkPoly = document.getElementById('check-poly')?.checked || false;
+  p.summary = document.getElementById('summary-text').value;
+  p.updatedAt = new Date().toISOString();
+}
+
+// ──── 저장 ────
+function savePatient() {
+  if (!currentId) return;
+  collectData();
+  saveDb();
+  renderTree();
+  document.getElementById('topbar-title').textContent =
+    (db[currentId].name || '새 환자') + ' 검진 결과';
+  setReadonlyMode();
+  showToast('💾 저장되었습니다.');
+}
+
+// ──── 삭제 ────
+function deletePatient() {
+  if (!currentId) return;
+  const p = db[currentId];
+  document.getElementById('delete-msg').textContent =
+    `"${p.name || '(이름 없음)'}" 환자의 모든 검진 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`;
+  document.getElementById('delete-modal').classList.add('show');
+}
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('show');
+}
+async function confirmDelete() {
+  const idToDelete = currentId;
+  delete db[idToDelete];
+  localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  // Firestore에서도 삭제
+  try { await fsdb.collection(COLLECTION).doc(idToDelete).delete(); } catch(e) {}
+  currentId = null;
+  closeDeleteModal();
+  document.getElementById('empty-state').style.display = 'flex';
+  document.getElementById('editor').style.display = 'none';
+  document.getElementById('topbar-btns').style.display = 'none';
+  document.getElementById('topbar-title').textContent = '서울퍼스트내과 종합검진 관리시스템';
+  renderTree();
+  showToast('🗑 삭제되었습니다.');
+}
+
+// ──── 헤더 업데이트 ────
+function updateHeader() {
+  const name = document.getElementById('pt-name').value || '새 환자';
+  const dob = document.getElementById('pt-dob').value;
+  const sex = document.getElementById('pt-sex').value;
+  const date = document.getElementById('pt-date').value;
+  document.getElementById('pt-display-name').textContent = name;
+  document.getElementById('pt-avatar-lg').textContent = name[0] || '?';
+  const age = dob ? calcAge(dob) + '세 · ' : '';
+  const dateStr = date ? new Date(date).toLocaleDateString('ko-KR') + ' 검진' : '';
+  document.getElementById('pt-display-meta').textContent = age + sex + (dateStr ? ' · ' + dateStr : '');
+  // 인쇄 날짜
+  document.getElementById('print-date').textContent = dateStr || ('검진일: ' + new Date().toLocaleDateString('ko-KR'));
+}
+function updateSigName() {
+  const doctor = document.getElementById('pt-doctor').value || '원장 OOO';
+  document.getElementById('sig-name').textContent = doctor;
+}
+
+// ──── 편집 모드 전환 ────
+const INFO_FIELDS = ['pt-name','pt-dob','pt-sex','pt-date','pt-chartno','pt-doctor'];
+
+function enterEditMode() {
+  INFO_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.removeAttribute('readonly'); el.style.background = ''; el.style.color = ''; }
+  });
+  const sex = document.getElementById('pt-sex');
+  if (sex) { sex.removeAttribute('disabled'); sex.style.background = ''; sex.style.color = ''; }
+  document.getElementById('btn-edit-mode').style.display = 'none';
+  document.getElementById('btn-save').style.display = '';
+  document.getElementById('btn-cancel-edit').style.display = '';
+  document.getElementById('edit-mode-badge').style.display = 'block';
+  editingPatient = true;
+  renderTree();
+}
+
+function cancelEditMode() {
+  // 원래 값으로 되돌리기
+  if (currentId && db[currentId]) openPatient(currentId);
+  else setReadonlyMode();
+}
+
+function setReadonlyMode() {
+  INFO_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.setAttribute('readonly', true); el.style.background = '#f8f9fa'; el.style.color = '#555'; }
+  });
+  const sex = document.getElementById('pt-sex');
+  if (sex) { sex.setAttribute('disabled', true); sex.style.background = '#f8f9fa'; sex.style.color = '#555'; }
+  document.getElementById('btn-edit-mode').style.display = '';
+  document.getElementById('btn-save').style.display = 'none';
+  document.getElementById('btn-cancel-edit').style.display = 'none';
+  document.getElementById('edit-mode-badge').style.display = 'none';
+  editingPatient = false;
+  renderTree();
+}
+
+function markEditing() {}
+function clearEditingBadge() {}
+
+// ──── 탭 전환 ────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  // 종합소견 탭 전환 시 textarea 높이 재계산 (숨겨진 상태에서 scrollHeight=0이므로)
+  if (name === 'summary') {
+    const st = document.getElementById('summary-text');
+    if (st) setTimeout(() => autoResizeTextarea(st), 10);
+  }
+}
+
+// ──── 언어 변경 ────
+document.getElementById('lang-select').addEventListener('change', function() {
+  currentLang = this.value;
+  const isKo = currentLang === 'ko';
+  SECTIONS.forEach(id => {
+    const el = document.getElementById('lang-label-' + id);
+    if (el) {
+      el.textContent = isKo ? '한국어' : 'English';
+      el.className = 'lang-badge ' + (isKo ? 'lang-ko' : 'lang-en');
+    }
+  });
+});
+
+// ──── API ────
+function showApiModal() {
+  document.getElementById('api-key-input').value = apiKey;
+  document.getElementById('api-modal').classList.add('show');
+}
+function closeApiModal() {
+  document.getElementById('api-modal').classList.remove('show');
+}
+function saveApiKey() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  localStorage.setItem(API_KEY_STORE, apiKey);
+  closeApiModal();
+  showToast('🔑 API 키가 저장되었습니다.');
+}
+
+async function callClaude(prompt, maxTokens = 400) {
+  if (!apiKey) { showApiModal(); throw new Error('API 키가 설정되지 않았습니다.'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.error?.message || `API 오류 (${res.status})`);
+  }
+  const data = await res.json();
+  return data.content[0].text.trim();
+}
+
+function buildPrompt(sectionId, rawText) {
+  const isKo = currentLang === 'ko';
+  const name = isKo ? SECTION_NAMES_KO[sectionId] : SECTION_NAMES_EN[sectionId];
+
+  if (isKo) {
+    return `당신은 내과 전문의입니다. ${name} 판독 결과를 환자에게 직접 설명하듯이 한국어로 작성하세요.
+
+[출력 형식 - 이 구조만 사용, 절대 변경 금지]
+◆ 검사 소견
+여기에 2~3문장.
+
+◆ 권고사항
+여기에 1~2문장. (이상 없으면 이 항목 전체 생략)
+
+[절대 금지 사항]
+- **, ##, --, __, * 등 마크다운 기호 사용 금지
+- 장기나 부위별로 나눠서 설명하는 것 금지
+- 정상인 부위 언급 금지
+- 판독문 항목을 그대로 번역하거나 나열하는 것 금지
+- 4문장 초과 금지
+
+[작성 방법]
+- 이상 소견이 있는 것만 골라서, 환자가 이해할 수 있는 자연스러운 문장으로 설명
+- 의학 용어 뒤에는 반드시 괄호로 쉬운 설명 병기
+- 표현은 공식 의료보고서 수준으로 격식체 사용
+- 정상이면: "◆ 검사 소견\n특별한 이상 소견은 없었습니다." 만 출력
+
+판독 원문:
+${rawText}
+
+설명:`;
+  } else {
+    return `You are an internal medicine specialist. Write a patient-friendly explanation of the ${name} findings in clear, professional English.
+
+[Required output format — use exactly this structure]
+◆ Findings
+2–3 sentences here.
+
+◆ Recommendations
+1–2 sentences here. (Omit this section entirely if no abnormalities found.)
+
+[Strictly prohibited]
+- No markdown symbols: **, ##, --, __, *
+- Do not list findings organ by organ
+- Do not mention normal findings
+- Do not translate or list the raw report items verbatim
+- Do not exceed 4 sentences total
+
+[Writing guidelines]
+- Only describe abnormal findings, explained in plain language a patient can understand
+- Add brief plain-language explanations for medical terms in parentheses
+- Use formal medical report tone
+- If all normal: output only "◆ Findings\nNo significant abnormalities were identified."
+
+Raw report:
+${rawText}
+
+Explanation:`;
+  }
+}
+
+async function translateSection(id, autoSum = true) {
+  const raw = document.getElementById('raw-' + id)?.value.trim();
+  if (!raw) { alert('판독문을 먼저 입력해주세요.'); return; }
+  const resultEl = document.getElementById('result-' + id);
+  resultEl.textContent = '⏳ AI가 변환 중입니다...';
+  resultEl.className = 'result-box loading';
+  try {
+    const result = await callClaude(buildPrompt(id, raw));
+    resultEl.textContent = result;
+    resultEl.className = 'result-box';
+    // 자동 저장
+    if (currentId) { collectData(); saveDb(); }
+    // 종합소견 자동 생성 (개별 변환 시에만; 전체 변환은 끝에 한 번)
+    if (autoSum) autoSummary();
+  } catch(e) {
+    resultEl.textContent = '❌ 오류: ' + e.message;
+    resultEl.className = 'result-box loading';
+  }
+}
+
+function clearSection(id) {
+  document.getElementById('raw-' + id).value = '';
+  const el = document.getElementById('result-' + id);
+  el.textContent = '변환 결과가 여기에 나타납니다.';
+  el.className = 'result-box empty';
+}
+
+async function translateAll() {
+  for (const id of SECTIONS) {
+    const raw = document.getElementById('raw-' + id)?.value.trim();
+    if (raw) await translateSection(id, false);
+  }
+  showToast('✅ 전체 변환이 완료되었습니다.');
+  // 모든 섹션 변환 후 종합소견 한 번 자동 생성
+  await autoSummary();
+}
+
+async function autoSummary() {
+  const parts = [];
+  const isKo = currentLang === 'ko';
+  SECTIONS.forEach(id => {
+    const name = isKo ? SECTION_NAMES_KO[id] : SECTION_NAMES_EN[id];
+    const res = document.getElementById('result-' + id);
+    if (res && !res.classList.contains('empty') && !res.classList.contains('loading')) {
+      parts.push(`[${name}]\n${res.textContent}`);
+    }
+    const raw = document.getElementById('raw-' + id)?.value.trim();
+    if (raw && res.classList.contains('empty')) {
+      parts.push(`[${name} - raw]\n${raw}`);
+    }
+  });
+  if (parts.length === 0) { alert('검사 결과를 먼저 입력해주세요.'); return; }
+  const prompt = isKo ? `당신은 종합건강검진 전문의입니다.
+아래 검사 결과를 바탕으로 한국어로 종합소견 및 권고사항을 작성해주세요.
+
+[절대 금지 사항]
+- #, ##, **, __, --, * 등 마크다운 기호 사용 절대 금지
+- 대신 "◆ 전체 평가", "◆ 주요 소견", "◆ 권고사항" 형식으로 구분
+
+[작성 규칙]
+1. ◆ 전체 평가 (1-2문장): 전반적인 건강 상태
+2. ◆ 주요 소견 (있는 경우만): 이상 소견을 항목별로 설명
+3. ◆ 권고사항: 생활습관 개선 및 추적검사 권고 (구체적으로)
+4. 일반인이 이해할 수 있는 친절한 격식체 사용
+5. 과도한 불안감을 주지 말 것
+
+각 검사 결과:
+${parts.join('\n\n')}
+
+종합소견:` : `You are a comprehensive health examination specialist.
+Based on the examination results below, write an overall health summary in clear, professional English.
+
+[Strictly prohibited]
+- No markdown symbols: #, ##, **, __, --, *
+- Use "◆ Overall Assessment", "◆ Key Findings", "◆ Recommendations" as section headers instead
+
+[Writing rules]
+1. ◆ Overall Assessment (1–2 sentences): general health status
+2. ◆ Key Findings (only if abnormalities exist): explain each finding in plain language
+3. ◆ Recommendations: specific lifestyle advice and follow-up tests
+4. Use friendly yet formal language that a non-medical reader can understand
+5. Do not cause unnecessary anxiety
+
+Examination results:
+${parts.join('\n\n')}
+
+Summary:`;
+  const el = document.getElementById('summary-text');
+  el.value = '⏳ AI가 종합소견을 생성 중입니다...';
+  autoResizeTextarea(el);
+  el.disabled = true;
+  try {
+    const result = await callClaude(prompt, 1500);
+    el.value = result;
+    autoResizeTextarea(el);
+    if (currentId) { collectData(); saveDb(); }
+  } catch(e) {
+    el.value = '❌ 오류: ' + e.message;
+    autoResizeTextarea(el);
+  } finally {
+    el.disabled = false;
+  }
+}
+
+// ──── 내보내기 / 가져오기 ────
+function exportData() {
+  const data = JSON.stringify(db, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `서울퍼스트내과_검진데이터_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('📤 데이터가 내보내기되었습니다.');
+}
+function importData() {
+  document.getElementById('import-file').click();
+}
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const imported = JSON.parse(evt.target.result);
+      if (typeof imported !== 'object') throw new Error('형식 오류');
+      const count = Object.keys(imported).length;
+      if (confirm(`${count}명의 환자 데이터를 가져옵니다. 기존 데이터와 병합됩니다. 진행하시겠습니까?`)) {
+        db = { ...db, ...imported };
+        saveDb();
+        renderTree();
+        showToast(`📥 ${count}명 데이터를 가져왔습니다.`);
+      }
+    } catch { alert('파일 형식이 올바르지 않습니다.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ──── 토스트 ────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ──── 인쇄 전처리 ────
+function prepareForPrint() {
+  // 1) textarea 내용 → .print-raw div 에 복사
+  document.querySelectorAll('textarea.raw-input').forEach(ta => {
+    let div = ta.nextElementSibling;
+    if (!div || !div.classList.contains('print-raw')) {
+      div = document.createElement('div');
+      div.className = 'print-raw';
+      ta.parentNode.insertBefore(div, ta.nextSibling);
+    }
+    div.textContent = ta.value;
+  });
+
+  // 1-2) 종합소견 textarea 내용 → .print-summary div 에 복사
+  //      (textarea는 인쇄 시 넘치는 내용이 잘리므로 div로 대체)
+  document.querySelectorAll('textarea.summary-textarea').forEach(ta => {
+    let div = ta.nextElementSibling;
+    if (!div || !div.classList.contains('print-summary')) {
+      div = document.createElement('div');
+      div.className = 'print-summary';
+      ta.parentNode.insertBefore(div, ta.nextSibling);
+    }
+    div.textContent = ta.value;
+  });
+
+  // 2) 원문도 소견도 없는 exam-section 숨기기
+  document.querySelectorAll('.exam-section').forEach(section => {
+    const raw    = section.querySelector('textarea.raw-input');
+    const result = section.querySelector('.result-box');
+    const rawEmpty    = !raw    || raw.value.trim() === '';
+    const resultEmpty = !result || result.classList.contains('empty') || result.textContent.trim() === '';
+    if (rawEmpty && resultEmpty) section.classList.add('print-hide');
+  });
+}
+
+function restoreAfterPrint() {
+  document.querySelectorAll('.exam-section.print-hide').forEach(s => s.classList.remove('print-hide'));
+  // print-raw / print-summary div 내용 비우기 (다음 인쇄 때 다시 채움)
+  document.querySelectorAll('.print-raw').forEach(d => d.textContent = '');
+  document.querySelectorAll('.print-summary').forEach(d => d.textContent = '');
+  showPrintDoneBar();
+}
+
+// window.print 래핑 — beforeprint 이벤트보다 더 확실하게 순서 보장
+const _nativePrint = window.print.bind(window);
+window.print = function() {
+  prepareForPrint();
+  setTimeout(() => {
+    _nativePrint();
+    // afterprint 이벤트가 없는 브라우저 대비 타임아웃 복원
+    setTimeout(restoreAfterPrint, 500);
+  }, 80);
+};
+
+window.addEventListener('beforeprint', prepareForPrint);
+window.addEventListener('afterprint',  restoreAfterPrint);
+
+// ──── 인쇄 완료 후 복귀 버튼 ────
+function showPrintDoneBar() {
+  let bar = document.getElementById('print-done-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'print-done-bar';
+    bar.style.cssText = `
+      position:fixed; top:0; left:0; right:0; z-index:9999;
+      background:#1a3a5c; color:white;
+      display:flex; align-items:center; justify-content:center; gap:20px;
+      padding:16px 24px; box-shadow:0 4px 20px rgba(0,0,0,.4);
+      font-size:15px; font-family:inherit;
+    `;
+    bar.innerHTML = `
+      <span style="font-size:20px;">🖨</span>
+      <span>인쇄 / PDF 저장이 완료되었습니까?</span>
+      <button onclick="closePrintBar()"
+        style="background:#2ecc71;color:white;border:none;border-radius:8px;
+               padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;
+               font-family:inherit;letter-spacing:0.3px;">
+        ✏️ 편집 화면으로 돌아가기
+      </button>
+      <button onclick="document.getElementById('print-done-bar').style.display='none';"
+        style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.4);
+               border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer;font-family:inherit;">
+        ✕ 닫기
+      </button>
+    `;
+    document.body.appendChild(bar);
+  }
+  bar.style.display = 'flex';
+}
+
+function closePrintBar() {
+  const bar = document.getElementById('print-done-bar');
+  if (bar) bar.style.display = 'none';
+  // 탭을 편집 첫 탭(위내시경)으로 돌리고 최상단 스크롤
+  const firstTab = document.querySelector('.tab-btn');
+  if (firstTab) firstTab.click();
+  window.scrollTo(0, 0);
+}
+
+// ──── 종합소견 textarea 자동 높이 ────
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// ──── 초기화 ────
+renderTree();
+// API 키 모달은 로그인 성공 후 startSecureData()에서 표시됨
+// 종합소견 textarea 입력할 때마다 자동 높이
+document.addEventListener('DOMContentLoaded', () => {
+  const st = document.getElementById('summary-text');
+  if (st) st.addEventListener('input', () => autoResizeTextarea(st));
+});
+// DOMContentLoaded 이후에도 안전하게 연결
+setTimeout(() => {
+  const st = document.getElementById('summary-text');
+  if (st) st.addEventListener('input', () => autoResizeTextarea(st));
+}, 300);
+// Drive 파일 자동 연결 시도
+initDataFile();
+// Firestore 로드·실시간 동기화는 로그인 성공 후 startSecureData()에서 시작됨
+</script>
+</body>
+</html>

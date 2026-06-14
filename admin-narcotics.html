@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마약·향정신성 의약품 기록지 — 서울퍼스트내과</title>
+<style>
+:root {
+  --primary: #1a3a5c;
+  --accent: #e67e22;
+  --border: #dde3ea;
+  --text: #2c3e50;
+  --muted: #8a9ab0;
+  --row-hover: #f0f7ff;
+  --row-editing: #fffaf5;
+  --row-saved: #ffffff;
+  --success: #27ae60;
+  --danger: #e74c3c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f9; color:var(--text); font-size:14px; }
+
+/* ── 헤더 ── */
+#header {
+  background: var(--primary); color: white;
+  padding: 0 24px; display: flex; align-items: center; gap: 16px;
+  height: 54px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.logo { font-size: 17px; font-weight: 900; }
+.logo span { color: #5dade2; }
+.header-title { font-size: 14px; opacity: .7; }
+.header-sep { width: 1px; height: 20px; background: rgba(255,255,255,.2); }
+.header-spacer { flex: 1; }
+.btn {
+  padding: 7px 14px; border: none; border-radius: 5px;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: .15s; font-family: inherit;
+}
+.btn-home  { background: rgba(255,255,255,.15); color: white; }
+.btn-home:hover  { background: rgba(255,255,255,.25); }
+.btn-print { background: #2980b9; color: white; }
+.btn-print:hover { background: #1f6fa0; }
+.btn-io { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.2); }
+.btn-io:hover { background: rgba(255,255,255,.2); }
+
+/* ── 툴바 ── */
+#toolbar {
+  background: white; border-bottom: 2px solid var(--border);
+  padding: 10px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.month-nav { display: flex; align-items: center; gap: 6px; }
+.month-nav button {
+  background: #f0f4f8; border: 1px solid var(--border);
+  border-radius: 5px; width: 30px; height: 30px;
+  cursor: pointer; font-size: 14px; transition: .15s;
+}
+.month-nav button:hover { background: #dce8f5; }
+#month-display {
+  font-size: 16px; font-weight: 900; color: var(--primary);
+  min-width: 100px; text-align: center; cursor: pointer;
+}
+#month-picker {
+  position: absolute; opacity: 0; pointer-events: none; width: 0;
+}
+.toolbar-sep { width: 1px; height: 24px; background: var(--border); }
+.btn-add {
+  background: var(--accent); color: white; border: none;
+  border-radius: 6px; padding: 7px 16px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit; transition: .15s;
+}
+.btn-add:hover { background: #d35400; }
+.toolbar-spacer { flex: 1; }
+.summary-chips { display: flex; gap: 8px; }
+.chip { background: #f0f4f8; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--primary); }
+.chip b { color: var(--accent); }
+.chip.mida { background: #ebf5fb; }
+.chip.prop { background: #fef5e7; }
+
+/* ── 테이블 ── */
+#table-wrap {
+  margin: 12px auto; max-width: 1280px; background: white;
+  border-radius: 10px; border: 1px solid var(--border);
+  overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  background: var(--primary); color: white;
+  padding: 7px 10px; text-align: left;
+  font-size: 12px; font-weight: 700; letter-spacing: .3px; white-space: nowrap;
+}
+thead th:first-child { width: 40px; text-align: center; }
+thead th.num-col { text-align: center; }
+
+/* 제품번호 셀 중앙정렬 */
+thead th:nth-child(6), thead th:nth-child(9),
+tbody td:nth-child(6), tbody td:nth-child(9),
+tfoot td:nth-child(6), tfoot td:nth-child(9) { text-align: center; }
+tbody td:nth-child(6) .cell-text,
+tbody td:nth-child(9) .cell-text { text-align: center; }
+
+/* amp 셀 오른쪽 여백 확보 */
+thead th:nth-child(7),
+tbody td:nth-child(7),
+tfoot td:nth-child(7) { padding-right: 10px !important; }
+
+/* 프로포폴 세트 시작 구분선 (8번째 열 = 프로포폴 mL) */
+thead th:nth-child(8),
+tbody td:nth-child(8),
+tfoot td:nth-child(8) {
+  border-left: 4px solid #4a90c4 !important;
+  padding-left: 10px !important;
+}
+
+tbody tr { transition: background .1s; }
+tbody tr.row-saved:hover { background: var(--row-hover); }
+tbody tr.row-editing { background: var(--row-editing); }
+
+tbody td {
+  border-bottom: 1px solid #eef1f5;
+  vertical-align: middle; padding: 0;
+}
+tbody tr:last-child td { border-bottom: none; }
+
+/* 저장된 행 — 텍스트 셀 */
+.cell-text {
+  padding: 6px 10px; font-size: 13px; color: var(--text);
+}
+.cell-text.num { text-align: center; }
+.cell-text.empty { color: var(--muted); font-style: italic; }
+.row-num { text-align: center; padding: 6px 4px; font-size: 11px; color: var(--muted); }
+
+/* 편집 행 — 인풋 */
+.cell-input {
+  width: 100%; border: none; background: transparent;
+  padding: 6px 10px; font-size: 13px; font-family: inherit;
+  color: var(--text); outline: none;
+}
+.cell-input:focus { background: #fff3e0; box-shadow: inset 0 0 0 2px var(--accent); }
+.cell-input[type=number] { text-align: right; }
+.cell-input[type=date]   { min-width: 130px; }
+
+/* 액션 버튼 셀 */
+.cell-actions {
+  padding: 6px 8px; white-space: nowrap;
+  display: flex; gap: 4px; align-items: center; justify-content: center;
+}
+.act-btn {
+  border: none; border-radius: 4px; padding: 4px 8px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: .15s; white-space: nowrap;
+}
+.act-save   { background: var(--success); color: white; }
+.act-save:hover   { background: #1e8449; }
+.act-edit   { background: #f0f4f8; color: var(--primary); border: 1px solid var(--border); }
+.act-edit:hover   { background: #dce8f5; }
+.act-cancel { background: #f5f5f5; color: var(--muted); border: 1px solid var(--border); }
+.act-cancel:hover { background: #e8e8e8; }
+.act-del    { background: #fdecea; color: var(--danger); border: 1px solid #f5c6c2; }
+.act-del:hover    { background: var(--danger); color: white; }
+
+/* 합계 행 */
+tfoot tr { background: #f8fafc; }
+tfoot td {
+  padding: 7px 10px; font-size: 13px; font-weight: 700;
+  border-top: 2px solid var(--border); color: var(--primary);
+}
+tfoot .total-num { text-align: right; color: var(--accent); font-size: 13px; }
+
+/* 빈 상태 */
+.empty-row td {
+  padding: 48px 24px; text-align: center;
+  color: var(--muted); font-size: 13px; border-bottom: none !important;
+}
+
+/* amp 자동계산 셀 */
+.cell-amp {
+  text-align: center; padding: 6px 10px;
+  font-size: 12px; font-weight: 700; color: #1a6a4a;
+  background: #f0faf5; white-space: nowrap;
+}
+.cell-amp.empty { color: var(--muted); font-weight: 400; background: transparent; }
+td.amp-td { background: #f0faf5; }
+tr.row-editing td.amp-td { background: #e8f8f0; }
+
+/* 화면/인쇄 전환 텍스트 */
+.print-only { display: none; }
+.screen-only { display: inline; }
+
+/* 날짜 그룹 헤더 */
+.date-group-row td {
+  background: #eef3f8;
+  padding: 5px 12px;
+  font-size: 15px; font-weight: 700;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border) !important;
+  border-top: 2px solid #c8d8e8;
+  letter-spacing: .3px;
+}
+.date-group-row:first-child td { border-top: none; }
+.date-group-badge {
+  display: inline-block;
+  background: var(--primary); color: white;
+  border-radius: 4px; padding: 2px 8px;
+  font-size: 15px; font-weight: 700; margin-right: 8px;
+}
+.date-group-sub {
+  color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px;
+}
+
+/* ── 월 합계 (표 분리, 최하단) ── */
+#month-summary {
+  max-width: 1280px; margin: 14px auto 28px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 24px;
+  flex-wrap: wrap;
+  background: #f0faf5; border: 1px solid #cfe8db; border-radius: 10px;
+  padding: 12px 20px;
+}
+#month-summary:empty { display: none; }
+.ms-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-right: auto; }
+.ms-note { font-size: 11px; font-weight: 400; color: #aaa; }
+.ms-items { display: flex; gap: 20px; }
+.ms-item { display: flex; align-items: baseline; gap: 8px; }
+.ms-label { font-size: 12px; color: var(--muted); }
+.ms-value { font-size: 16px; font-weight: 900; color: #1a6a4a; }
+
+/* ── 삭제 확인 모달 ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white; border-radius: 12px; padding: 28px;
+  max-width: 380px; width: 90%;
+  box-shadow: 0 8px 40px rgba(0,0,0,.2); text-align: center;
+}
+.modal .modal-icon { font-size: 40px; margin-bottom: 12px; }
+.modal h3 { color: var(--primary); font-size: 17px; margin-bottom: 8px; }
+.modal p  { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal-btns .btn { min-width: 100px; padding: 9px 20px; font-size: 14px; }
+.btn-cancel-modal { background: #f0f0f0; color: var(--text); }
+.btn-cancel-modal:hover { background: #e0e0e0; }
+.btn-del-confirm { background: var(--danger); color: white; }
+.btn-del-confirm:hover { background: #c0392b; }
+
+/* 토스트 */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #2c3e50; color: white; padding: 10px 18px;
+  border-radius: 8px; font-size: 13px;
+  opacity: 0; transform: translateY(8px); transition: .3s;
+  z-index: 999; pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── 인쇄 ── */
+@media print {
+  @page { size: A4 portrait; margin: 10mm 8mm; }
+
+  #header .btn-home, #header .btn-io, #toolbar .btn-add,
+  #toolbar .month-nav button, #month-picker,
+  .toolbar-sep, .cell-actions, .act-btn,
+  #sync-indicator { display: none !important; }
+
+  /* 비고·작업 열 인쇄 시 숨김 */
+  #main-table th:nth-child(11), #main-table td:nth-child(11),
+  #main-table th:nth-child(12), #main-table td:nth-child(12) { display: none !important; }
+
+  /* 좌우 외곽 프레임 — 헤더와 데이터 박스를 프로포폴 amp(10열)에서 동일하게 마감
+     (날짜 밴드 행은 제외 → 밴드 왼쪽 잔선 방지) */
+  #main-table thead th:nth-child(10),
+  #main-table tbody tr:not(.date-group-row) td:nth-child(10) { border-right: 1.5px solid #000 !important; }
+  #main-table thead th:nth-child(1),
+  #main-table tbody tr:not(.date-group-row) td:nth-child(1)  { border-left: 1.5px solid #000 !important; }
+
+  /* 화면/인쇄 텍스트 전환 */
+  .print-only { display: inline !important; }
+  .screen-only { display: none !important; }
+  /* amp 단위 숨김 — 숫자만 표시 */
+  .amp-unit { display: none !important; }
+
+  /* ── 흑백 기본 ── */
+  * { color: #000 !important; background: white !important;
+      box-shadow: none !important; text-shadow: none !important; }
+
+  body { background: white; font-size: 10px; }
+  /* 헤더·툴바·표 모두 표 너비(193mm = 열 너비 합)로 통일 → 가로선 우측 끝 일치 */
+  #header { position: static; padding: 6px 0;
+            width: 193mm; margin: 0 auto;
+            border-bottom: 2px solid #000 !important; }
+  #header .logo { font-size: 14px; font-weight: 900; }
+  #header .header-title { font-size: 12px; }
+  #toolbar { width: 193mm; margin: 0 auto; padding: 5px 0;
+             border-bottom: 1px solid #999 !important; }
+
+  #table-wrap { width: 193mm; margin: 0 auto; border: none; overflow: visible; }
+  #main-table { width: 193mm; table-layout: fixed; font-size: 9.5px;
+                border-collapse: collapse; }
+
+  /* 열 너비 A4 세로(190mm 가용) 기준 배분 — 비고·작업 제외 10열 */
+  #main-table th:nth-child(1)  { width: 6mm; }   /* # */
+  #main-table th:nth-child(2)  { width: 17mm; }  /* 시술일 */
+  #main-table th:nth-child(3)  { width: 18mm; }  /* 환자번호 */
+  #main-table th:nth-child(4)  { width: 20mm; }  /* 성명 */
+  #main-table th:nth-child(5)  { width: 20mm; }  /* 미다졸람 mL */
+  #main-table th:nth-child(6)  { width: 28mm; }  /* 미다졸람 lot */
+  #main-table th:nth-child(7)  { width: 18mm; }  /* amp */
+  #main-table th:nth-child(8)  { width: 20mm; }  /* 프로포폴 mL */
+  #main-table th:nth-child(9)  { width: 28mm; }  /* 포폴 lot */
+  #main-table th:nth-child(10) { width: 18mm; }  /* amp */
+
+  /* 헤더 행: 흑백에서 배경색 대신 굵은 하단 선으로 구분 */
+  thead th {
+    padding: 5px 4px; font-size: 9px; font-weight: 900;
+    border-top: 2px solid #000 !important;
+    border-bottom: 2px solid #000 !important;
+    border-left: 1px solid #000 !important;
+    border-right: 1px solid #000 !important;
+    text-align: center;
+  }
+
+  /* 데이터 행 셀 — 균일한 검은 격자, 모든 칸 중앙정렬 */
+  td {
+    padding: 4px; word-break: keep-all;
+    border: 1px solid #000 !important;
+    text-align: center !important;
+  }
+  .cell-text { padding: 5px 4px; text-align: center !important; }
+  tbody td b { font-weight: 700; }
+
+  /* 프로포폴 세트 구분선 — 인쇄 시 더 두껍게 (데이터 셀에만) */
+  thead th:nth-child(8),
+  tbody td:nth-child(8) {
+    border-left: 3px solid #000 !important;
+    padding-left: 6px !important;
+  }
+  .row-num { color: #666 !important; }
+
+  /* amp 셀: 다른 셀과 동일한 패딩·글자 크기로 정규화 → 행 높이·테두리 정렬
+     (span 자체 패딩 제거, td 패딩만 사용; 강조 없이 일반 표기) */
+  td.amp-td { background: white !important; padding: 5px 4px !important; vertical-align: middle; }
+  .cell-amp {
+    display: inline; padding: 0 !important; margin: 0 !important;
+    font-size: 9.5px !important; font-weight: 400 !important; line-height: 1.2;
+    background: white !important; white-space: nowrap;
+  }
+  .cell-amp .amp-num { font-size: 9.5px !important; font-weight: 400 !important; }
+
+  /* 날짜 그룹 헤더: 표 격자에서 분리된 '제목 밴드' (테두리 없음, 좌측정렬) */
+  .date-group-row td {
+    padding: 9px 0 3px 6px; font-size: 12px; font-weight: 900;
+    border: none !important;
+    background: white !important;
+    text-align: left !important;
+  }
+  .date-group-row:first-child td { padding-top: 4px; }
+  /* 배지 박스 테두리 유지 (2번 이미지처럼) */
+  .date-group-badge {
+    font-size: 12px; font-weight: 900;
+    background: white !important; color: #000 !important;
+    border: 1.5px solid #000 !important;
+    border-radius: 3px; padding: 1px 6px;
+    margin-right: 8px;
+  }
+  .date-group-sub { font-size: 11px; color: #444 !important; }
+
+  /* 월 합계 — 마지막 페이지 최하단 고정 */
+  #month-summary {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    margin: 0; padding: 6px 4px 2px;
+    border: none !important; border-top: 2px solid #000 !important;
+    background: white !important;
+    display: flex; align-items: baseline; gap: 18px;
+    font-size: 11px;
+  }
+  #month-summary .ms-title { font-weight: 900; margin-right: auto; }
+  #month-summary .ms-note { font-size: 10px; color: #444 !important; }
+  #month-summary .ms-items { display: flex; gap: 18px; }
+  #month-summary .ms-item { gap: 6px; }
+  #month-summary .ms-label { font-size: 11px; }
+  #month-summary .ms-value { font-size: 13px; font-weight: 900; }
+
+  /* 짝수 행 옅은 줄무늬 → 흑백에서 제거 */
+  .row-saved:nth-child(even) td { background: white !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── 관리자 로그인 게이트 ── -->
+<style>
+#authGate { position: fixed; inset: 0; background: linear-gradient(135deg,#1a3a5c,#2980b9); display: flex; align-items: center; justify-content: center; z-index: 100000; font-family: 'Malgun Gothic','맑은 고딕',sans-serif; }
+#authGate.hidden { display: none; }
+#authGate .auth-box { background:#fff; border-radius:16px; padding:40px 36px; width:340px; box-shadow:0 12px 48px rgba(0,0,0,.3); }
+#authGate h2 { font-size:20px; font-weight:800; text-align:center; color:#0f2b3d; margin-bottom:4px; }
+#authGate .auth-sub { font-size:12px; color:#7f8c8d; text-align:center; margin-bottom:24px; }
+#authGate .auth-f { margin-bottom:14px; }
+#authGate .auth-f label { display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:5px; }
+#authGate .auth-f input { width:100%; padding:11px 14px; border:1.5px solid #dde1e7; border-radius:8px; font-size:15px; font-family:inherit; }
+#authGate .auth-f input:focus { outline:none; border-color:#2980b9; }
+#authGate #btnLogin { width:100%; padding:13px; background:#2980b9; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; margin-top:8px; font-family:inherit; }
+#authGate #btnLogin:disabled { opacity:.6; cursor:default; }
+#authGate #loginError { color:#c0392b; font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
+</style>
+<div id="authGate">
+  <div class="auth-box">
+    <h2>🔐 관리자 로그인</h2>
+    <p class="auth-sub">서울퍼스트내과 · 마약류 기록지</p>
+    <div class="auth-f">
+      <label>이메일</label>
+      <input type="email" id="lEmail" placeholder="관리자 이메일" autocomplete="username" />
+    </div>
+    <div class="auth-f">
+      <label>비밀번호</label>
+      <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" />
+    </div>
+    <button id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- 헤더 -->
+<div id="header">
+  <div class="logo" onclick="location.href='admin.html'" style="cursor:pointer;" title="홈으로">서울<span>퍼스트</span>내과</div>
+  <div class="header-sep"></div>
+  <div class="header-title">💉 마약·향정신성 의약품 기록지</div>
+  <div class="header-spacer"></div>
+  <button class="btn btn-io" onclick="exportData()">📤 내보내기</button>
+  <button class="btn btn-io" onclick="importData()">📥 가져오기</button>
+  <button class="btn btn-print" onclick="window.print()">🖨 인쇄/PDF</button>
+  <button class="btn btn-home" onclick="location.href='admin.html'">🏠 홈</button>
+  <button class="btn btn-home" id="logoutBtn" style="display:none;">🔓 로그아웃</button>
+</div>
+
+<!-- 툴바 -->
+<div id="toolbar">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div id="month-display" onclick="document.getElementById('month-picker').showPicker()"></div>
+    <button onclick="changeMonth(1)">›</button>
+    <input type="month" id="month-picker" onchange="onMonthPick(this.value)">
+  </div>
+  <div class="toolbar-sep"></div>
+  <button class="btn-add" onclick="addRow()">＋ 행 추가</button>
+  <div class="toolbar-spacer"></div>
+</div>
+
+<!-- 테이블 -->
+<div id="table-wrap">
+  <table id="main-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>시술일</th>
+        <th>환자번호</th>
+        <th>성명</th>
+        <th class="num-col">미다졸람 (mL)</th>
+        <th><span class="screen-only">미다졸람 제품번호</span><span class="print-only">미다졸람 lot</span></th>
+        <th class="num-col">amp</th>
+        <th class="num-col">프로포폴 (mL)</th>
+        <th><span class="screen-only">프로포폴 제품번호</span><span class="print-only">포폴 lot</span></th>
+        <th class="num-col">amp</th>
+        <th>비고</th>
+        <th style="width:130px;text-align:center;">작업</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<!-- 월 합계 (표와 분리, 화면/출력물 최하단) -->
+<div id="month-summary"></div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal">
+    <div class="modal-icon">🗑️</div>
+    <h3>정말 삭제하시겠습니까?</h3>
+    <p id="del-modal-msg">이 기록을 삭제하면 복구할 수 없습니다.</p>
+    <div class="modal-btns">
+      <button class="btn btn-cancel-modal" onclick="closeDelModal()">취소</button>
+      <button class="btn btn-del-confirm" onclick="confirmDelete()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="sync-indicator" style="position:fixed;bottom:12px;right:16px;font-size:11px;padding:4px 10px;
+  background:rgba(0,0,0,.6);color:white;border-radius:12px;display:none;z-index:999;"></div>
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+// ── Firebase 초기화 ──
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+    authDomain: "seoulfirst-ba9d4.firebaseapp.com",
+    projectId: "seoulfirst-ba9d4",
+    storageBucket: "seoulfirst-ba9d4.firebasestorage.app",
+    messagingSenderId: "702099053597",
+    appId: "1:702099053597:web:27efd596ee2156a8fefaf4"
+  });
+}
+const fsdb = firebase.firestore();
+const FS_COLLECTION = 'narcotics_records'; // 마약기록 전용 컬렉션
+const auth = firebase.auth();
+
+// ── 관리자 로그인 게이트 ──
+let _secureStarted = false;
+function startSecureData() {
+  if (_secureStarted) return;
+  _secureStarted = true;
+  loadFromFirestore().then(() => startRealtimeSync());
+}
+function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw    = document.getElementById('lPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  auth.signInWithEmailAndPassword(email, pw).catch(() => {
+    errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+    btn.textContent = '로그인'; btn.disabled = false;
+  });
+}
+auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('authGate');
+  const lo   = document.getElementById('logoutBtn');
+  if (user) {
+    if (gate) gate.classList.add('hidden');
+    if (lo) { lo.style.display = ''; lo.title = user.email + ' — 로그아웃'; }
+    startSecureData();
+  } else {
+    if (gate) gate.classList.remove('hidden');
+    if (lo) lo.style.display = 'none';
+  }
+});
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+
+function setSyncStatus(msg, ok) {
+  const el = document.getElementById('sync-indicator');
+  el.style.display = 'block';
+  el.textContent = msg;
+  el.style.background = ok ? 'rgba(39,174,96,.85)' : 'rgba(231,76,60,.85)';
+}
+
+const STORE_KEY = 'sf_narcotics_v2';
+let db = loadDb();
+// db 구조: { "YYYY-MM": [ {id, date, chartNo, name, midaDose, midaLot, propDose, propLot, memo, saved:bool} ] }
+let currentMonth = todayYM();
+let editingIds = new Set();   // 현재 편집 중인 행 id
+let pendingDeleteId = null;   // 삭제 대기 id
+
+function todayYM() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function loadDb() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+}
+
+// Firestore에 월별 데이터 저장
+async function saveDb() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  try {
+    await fsdb.collection(FS_COLLECTION).doc(currentMonth).set({ rows: db[currentMonth] || [] });
+    const now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+    setSyncStatus(`☁️ 저장됨 (${now})`, true);
+  } catch(e) {
+    setSyncStatus('⚠️ 저장 실패: ' + e.message, false);
+  }
+}
+
+// Firestore에서 전체 로드
+async function loadFromFirestore() {
+  try {
+    setSyncStatus('☁️ 불러오는 중...', true);
+    const snapshot = await fsdb.collection(FS_COLLECTION).get();
+    if (!snapshot.empty) {
+      const firestoreDb = {};
+      snapshot.forEach(doc => { firestoreDb[doc.id] = doc.data().rows || []; });
+      db = firestoreDb;
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+      render();
+    }
+    setSyncStatus(`☁️ 동기화 완료 (${Object.keys(db).length}개월)`, true);
+  } catch(e) {
+    setSyncStatus('⚠️ Firestore 연결 실패', false);
+  }
+}
+
+// 실시간 현재 월 동기화
+function startRealtimeSync() {
+  fsdb.collection(FS_COLLECTION).onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const ym = change.doc.id;
+      if (change.type === 'modified' || change.type === 'added') {
+        const rows = change.doc.data().rows || [];
+        // 현재 편집 중인 행은 덮어쓰지 않음
+        if (editingIds.size > 0 && ym === currentMonth) return;
+        db[ym] = rows;
+      } else if (change.type === 'removed') {
+        delete db[ym];
+      }
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    render();
+    const now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+    setSyncStatus(`☁️ 실시간 동기화 중 (${now})`, true);
+  });
+}
+function uuid()   { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(v)   { return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function ensureMonth(ym) { if (!db[ym]) db[ym] = []; }
+
+/* ── 월 이동 ── */
+function changeMonth(delta) {
+  const [y, m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  currentMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  editingIds.clear();
+  render();
+}
+function onMonthPick(val) { currentMonth = val; editingIds.clear(); render(); }
+function displayMonth(ym) {
+  const [y, m] = ym.split('-');
+  return y + '년 ' + parseInt(m) + '월';
+}
+
+/* ── 행 추가 (편집 상태로 생성) ── */
+function addRow() {
+  ensureMonth(currentMonth);
+  const today = new Date().toISOString().slice(0,10);
+  const id = uuid();
+  db[currentMonth].push({ id, date:today, chartNo:'', name:'', midaDose:'', midaLot:'', propDose:'', propLot:'', memo:'', saved:false });
+  saveDb();
+  editingIds.add(id);
+  render();
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) { const inp = tr.querySelectorAll('.cell-input')[2]; if (inp) inp.focus(); }
+  }, 50);
+}
+
+/* ── 행 저장 ── */
+function saveRow(id) {
+  const rows = db[currentMonth];
+  if (!rows) return;
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+
+  // 현재 입력값 수집
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (tr) {
+    row.date     = tr.querySelector('[data-field=date]')?.value     || row.date;
+    row.chartNo  = tr.querySelector('[data-field=chartNo]')?.value  || '';
+    row.name     = tr.querySelector('[data-field=name]')?.value     || '';
+    row.midaDose = tr.querySelector('[data-field=midaDose]')?.value || '';
+    row.midaLot  = tr.querySelector('[data-field=midaLot]')?.value  || '';
+    row.propDose = tr.querySelector('[data-field=propDose]')?.value || '';
+    row.propLot  = tr.querySelector('[data-field=propLot]')?.value  || '';
+    row.memo     = tr.querySelector('[data-field=memo]')?.value     || '';
+  }
+  row.saved = true;
+  saveDb();
+  editingIds.delete(id);
+  render();
+  showToast('💾 저장되었습니다.');
+}
+
+/* ── amp 실시간 계산 ── */
+function updateAmp(id, drug, val) {
+  const ml = parseFloat(val);
+  const divider = drug === 'mida' ? 5 : 12;
+  const el = document.getElementById(`amp-${drug}-${id}`);
+  if (!el) return;
+  if (isNaN(ml) || val === '') {
+    el.innerHTML = '—'; el.className = 'cell-amp empty';
+  } else {
+    el.innerHTML = `<span class="amp-num">${(ml / divider).toFixed(2)}</span><span class="amp-unit"> amp</span>`;
+    el.className = 'cell-amp';
+  }
+}
+
+/* ── 행 편집 모드 ── */
+function editRow(id) {
+  editingIds.add(id);
+  render();
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) { const inp = tr.querySelectorAll('.cell-input')[0]; if (inp) inp.focus(); }
+  }, 50);
+}
+
+/* ── 편집 취소 ── */
+function cancelEdit(id) {
+  const rows = db[currentMonth];
+  if (!rows) return;
+  const row = rows.find(r => r.id === id);
+  // 한 번도 저장 안 된 행이면 제거
+  if (row && !row.saved) {
+    db[currentMonth] = rows.filter(r => r.id !== id);
+    if (db[currentMonth].length === 0) delete db[currentMonth];
+    saveDb();
+  }
+  editingIds.delete(id);
+  render();
+}
+
+/* ── 삭제 모달 ── */
+function askDelete(id) {
+  pendingDeleteId = id;
+  const rows = db[currentMonth] || [];
+  const row = rows.find(r => r.id === id);
+  const label = row ? `"${row.name || '(이름 없음)'}" (${row.date || '날짜 미입력'})` : '이 기록';
+  document.getElementById('del-modal-msg').textContent =
+    `${label} 기록을 삭제하면 복구할 수 없습니다.`;
+  document.getElementById('del-modal').classList.add('show');
+}
+function closeDelModal() {
+  document.getElementById('del-modal').classList.remove('show');
+  pendingDeleteId = null;
+}
+function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  db[currentMonth] = (db[currentMonth] || []).filter(r => r.id !== id);
+  if ((db[currentMonth] || []).length === 0) delete db[currentMonth];
+  saveDb();
+  editingIds.delete(id);
+  closeDelModal();
+  render();
+  showToast('🗑️ 삭제되었습니다.');
+}
+
+/* ── 렌더 ── */
+function render() {
+  document.getElementById('month-display').textContent = displayMonth(currentMonth);
+  document.getElementById('month-picker').value = currentMonth;
+
+  const rows = db[currentMonth] || [];
+  const tbody = document.getElementById('table-body');
+  const summary = document.getElementById('month-summary');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">이 달에 기록이 없습니다. [＋ 행 추가] 버튼으로 입력하세요.</td></tr>`;
+    summary.innerHTML = '';
+    updateChips();
+    return;
+  }
+
+  // 날짜 기준 정렬 (미저장 새 행은 맨 아래)
+  const sorted = [...rows].sort((a, b) => {
+    if (!a.saved && b.saved) return 1;
+    if (a.saved && !b.saved) return -1;
+    return (a.date||'').localeCompare(b.date||'');
+  });
+
+  // 날짜별 그룹화
+  const groups = {};
+  sorted.forEach(r => {
+    const key = (r.saved && r.date) ? r.date : '__new__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+
+  const DOW = ['일','월','화','수','목','금','토'];
+  let rowNum = 0;
+  let html = '';
+
+  const dateKeys = Object.keys(groups).filter(k => k !== '__new__').sort();
+  if (groups['__new__']) dateKeys.push('__new__');
+
+  dateKeys.forEach(dateKey => {
+    const groupRows = groups[dateKey];
+    // 앰플 수 = 환자별 ceil(투여량/앰플용량) 합산 (미다졸람 5mL, 프로포폴 12mL)
+    const dayMidaAmp = groupRows.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
+    const dayPropAmp = groupRows.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
+
+    // 날짜 그룹 헤더
+    if (dateKey === '__new__') {
+      html += `<tr class="date-group-row">
+        <td colspan="12">
+          <span class="date-group-badge">✏️ 입력 중</span>
+          새로 추가한 행
+        </td>
+      </tr>`;
+    } else {
+      const d = new Date(dateKey + 'T00:00');
+      const dateLabel = d.toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
+      const dow = DOW[d.getDay()];
+      const dowColor = d.getDay()===0 ? '#e74c3c' : d.getDay()===6 ? '#2980b9' : 'inherit';
+      const midaPart = dayMidaAmp > 0 ? `미다졸람 ${dayMidaAmp}amp` : '';
+      const propPart = dayPropAmp > 0 ? `프로포폴 ${dayPropAmp}amp` : '';
+      const subText = `${groupRows.length}명` + (midaPart ? ` · ${midaPart}` : '') + (propPart ? ` · ${propPart}` : '');
+      html += `<tr class="date-group-row">
+        <td colspan="12">
+          <span class="date-group-badge">${dateLabel}</span>
+          <span style="color:${dowColor};font-weight:700;">${dow}요일</span>
+          <span class="date-group-sub">${subText}</span>
+        </td>
+      </tr>`;
+    }
+
+    // 해당 날짜 행들
+    groupRows.forEach(r => {
+      const editing = editingIds.has(r.id) || !r.saved;
+      rowNum++;
+      if (editing) {
+        const midaAmp = r.midaDose !== '' ? `<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        html += `<tr class="row-editing" data-id="${r.id}">
+          <td class="row-num">${rowNum}</td>
+          <td><input class="cell-input" type="date" data-field="date" value="${esc(r.date)}"></td>
+          <td><input class="cell-input" type="text" data-field="chartNo" value="${esc(r.chartNo)}" placeholder="환자번호"></td>
+          <td><input class="cell-input" type="text" data-field="name" value="${esc(r.name)}" placeholder="홍길동"></td>
+          <td><input class="cell-input" type="number" data-field="midaDose" value="${esc(r.midaDose)}" placeholder="0.0" step="0.1" min="0" style="text-align:right" oninput="updateAmp('${r.id}','mida',this.value)"></td>
+          <td><input class="cell-input" type="text" data-field="midaLot" value="${esc(r.midaLot)}" placeholder="LOT번호"></td>
+          <td class="amp-td"><span class="cell-amp${r.midaDose===''?' empty':''}" id="amp-mida-${r.id}">${midaAmp}</span></td>
+          <td><input class="cell-input" type="number" data-field="propDose" value="${esc(r.propDose)}" placeholder="0.0" step="0.5" min="0" style="text-align:right" oninput="updateAmp('${r.id}','prop',this.value)"></td>
+          <td><input class="cell-input" type="text" data-field="propLot" value="${esc(r.propLot)}" placeholder="LOT번호"></td>
+          <td class="amp-td"><span class="cell-amp${r.propDose===''?' empty':''}" id="amp-prop-${r.id}">${propAmp}</span></td>
+          <td><input class="cell-input" type="text" data-field="memo" value="${esc(r.memo)}" placeholder="비고"></td>
+          <td class="cell-actions">
+            <button class="act-btn act-save"   onclick="saveRow('${r.id}')">💾 저장</button>
+            <button class="act-btn act-cancel" onclick="cancelEdit('${r.id}')">취소</button>
+          </td>
+        </tr>`;
+      } else {
+        const midaVal = r.midaDose !== '' ? r.midaDose + ' mL' : '—';
+        const propVal = r.propDose !== '' ? r.propDose + ' mL' : '—';
+        const midaAmp = r.midaDose !== '' ? `<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        html += `<tr class="row-saved" data-id="${r.id}">
+          <td class="row-num">${rowNum}</td>
+          <td class="cell-text" style="color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00').toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '—'}</td>
+          <td class="cell-text">${esc(r.chartNo)||'<span style="color:var(--muted)">—</span>'}</td>
+          <td class="cell-text"><b>${esc(r.name)||'<span style="color:var(--muted)">—</span>'}</b></td>
+          <td class="cell-text num">${midaVal}</td>
+          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.midaLot)||'—'}</td>
+          <td class="amp-td"><span class="cell-amp${r.midaDose===''?' empty':''}">${midaAmp}</span></td>
+          <td class="cell-text num">${propVal}</td>
+          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.propLot)||'—'}</td>
+          <td class="amp-td"><span class="cell-amp${r.propDose===''?' empty':''}">${propAmp}</span></td>
+          <td class="cell-text" style="color:var(--muted);font-size:12px">${esc(r.memo)||''}</td>
+          <td class="cell-actions">
+            <button class="act-btn act-edit" onclick="editRow('${r.id}')">✏️ 수정</button>
+            <button class="act-btn act-del"  onclick="askDelete('${r.id}')">🗑 삭제</button>
+          </td>
+        </tr>`;
+      }
+    });
+  });
+
+  tbody.innerHTML = html;
+
+  // 월 합계
+  // amp 카운트: 환자별 ceil(투여량/앰플용량) 합산 (미다졸람 5mL, 프로포폴 12mL)
+  const midaAmpCount = rows.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
+  const propAmpCount = rows.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
+  document.getElementById('month-summary').innerHTML = `
+    <div class="ms-title">월 amp 사용수 <span class="ms-note">(폐기량 포함)</span></div>
+    <div class="ms-items">
+      <div class="ms-item"><span class="ms-label">미다졸람</span><span class="ms-value">${midaAmpCount} amp</span></div>
+      <div class="ms-item"><span class="ms-label">프로포폴</span><span class="ms-value">${propAmpCount} amp</span></div>
+    </div>`;
+
+  updateChips();
+}
+
+function updateChips() {}
+
+// Enter 키 → 같은 열 다음 행
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.classList.contains('cell-input')) {
+    const row = e.target.closest('tr');
+    const next = row?.nextElementSibling;
+    if (next && next.classList.contains('row-editing')) {
+      const idx = Array.from(row.querySelectorAll('.cell-input')).indexOf(e.target);
+      const nextInputs = next.querySelectorAll('.cell-input');
+      if (nextInputs[idx]) nextInputs[idx].focus();
+    }
+    e.preventDefault();
+  }
+});
+
+/* ── 내보내기 / 가져오기 ── */
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `서울퍼스트내과_마약항정기록_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('📤 내보내기 완료');
+}
+function importData() { document.getElementById('import-file').click(); }
+function handleImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const imported = JSON.parse(evt.target.result);
+      const months = Object.keys(imported).length;
+      if (confirm(`${months}개월 데이터를 가져옵니다. 같은 달 데이터는 병합됩니다.`)) {
+        Object.keys(imported).forEach(ym => {
+          if (!db[ym]) db[ym] = [];
+          const existingIds = new Set(db[ym].map(r => r.id));
+          imported[ym].forEach(r => { if (!existingIds.has(r.id)) db[ym].push(r); });
+        });
+        saveDb(); render(); showToast('📥 가져오기 완료');
+      }
+    } catch { alert('파일 형식이 올바르지 않습니다.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+render();
+// Firestore 로드·실시간 동기화는 로그인 성공 후 startSecureData()에서 시작됨
+</script>
+</body>
+</html>
