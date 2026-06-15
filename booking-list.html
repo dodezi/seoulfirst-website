@@ -87,6 +87,9 @@
     tbody td { padding: 11px 12px; font-size: 13px; color: #333; vertical-align: middle; }
     .td-num  { color: #aaa; font-size: 12px; width: 36px; text-align: center; }
     .td-name { font-weight: 600; white-space: nowrap; }
+    .btn-name-edit { margin-left: 6px; border: none; background: transparent; cursor: pointer; font-size: 12px; opacity: .35; padding: 2px; border-radius: 4px; transition: opacity .12s, background .12s; }
+    .td-name:hover .btn-name-edit { opacity: 1; }
+    .btn-name-edit:hover { background: #e8f4f4; }
     .td-phone { font-size: 14px; font-weight: 800; color: #0a5c5f; letter-spacing: .3px; white-space: nowrap; }
     .td-date  { font-size: 13px; white-space: nowrap; }
     .td-recv  { font-size: 11px; color: #aaa; white-space: nowrap; }
@@ -537,7 +540,13 @@ function renderTable() {
     ? allBookings.filter(b => b.deleted === true)
     : allBookings.filter(b => b.deleted !== true);
 
-  if (!isDeletedTab) {
+  if (q) {
+    // 검색 중에는 날짜·상태 필터를 무시하고 이름·연락처로 전체 검색
+    list = list.filter(b =>
+      (b.name||'').toLowerCase().includes(q) ||
+      (b.phone||'').replace(/-/g,'').includes(q.replace(/-/g,''))
+    );
+  } else if (!isDeletedTab) {
     if (currentFilter === '전체') {
       // 전체 탭: 대기중(전체) + 확정(오늘 날짜 한정)만 표시
       const today = new Date().toISOString().slice(0, 10);
@@ -551,11 +560,6 @@ function renderTable() {
       list = list.filter(b => (b.status || '대기중') === currentFilter);
     }
   }
-
-  if (q) list = list.filter(b =>
-    (b.name||'').toLowerCase().includes(q) ||
-    (b.phone||'').replace(/-/g,'').includes(q.replace(/-/g,''))
-  );
 
   // 통계
   const live = allBookings.filter(b => !b.deleted);
@@ -648,7 +652,7 @@ function renderTable() {
     return `
       <tr class="${isDeleted ? 'row-deleted' : ''}">
         <td class="td-num">${i+1}</td>
-        <td class="td-name">${esc(b.name||'-')}${srcTag}</td>
+        <td class="td-name">${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
         <td class="td-phone">${esc(formatPhone(b.phone))}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
@@ -709,6 +713,22 @@ async function cycleStatus(id, current) {
     renderTable();
     showToast(`✅ 상태: ${current} → ${next}`);
   } catch(e) { alert('상태 변경 오류: '+e.message); }
+}
+
+// ── 이름 수정 ────────────────────────────────────────────
+async function editName(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (!item) return;
+  const nv = prompt('이름을 수정하세요', item.name || '');
+  if (nv === null) return;            // 취소
+  const v = nv.trim();
+  if (v === (item.name || '')) return; // 변경 없음
+  try {
+    await db.collection('bookings').doc(id).update({ name: v });
+    item.name = v;
+    renderTable();
+    showToast(`✏️ 이름이 "${v}"(으)로 수정되었습니다.`);
+  } catch(e) { alert('이름 수정 오류: '+e.message); }
 }
 
 // ── 확인 직원 ────────────────────────────────────────────
