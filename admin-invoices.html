@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>거래명세서 관리 — 서울퍼스트내과</title>
+<style>
+:root {
+  --primary: #1a3a5c; --accent: #16a085; --border: #dde3ea;
+  --text: #2c3e50; --muted: #8a9ab0; --danger: #e74c3c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f9; color:var(--text); font-size:14px; }
+
+/* ── 헤더 ── */
+#header {
+  background: var(--primary); color: white; padding: 0 24px;
+  display: flex; align-items: center; gap: 16px; height: 54px;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.logo { font-size: 17px; font-weight: 900; cursor: pointer; }
+.logo span { color: #5dade2; }
+.header-title { font-size: 14px; opacity: .7; }
+.header-sep { width: 1px; height: 20px; background: rgba(255,255,255,.2); }
+.header-spacer { flex: 1; }
+.btn { padding: 7px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; transition: .15s; font-family: inherit; }
+.btn-home { background: rgba(255,255,255,.15); color: white; text-decoration:none; display:inline-flex; align-items:center; }
+.btn-home:hover { background: rgba(255,255,255,.25); }
+#logoutBtn { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.2); }
+
+/* ── 툴바 ── */
+#toolbar { background: white; border-bottom: 2px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tb-title { font-size: 16px; font-weight: 800; color: var(--primary); display:flex; align-items:center; gap:8px; }
+.toolbar-spacer { flex: 1; }
+.search-box input { padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; width: 220px; }
+.search-box input:focus { outline: none; border-color: var(--accent); }
+.btn-upload { background: var(--accent); color: #fff; font-size: 14px; padding: 9px 18px; }
+.btn-upload:hover { background: #12876f; }
+.btn-csv { background: #ecf3f9; color: #2471a3; }
+.btn-csv:hover { background: #d6eaf8; }
+
+/* ── 통계 ── */
+#stats { padding: 14px 24px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+.stat-chip { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.chip-total { background: #e8f6f3; color: #16a085; }
+.chip-month { background: #eaf2fb; color: #2471a3; }
+.chip-sum   { background: #fef5e7; color: #e67e22; }
+
+/* ── 표 ── */
+#wrap { padding: 16px 24px 60px; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+thead th { background: #f8fafc; padding: 12px 12px; font-size: 12px; font-weight: 700; color: #555; border-bottom: 2px solid #e8ecf0; text-align: left; white-space: nowrap; }
+tbody td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid #f0f2f4; vertical-align: middle; }
+tbody tr:hover { background: #f9fcfb; }
+.td-date { white-space: nowrap; color: #555; }
+.td-vendor { font-weight: 700; color: var(--primary); }
+.td-amount { text-align: right; font-weight: 800; color: #16895f; white-space: nowrap; }
+.td-items { color: #555; font-size: 12.5px; max-width: 320px; }
+.thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #e0e4ea; }
+.no-thumb { width: 46px; height: 46px; border-radius: 6px; background: #f0f2f4; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 18px; }
+.cell-input { width: 100%; border: 1px solid #cdd5dd; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; }
+.cell-input:focus { outline: none; border-color: var(--accent); }
+.parsed-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #e8f6f3; color: #16a085; margin-left: 6px; }
+.manual-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #eef0f3; color: #888; margin-left: 6px; }
+.act-btn { border: none; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.act-edit { background: #e0e4ea; color: #555; }
+.act-save { background: var(--accent); color: #fff; }
+.act-del  { background: #fdecea; color: var(--danger); }
+.empty-msg { text-align: center; color: var(--muted); padding: 40px; }
+
+/* ── 로그인 게이트 ── */
+#authGate { position: fixed; inset: 0; background: linear-gradient(135deg,#1a3a5c,#16a085); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#authGate.hidden { display: none; }
+.login-box { background: #fff; border-radius: 16px; padding: 44px 38px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.login-box h2 { color: var(--primary); font-size: 20px; margin-bottom: 6px; text-align: center; }
+.login-box p { color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 24px; }
+.login-box input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px; font-family: inherit; }
+.login-box input:focus { outline: none; border-color: var(--accent); }
+.btn-login { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.login-error { color: var(--danger); font-size: 12.5px; text-align: center; min-height: 18px; margin-top: 8px; }
+
+/* ── 이미지 라이트박스 ── */
+#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1100; align-items: center; justify-content: center; padding: 30px; }
+#lightbox.on { display: flex; }
+#lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+
+/* ── 토스트 ── */
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .25s; z-index: 1200; pointer-events: none; }
+#toast.show { opacity: 1; }
+
+/* ── 업로드 진행 ── */
+#uploadBar { display: none; position: fixed; top: 54px; left: 0; right: 0; background: #16a085; color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; z-index: 90; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span class="logo" onclick="location.href='admin.html'">서울<span>퍼스트</span>내과</span>
+  <span class="header-sep"></span>
+  <span class="header-title">🧾 거래명세서 관리</span>
+  <span class="header-spacer"></span>
+  <a class="btn btn-home" href="admin.html">🏠 관리홈</a>
+  <button class="btn" id="logoutBtn" style="display:none">로그아웃</button>
+</div>
+
+<div id="uploadBar">📤 사진 업로드 중…</div>
+
+<div id="toolbar">
+  <span class="tb-title">🧾 거래명세서</span>
+  <div class="toolbar-spacer"></div>
+  <div class="search-box"><input type="text" id="searchInput" placeholder="업체·품목 검색…"></div>
+  <button class="btn btn-csv" onclick="exportCsv()">⬇️ CSV 내보내기</button>
+  <button class="btn btn-upload" onclick="document.getElementById('photoInput').click()">📷 명세서 사진 추가</button>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+</div>
+
+<div id="stats"></div>
+
+<div id="wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th style="width:110px">거래일</th>
+        <th style="width:160px">업체</th>
+        <th>품목 요약</th>
+        <th style="width:120px;text-align:right">금액(원)</th>
+        <th style="width:60px">사진</th>
+        <th style="width:140px">메모</th>
+        <th style="width:150px;text-align:center">작업</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div id="authGate">
+  <div class="login-box">
+    <h2>거래명세서 관리</h2>
+    <p>관리자 로그인이 필요합니다</p>
+    <input type="email" id="lEmail" placeholder="이메일" autocomplete="username">
+    <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password">
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="this.classList.remove('on')"><img id="lightboxImg" src="" alt=""></div>
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+<script>
+// ── Firebase 초기화 ──
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+    authDomain: "seoulfirst-ba9d4.firebaseapp.com",
+    projectId: "seoulfirst-ba9d4",
+    storageBucket: "seoulfirst-ba9d4.firebasestorage.app",
+    messagingSenderId: "702099053597",
+    appId: "1:702099053597:web:27efd596ee2156a8fefaf4"
+  });
+}
+const fsdb = firebase.firestore();
+const auth = firebase.auth();
+const storage = firebase.storage();
+const COL = 'invoices';
+
+let invoices = [];          // 전체 목록
+let editingIds = new Set(); // 편집 중 id
+let _started = false;
+
+// ── 로그인 ──
+function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw = document.getElementById('lPw').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중…'; btn.disabled = true;
+  auth.signInWithEmailAndPassword(email, pw).catch(() => {
+    err.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+    btn.textContent = '로그인'; btn.disabled = false;
+  });
+}
+auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('authGate');
+  const lo = document.getElementById('logoutBtn');
+  if (user) {
+    gate.classList.add('hidden');
+    lo.style.display = ''; lo.title = user.email + ' — 로그아웃';
+    if (!_started) { _started = true; startRealtime(); }
+  } else {
+    gate.classList.remove('hidden');
+    lo.style.display = 'none';
+  }
+});
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+document.getElementById('searchInput').addEventListener('input', render);
+
+// ── 실시간 동기화 ──
+function startRealtime() {
+  fsdb.collection(COL).orderBy('date', 'desc').onSnapshot(snap => {
+    invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  }, err => {
+    console.error(err);
+    showToast('⚠️ 데이터 로드 실패: ' + err.message);
+  });
+}
+
+// ── 유틸 ──
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function fmtAmount(n) { const x = parseFloat(n); return isNaN(x) ? '' : x.toLocaleString('ko-KR'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function openImg(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('on');
+}
+
+// ── 사진 추가 → Storage 업로드 → 빈 행 생성(수동 입력/추후 자동 파싱) ──
+async function handlePhoto(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const bar = document.getElementById('uploadBar');
+  bar.style.display = 'block';
+  try {
+    const id = fsdb.collection(COL).doc().id;
+    const path = `invoices/${id}_${file.name}`;
+    const ref = storage.ref().child(path);
+    const snap = await ref.put(file);
+    const url = await snap.ref.getDownloadURL();
+    await fsdb.collection(COL).doc(id).set({
+      date: new Date().toISOString().slice(0,10),
+      vendor: '', items: '', amount: '', memo: '',
+      imageUrl: url, imagePath: path, source: 'manual',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    editingIds.add(id);
+    showToast('✅ 사진 업로드 완료 — 업체·금액을 입력하세요.');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ 업로드 실패: ' + err.message);
+  } finally {
+    bar.style.display = 'none';
+  }
+}
+
+// ── 편집/저장/삭제 ──
+function editRow(id) { editingIds.add(id); render(); }
+async function saveRow(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) return;
+  const get = f => tr.querySelector(`[data-field="${f}"]`)?.value ?? '';
+  const upd = {
+    date: get('date'), vendor: get('vendor').trim(),
+    items: get('items').trim(), amount: get('amount').replace(/[^0-9.]/g,''),
+    memo: get('memo').trim()
+  };
+  try {
+    await fsdb.collection(COL).doc(id).update(upd);
+    editingIds.delete(id);
+    showToast('💾 저장되었습니다.');
+  } catch (err) { alert('저장 오류: ' + err.message); }
+}
+let pendingDel = null;
+async function delRow(id) {
+  const it = invoices.find(b => b.id === id);
+  const label = it ? `${it.vendor || '(업체 미입력)'} / ${it.date || ''}` : '이 명세서';
+  if (!confirm(`"${label}" 명세서를 삭제하시겠습니까?\n사진도 함께 삭제됩니다.`)) return;
+  try {
+    if (it?.imagePath) { try { await storage.ref().child(it.imagePath).delete(); } catch(_){} }
+    await fsdb.collection(COL).doc(id).delete();
+    showToast('🗑️ 삭제되었습니다.');
+  } catch (err) { alert('삭제 오류: ' + err.message); }
+}
+
+// ── 렌더 ──
+function render() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let list = invoices.slice();
+  if (q) list = list.filter(b =>
+    (b.vendor||'').toLowerCase().includes(q) || (b.items||'').toLowerCase().includes(q)
+  );
+
+  // 통계
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthList = invoices.filter(b => (b.date||'').startsWith(thisMonth));
+  const monthSum = monthList.reduce((s,b) => s + (parseFloat(b.amount)||0), 0);
+  document.getElementById('stats').innerHTML = `
+    <span class="stat-chip chip-total">전체 ${invoices.length}건</span>
+    <span class="stat-chip chip-month">이번 달 ${monthList.length}건</span>
+    <span class="stat-chip chip-sum">이번 달 합계 ${monthSum.toLocaleString('ko-KR')}원</span>`;
+
+  const tbody = document.getElementById('tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">${invoices.length ? '검색 결과가 없습니다.' : '아직 등록된 명세서가 없습니다. [📷 명세서 사진 추가]로 시작하세요.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((b, i) => {
+    const editing = editingIds.has(b.id);
+    const badge = b.source === 'telegram' || b.source === 'parsed'
+      ? '<span class="parsed-badge">자동</span>' : '<span class="manual-badge">수동</span>';
+    const thumb = b.imageUrl
+      ? `<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="명세서">`
+      : `<div class="no-thumb">🧾</div>`;
+
+    if (editing) {
+      return `<tr data-id="${b.id}">
+        <td>${i+1}</td>
+        <td><input class="cell-input" type="date" data-field="date" value="${esc(b.date)}"></td>
+        <td><input class="cell-input" type="text" data-field="vendor" value="${esc(b.vendor)}" placeholder="업체명"></td>
+        <td><input class="cell-input" type="text" data-field="items" value="${esc(b.items)}" placeholder="품목 요약"></td>
+        <td><input class="cell-input" type="text" data-field="amount" value="${esc(b.amount)}" placeholder="금액" style="text-align:right"></td>
+        <td>${thumb}</td>
+        <td><input class="cell-input" type="text" data-field="memo" value="${esc(b.memo)}" placeholder="메모"></td>
+        <td style="text-align:center">
+          <button class="act-btn act-save" onclick="saveRow('${b.id}')">💾 저장</button>
+        </td>
+      </tr>`;
+    }
+    return `<tr data-id="${b.id}">
+      <td>${i+1}</td>
+      <td class="td-date">${esc(b.date)||'—'}</td>
+      <td class="td-vendor">${esc(b.vendor)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
+      <td class="td-items">${esc(b.items)||'<span style="color:#ccc">—</span>'}</td>
+      <td class="td-amount">${fmtAmount(b.amount)||'—'}</td>
+      <td>${thumb}</td>
+      <td style="color:#888;font-size:12px">${esc(b.memo)||''}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="act-btn act-edit" onclick="editRow('${b.id}')">✏️ 수정</button>
+        <button class="act-btn act-del" onclick="delRow('${b.id}')">삭제</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CSV 내보내기 ──
+function exportCsv() {
+  if (!invoices.length) { showToast('내보낼 데이터가 없습니다.'); return; }
+  const rows = [['거래일','업체','품목요약','금액','메모','등록방식']];
+  invoices.forEach(b => rows.push([
+    b.date||'', b.vendor||'', b.items||'', b.amount||'', b.memo||'',
+    (b.source==='telegram'||b.source==='parsed')?'자동':'수동'
+  ]));
+  const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `거래명세서_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇️ CSV를 내려받았습니다.');
+}
+</script>
+</body>
+</html>
