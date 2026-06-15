@@ -213,11 +213,12 @@
     .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
     /* ── 날짜 상세 모달 행 ── */
-    .day-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid #f0f2f4; cursor: pointer; border-radius: 8px; transition: background .12s; }
+    .day-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-bottom: 1px solid #f0f2f4; cursor: pointer; border-radius: 8px; transition: background .12s; }
     .day-row:hover { background: #f4f8fb; }
-    .day-row .day-time { font-weight: 700; color: #1b5e8a; font-size: 14px; min-width: 48px; }
+    .day-row .day-time { font-weight: 700; color: #1b5e8a; font-size: 14px; min-width: 48px; padding-top: 2px; }
+    .day-row .day-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
     .day-row .day-name { font-weight: 700; color: #1e2a38; white-space: nowrap; }
-    .day-row .day-svc { flex: 1; font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .day-row .day-svc { font-size: 12px; color: #555; white-space: normal; line-height: 1.4; }
 
     /* ── 컴팩트 월간 달력 (명단 위) ── */
     #miniSchedule { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 14px 16px 16px; margin-bottom: 18px; }
@@ -402,7 +403,7 @@
 
 <!-- ── 날짜별 확정 일정 상세 모달 ── -->
 <div class="form-modal" id="dayModal">
-  <div class="form-box" style="width:420px;">
+  <div class="form-box" style="width:600px;max-width:95vw;max-height:85vh;overflow-y:auto;">
     <h3 id="dayModalTitle">📅 일정</h3>
     <p class="sub" id="dayModalSub">확정 검사 예약</p>
     <div id="dayModalList"></div>
@@ -995,8 +996,10 @@ function openDayDetail(dateStr) {
         const st = b.status || '확정';
         return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
           <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
-          <span class="day-name">${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
-          <span class="day-svc">${esc(b.service||'')}</span>
+          <div class="day-info">
+            <span class="day-name">${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
+            <span class="day-svc">${esc(b.service||'')}</span>
+          </div>
           <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
         </div>`;
       }).join('')
