@@ -99,6 +99,7 @@ tbody tr:hover { background: #f9fcfb; }
   <span class="header-sep"></span>
   <span class="header-title">🧾 거래명세서 관리</span>
   <span class="header-spacer"></span>
+  <button class="btn" id="apiKeyBtn" onclick="openApiModal()" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)">🔑 AI 키</button>
   <a class="btn btn-home" href="admin.html">🏠 관리홈</a>
   <button class="btn" id="logoutBtn" style="display:none">로그아웃</button>
 </div>
@@ -146,6 +147,20 @@ tbody tr:hover { background: #f9fcfb; }
 </div>
 
 <div id="lightbox" onclick="this.classList.remove('on')"><img id="lightboxImg" src="" alt=""></div>
+
+<!-- API 키 설정 모달 -->
+<div id="apiModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;padding:30px 28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h2 style="color:var(--primary);font-size:18px;margin-bottom:8px;">🔑 Anthropic API 키 설정</h2>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px;">사진을 자동으로 읽어 업체·금액을 채우는 데 사용됩니다. 종합검진에서 쓰는 키와 동일합니다.<br>키 발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:14px;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" onclick="closeApiModal()" style="background:#eef0f3;color:#555;">취소</button>
+      <button class="btn" onclick="saveApiKey()" style="background:var(--accent);color:#fff;">저장</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- Firebase SDK -->
@@ -170,10 +185,25 @@ const fsdb = firebase.firestore();
 const auth = firebase.auth();
 const storage = firebase.storage();
 const COL = 'invoices';
+const API_KEY_STORE = 'sf_api_key';  // 종합검진과 동일 키 공유
 
 let invoices = [];          // 전체 목록
 let editingIds = new Set(); // 편집 중 id
+let parsingIds = new Set(); // 자동 인식 중 id
 let _started = false;
+
+// ── API 키 모달 ──
+function openApiModal() {
+  document.getElementById('apiKeyInput').value = localStorage.getItem(API_KEY_STORE) || '';
+  document.getElementById('apiModal').style.display = 'flex';
+}
+function closeApiModal() { document.getElementById('apiModal').style.display = 'none'; }
+function saveApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(API_KEY_STORE, v);
+  closeApiModal();
+  showToast('🔑 API 키가 저장되었습니다.');
+}
 
 // ── 로그인 ──
 function doLogin() {
@@ -230,15 +260,17 @@ function openImg(url) {
   document.getElementById('lightbox').classList.add('on');
 }
 
-// ── 사진 추가 → Storage 업로드 → 빈 행 생성(수동 입력/추후 자동 파싱) ──
+// ── 사진 추가 → Storage 업로드 → 자동 파싱 ──
 async function handlePhoto(e) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
   const bar = document.getElementById('uploadBar');
   bar.style.display = 'block';
+  let newId = null;
   try {
     const id = fsdb.collection(COL).doc().id;
+    newId = id;
     const path = `invoices/${id}_${file.name}`;
     const ref = storage.ref().child(path);
     const snap = await ref.put(file);
@@ -249,13 +281,134 @@ async function handlePhoto(e) {
       imageUrl: url, imagePath: path, source: 'manual',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    editingIds.add(id);
-    showToast('✅ 사진 업로드 완료 — 업체·금액을 입력하세요.');
+    showToast('✅ 사진 업로드 완료 — AI가 내용을 읽는 중…');
   } catch (err) {
     console.error(err);
     showToast('⚠️ 업로드 실패: ' + err.message);
-  } finally {
     bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'none';
+  // 자동 파싱 (실패해도 행은 남고 수동 입력 가능)
+  await parseInvoice(newId, file);
+}
+
+// ── 파일 → base64 ──
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Claude Vision 호출 → 명세서 항목 추출 ──
+async function callClaudeVision(apiKey, b64, mediaType) {
+  const prompt = `이 이미지는 거래명세서 또는 세금계산서입니다. 다음 항목을 추출해서 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만.
+{
+  "date": "거래일자 YYYY-MM-DD 형식, 없으면 빈 문자열",
+  "vendor": "공급자(판매처) 상호명",
+  "items": "주요 품목들을 한 줄로 요약 (예: 미다졸람주 외 3건)",
+  "amount": 합계금액 숫자만 (콤마·원 제외, 없으면 0)
+}`;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+          { type: 'text', text: prompt }
+        ]
+      }]
+    })
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`API ${res.status}: ${t.slice(0,120)}`);
+  }
+  const data = await res.json();
+  let txt = (data.content?.[0]?.text || '').trim();
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('추출 결과를 해석할 수 없습니다.');
+  return JSON.parse(m[0]);
+}
+
+// ── 한 건 자동 파싱 ──
+async function parseInvoice(id, file) {
+  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
+  if (!apiKey) {
+    showToast('🔑 AI 키가 없어 자동인식을 건너뜁니다. 우측 상단 🔑 AI 키에서 설정하세요.');
+    editingIds.add(id); render();
+    return;
+  }
+  const supported = ['image/jpeg','image/png','image/webp','image/gif'];
+  if (!supported.includes(file.type)) {
+    showToast('⚠️ 이 사진 형식은 AI 인식이 안 됩니다(JPEG/PNG 권장). 수동 입력하세요.');
+    editingIds.add(id); render();
+    return;
+  }
+  parsingIds.add(id); render();
+  try {
+    const b64 = await fileToBase64(file);
+    const r = await callClaudeVision(apiKey, b64, file.type);
+    const upd = {
+      date: r.date || new Date().toISOString().slice(0,10),
+      vendor: (r.vendor || '').toString().trim(),
+      items: (r.items || '').toString().trim(),
+      amount: String(r.amount || '').replace(/[^0-9.]/g,''),
+      source: 'parsed',
+      parsedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await fsdb.collection(COL).doc(id).update(upd);
+    showToast('🤖 AI 자동 인식 완료 — 내용을 확인해 주세요.');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ 자동 인식 실패: ' + err.message + ' (수동 입력 가능)');
+    editingIds.add(id);
+  } finally {
+    parsingIds.delete(id);
+    render();
+  }
+}
+
+// ── 기존 명세서 다시 인식 (저장된 이미지로) ──
+async function reparse(id) {
+  const it = invoices.find(b => b.id === id);
+  if (!it || !it.imageUrl) { showToast('사진이 없어 인식할 수 없습니다.'); return; }
+  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
+  if (!apiKey) { openApiModal(); return; }
+  parsingIds.add(id); render();
+  try {
+    const resp = await fetch(it.imageUrl);
+    const blob = await resp.blob();
+    const file = new File([blob], 'invoice', { type: blob.type });
+    const supported = ['image/jpeg','image/png','image/webp','image/gif'];
+    if (!supported.includes(blob.type)) throw new Error('지원하지 않는 이미지 형식');
+    const b64 = await fileToBase64(file);
+    const r = await callClaudeVision(apiKey, b64, blob.type);
+    await fsdb.collection(COL).doc(id).update({
+      date: r.date || it.date || '',
+      vendor: (r.vendor || '').toString().trim(),
+      items: (r.items || '').toString().trim(),
+      amount: String(r.amount || '').replace(/[^0-9.]/g,''),
+      source: 'parsed',
+      parsedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('🤖 다시 인식 완료.');
+  } catch (err) {
+    showToast('⚠️ 인식 실패: ' + err.message);
+  } finally {
+    parsingIds.delete(id); render();
   }
 }
 
@@ -313,11 +466,22 @@ function render() {
 
   tbody.innerHTML = list.map((b, i) => {
     const editing = editingIds.has(b.id);
+    const parsing = parsingIds.has(b.id);
     const badge = b.source === 'telegram' || b.source === 'parsed'
       ? '<span class="parsed-badge">자동</span>' : '<span class="manual-badge">수동</span>';
     const thumb = b.imageUrl
       ? `<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="명세서">`
       : `<div class="no-thumb">🧾</div>`;
+
+    if (parsing) {
+      return `<tr data-id="${b.id}">
+        <td>${i+1}</td>
+        <td class="td-date">${esc(b.date)||'—'}</td>
+        <td colspan="4" style="color:#16a085;font-weight:600">🤖 AI가 명세서를 읽는 중입니다…</td>
+        <td>${thumb}</td>
+        <td style="text-align:center;color:#aaa">잠시만요</td>
+      </tr>`;
+    }
 
     if (editing) {
       return `<tr data-id="${b.id}">
@@ -342,6 +506,7 @@ function render() {
       <td>${thumb}</td>
       <td style="color:#888;font-size:12px">${esc(b.memo)||''}</td>
       <td style="text-align:center;white-space:nowrap">
+        ${b.imageUrl ? `<button class="act-btn" style="background:#e8f6f3;color:#16a085" onclick="reparse('${b.id}')" title="AI로 다시 인식">🔄</button>` : ''}
         <button class="act-btn act-edit" onclick="editRow('${b.id}')">✏️ 수정</button>
         <button class="act-btn act-del" onclick="delRow('${b.id}')">삭제</button>
       </td>
