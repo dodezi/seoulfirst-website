@@ -309,7 +309,7 @@ async function callClaudeVision(apiKey, b64, mediaType) {
 {
   "date": "거래일자 YYYY-MM-DD 형식, 없으면 빈 문자열",
   "vendor": "공급자(판매처) 상호명",
-  "items": "주요 품목들을 한 줄로 요약 (예: 미다졸람주 외 3건)",
+  "items": "명세서에 적힌 모든 품목명을 표기된 순서대로 쉼표(, )로 구분해 그대로 나열. 임의로 요약·생략하지 말 것. 규격·수량은 품목명 옆에 적힌 그대로 포함",
   "amount": 합계금액 숫자만 (콤마·원 제외, 없으면 0)
 }`;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -323,6 +323,7 @@ async function callClaudeVision(apiKey, b64, mediaType) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
+      temperature: 0,
       messages: [{
         role: 'user',
         content: [
