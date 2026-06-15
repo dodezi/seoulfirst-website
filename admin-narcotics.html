@@ -92,22 +92,22 @@ thead th {
 thead th:first-child { width: 40px; text-align: center; }
 thead th.num-col { text-align: center; }
 
-/* 제품번호 셀 중앙정렬 */
-thead th:nth-child(6), thead th:nth-child(9),
-tbody td:nth-child(6), tbody td:nth-child(9),
-tfoot td:nth-child(6), tfoot td:nth-child(9) { text-align: center; }
+/* 제품번호 셀 중앙정렬 (미다lot=6, 프폴lot=10) */
+thead th:nth-child(6), thead th:nth-child(10),
+tbody td:nth-child(6), tbody td:nth-child(10),
+tfoot td:nth-child(6), tfoot td:nth-child(10) { text-align: center; }
 tbody td:nth-child(6) .cell-text,
-tbody td:nth-child(9) .cell-text { text-align: center; }
+tbody td:nth-child(10) .cell-text { text-align: center; }
 
 /* amp 셀 오른쪽 여백 확보 */
 thead th:nth-child(7),
 tbody td:nth-child(7),
 tfoot td:nth-child(7) { padding-right: 10px !important; }
 
-/* 프로포폴 세트 시작 구분선 (8번째 열 = 프로포폴 mL) */
-thead th:nth-child(8),
-tbody td:nth-child(8),
-tfoot td:nth-child(8) {
+/* 프로포폴 세트 시작 구분선 (9번째 열 = 프로포폴 mL) */
+thead th:nth-child(9),
+tbody td:nth-child(9),
+tfoot td:nth-child(9) {
   border-left: 4px solid #4a90c4 !important;
   padding-left: 10px !important;
 }
@@ -341,13 +341,13 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
   #sync-indicator { display: none !important; }
 
   /* 비고·작업 열 인쇄 시 숨김 */
-  #main-table th:nth-child(11), #main-table td:nth-child(11),
-  #main-table th:nth-child(12), #main-table td:nth-child(12) { display: none !important; }
+  #main-table th:nth-child(13), #main-table td:nth-child(13),
+  #main-table th:nth-child(14), #main-table td:nth-child(14) { display: none !important; }
 
-  /* 좌우 외곽 프레임 — 헤더와 데이터 박스를 프로포폴 amp(10열)에서 동일하게 마감
+  /* 좌우 외곽 프레임 — 헤더와 데이터 박스를 프로포폴 폐기(12열)에서 동일하게 마감
      (날짜 밴드 행은 제외 → 밴드 왼쪽 잔선 방지) */
-  #main-table thead th:nth-child(10),
-  #main-table tbody tr:not(.date-group-row) td:nth-child(10) { border-right: 1.5px solid #000 !important; }
+  #main-table thead th:nth-child(12),
+  #main-table tbody tr:not(.date-group-row) td:nth-child(12) { border-right: 1.5px solid #000 !important; }
   #main-table thead th:nth-child(1),
   #main-table tbody tr:not(.date-group-row) td:nth-child(1)  { border-left: 1.5px solid #000 !important; }
 
@@ -375,17 +375,19 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
   #main-table { width: 193mm; table-layout: fixed; font-size: 9.5px;
                 border-collapse: collapse; }
 
-  /* 열 너비 A4 세로(190mm 가용) 기준 배분 — 비고·작업 제외 10열 */
+  /* 열 너비 A4 세로(193mm 가용) 기준 배분 — 비고·작업 제외 12열 */
   #main-table th:nth-child(1)  { width: 6mm; }   /* # */
-  #main-table th:nth-child(2)  { width: 17mm; }  /* 시술일 */
+  #main-table th:nth-child(2)  { width: 15mm; }  /* 시술일 */
   #main-table th:nth-child(3)  { width: 18mm; }  /* 환자번호 */
-  #main-table th:nth-child(4)  { width: 20mm; }  /* 성명 */
-  #main-table th:nth-child(5)  { width: 20mm; }  /* 미다졸람 mL */
-  #main-table th:nth-child(6)  { width: 28mm; }  /* 미다졸람 lot */
-  #main-table th:nth-child(7)  { width: 18mm; }  /* amp */
-  #main-table th:nth-child(8)  { width: 20mm; }  /* 프로포폴 mL */
-  #main-table th:nth-child(9)  { width: 28mm; }  /* 포폴 lot */
-  #main-table th:nth-child(10) { width: 18mm; }  /* amp */
+  #main-table th:nth-child(4)  { width: 18mm; }  /* 성명 */
+  #main-table th:nth-child(5)  { width: 15mm; }  /* 미다졸람 mL */
+  #main-table th:nth-child(6)  { width: 26mm; }  /* 미다졸람 lot */
+  #main-table th:nth-child(7)  { width: 13mm; }  /* 미다 amp */
+  #main-table th:nth-child(8)  { width: 14mm; }  /* 미다 폐기 */
+  #main-table th:nth-child(9)  { width: 15mm; }  /* 프로포폴 mL */
+  #main-table th:nth-child(10) { width: 26mm; }  /* 포폴 lot */
+  #main-table th:nth-child(11) { width: 13mm; }  /* 포폴 amp */
+  #main-table th:nth-child(12) { width: 14mm; }  /* 포폴 폐기 */
 
   /* 헤더 행: 흑백에서 배경색 대신 굵은 하단 선으로 구분 */
   thead th {
@@ -395,6 +397,8 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
     border-left: 1px solid #000 !important;
     border-right: 1px solid #000 !important;
     text-align: center;
+    white-space: normal !important;   /* 단위(mL)가 칸을 넘으면 두 줄로 */
+    word-break: keep-all; line-height: 1.25;
   }
 
   /* 데이터 행 셀 — 균일한 검은 격자, 모든 칸 중앙정렬 */
@@ -406,9 +410,9 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
   .cell-text { padding: 5px 4px; text-align: center !important; }
   tbody td b { font-weight: 700; }
 
-  /* 프로포폴 세트 구분선 — 인쇄 시 더 두껍게 (데이터 셀에만) */
-  thead th:nth-child(8),
-  tbody td:nth-child(8) {
+  /* 프로포폴 세트 구분선 — 인쇄 시 더 두껍게 (9열 = 프로포폴 mL) */
+  thead th:nth-child(9),
+  tbody td:nth-child(9) {
     border-left: 3px solid #000 !important;
     padding-left: 6px !important;
   }
@@ -521,6 +525,7 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
   <div class="toolbar-sep"></div>
   <button class="btn-add" onclick="addRow()">＋ 행 추가</button>
   <div class="toolbar-spacer"></div>
+  <button class="btn" id="btn-show-deleted" onclick="toggleDeleted()" style="background:#fdecea;color:#c0392b;border:1px solid #f1b0a8;">🗑️ 삭제된 기록</button>
 </div>
 
 <!-- 테이블 -->
@@ -535,9 +540,11 @@ tr.row-editing td.amp-td { background: #e8f8f0; }
         <th class="num-col">미다졸람 (mL)</th>
         <th><span class="screen-only">미다졸람 제품번호</span><span class="print-only">미다졸람 lot</span></th>
         <th class="num-col">amp</th>
+        <th class="num-col">폐기(mL)</th>
         <th class="num-col">프로포폴 (mL)</th>
         <th><span class="screen-only">프로포폴 제품번호</span><span class="print-only">포폴 lot</span></th>
         <th class="num-col">amp</th>
+        <th class="num-col">폐기(mL)</th>
         <th>비고</th>
         <th style="width:130px;text-align:center;">작업</th>
       </tr>
@@ -698,6 +705,13 @@ function startRealtimeSync() {
 }
 function uuid()   { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function esc(v)   { return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+/* 폐기량(mL) 계산: 사용량이 없으면 null */
+function calcWaste(dose, ampSize) {
+  const ml = parseFloat(dose);
+  if (isNaN(ml) || ml <= 0 || dose === '') return null;
+  return ((Math.ceil(ml / ampSize) * ampSize) - ml).toFixed(1);
+}
 function ensureMonth(ym) { if (!db[ym]) db[ym] = []; }
 
 /* ── 월 이동 ── */
@@ -755,17 +769,22 @@ function saveRow(id) {
   showToast('💾 저장되었습니다.');
 }
 
-/* ── amp 실시간 계산 ── */
+/* ── amp + 폐기량 실시간 계산 ── */
 function updateAmp(id, drug, val) {
   const ml = parseFloat(val);
-  const divider = drug === 'mida' ? 5 : 12;
-  const el = document.getElementById(`amp-${drug}-${id}`);
-  if (!el) return;
-  if (isNaN(ml) || val === '') {
-    el.innerHTML = '—'; el.className = 'cell-amp empty';
+  const ampSize = drug === 'mida' ? 5 : 12;
+  const ampEl   = document.getElementById(`amp-${drug}-${id}`);
+  const wasteEl = document.getElementById(`waste-${drug}-${id}`);
+  if (!ampEl || !wasteEl) return;
+  if (isNaN(ml) || val === '' || ml <= 0) {
+    ampEl.innerHTML = '—';   ampEl.className = 'cell-amp empty';
+    wasteEl.innerHTML = '—'; wasteEl.className = 'cell-amp empty';
   } else {
-    el.innerHTML = `<span class="amp-num">${(ml / divider).toFixed(2)}</span><span class="amp-unit"> amp</span>`;
-    el.className = 'cell-amp';
+    ampEl.innerHTML = `<span class="amp-num">${(ml / ampSize).toFixed(2)}</span><span class="amp-unit"> amp</span>`;
+    ampEl.className = 'cell-amp';
+    const waste = Math.ceil(ml / ampSize) * ampSize - ml;
+    wasteEl.innerHTML = `<span class="amp-num">${waste.toFixed(1)}</span><span class="amp-unit"> mL</span>`;
+    wasteEl.className = 'cell-amp';
   }
 }
 
@@ -811,13 +830,34 @@ function closeDelModal() {
 function confirmDelete() {
   if (!pendingDeleteId) return;
   const id = pendingDeleteId;
-  db[currentMonth] = (db[currentMonth] || []).filter(r => r.id !== id);
-  if ((db[currentMonth] || []).length === 0) delete db[currentMonth];
+  const row = (db[currentMonth] || []).find(r => r.id === id);
+  if (row) row.deleted = true;
   saveDb();
   editingIds.delete(id);
   closeDelModal();
   render();
-  showToast('🗑️ 삭제되었습니다.');
+  showToast('🗑️ 삭제되었습니다. 삭제된 기록 버튼에서 복원할 수 있습니다.');
+}
+
+/* ── 복원 ── */
+function restoreRow(id) {
+  const row = (db[currentMonth] || []).find(r => r.id === id);
+  if (row) { delete row.deleted; saveDb(); render(); showToast('♻️ 복원되었습니다.'); }
+}
+
+/* ── 삭제된 기록 토글 ── */
+let showDeleted = false;
+function toggleDeleted() {
+  showDeleted = !showDeleted;
+  const btn = document.getElementById('btn-show-deleted');
+  if (showDeleted) {
+    btn.style.background = '#c0392b'; btn.style.color = '#fff';
+    btn.textContent = '✅ 삭제된 기록 닫기';
+  } else {
+    btn.style.background = '#fdecea'; btn.style.color = '#c0392b';
+    btn.textContent = '🗑️ 삭제된 기록';
+  }
+  render();
 }
 
 /* ── 렌더 ── */
@@ -830,7 +870,7 @@ function render() {
   const summary = document.getElementById('month-summary');
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">이 달에 기록이 없습니다. [＋ 행 추가] 버튼으로 입력하세요.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">이 달에 기록이 없습니다. [＋ 행 추가] 버튼으로 입력하세요.</td></tr>`;
     summary.innerHTML = '';
     updateChips();
     return;
@@ -861,13 +901,14 @@ function render() {
   dateKeys.forEach(dateKey => {
     const groupRows = groups[dateKey];
     // 앰플 수 = 환자별 ceil(투여량/앰플용량) 합산 (미다졸람 5mL, 프로포폴 12mL)
-    const dayMidaAmp = groupRows.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
-    const dayPropAmp = groupRows.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
+    const activeGroup = groupRows.filter(r => !r.deleted);
+    const dayMidaAmp = activeGroup.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
+    const dayPropAmp = activeGroup.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
 
     // 날짜 그룹 헤더
     if (dateKey === '__new__') {
       html += `<tr class="date-group-row">
-        <td colspan="12">
+        <td colspan="14">
           <span class="date-group-badge">✏️ 입력 중</span>
           새로 추가한 행
         </td>
@@ -879,9 +920,9 @@ function render() {
       const dowColor = d.getDay()===0 ? '#e74c3c' : d.getDay()===6 ? '#2980b9' : 'inherit';
       const midaPart = dayMidaAmp > 0 ? `미다졸람 ${dayMidaAmp}amp` : '';
       const propPart = dayPropAmp > 0 ? `프로포폴 ${dayPropAmp}amp` : '';
-      const subText = `${groupRows.length}명` + (midaPart ? ` · ${midaPart}` : '') + (propPart ? ` · ${propPart}` : '');
+      const subText = `${activeGroup.length}명` + (midaPart ? ` · ${midaPart}` : '') + (propPart ? ` · ${propPart}` : '');
       html += `<tr class="date-group-row">
-        <td colspan="12">
+        <td colspan="14">
           <span class="date-group-badge">${dateLabel}</span>
           <span style="color:${dowColor};font-weight:700;">${dow}요일</span>
           <span class="date-group-sub">${subText}</span>
@@ -891,11 +932,12 @@ function render() {
 
     // 해당 날짜 행들
     groupRows.forEach(r => {
+      if (r.deleted) return; // 소프트 삭제된 행은 일반 뷰에서 숨김
       const editing = editingIds.has(r.id) || !r.saved;
       rowNum++;
       if (editing) {
-        const midaAmp = r.midaDose !== '' ? `<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
-        const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        const midaWaste = calcWaste(r.midaDose, 5);
+        const propWaste = calcWaste(r.propDose, 12);
         html += `<tr class="row-editing" data-id="${r.id}">
           <td class="row-num">${rowNum}</td>
           <td data-label="시술일"><input class="cell-input" type="date" data-field="date" value="${esc(r.date)}"></td>
@@ -903,10 +945,12 @@ function render() {
           <td data-label="성명"><input class="cell-input" type="text" data-field="name" value="${esc(r.name)}" placeholder="홍길동"></td>
           <td data-label="미다졸람 mL"><input class="cell-input" type="number" data-field="midaDose" value="${esc(r.midaDose)}" placeholder="0.0" step="0.1" min="0" style="text-align:right" oninput="updateAmp('${r.id}','mida',this.value)"></td>
           <td data-label="미다졸람 제품번호"><input class="cell-input" type="text" data-field="midaLot" value="${esc(r.midaLot)}" placeholder="LOT번호"></td>
-          <td class="amp-td" data-label="미다졸람 amp"><span class="cell-amp${r.midaDose===''?' empty':''}" id="amp-mida-${r.id}">${midaAmp}</span></td>
+          <td class="amp-td" data-label="amp"><span class="cell-amp${r.midaDose===''?' empty':''}" id="amp-mida-${r.id}">${r.midaDose!==''?`<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>`:'—'}</span></td>
+          <td class="amp-td" data-label="폐기(mL)"><span class="cell-amp${midaWaste===null?' empty':''}" id="waste-mida-${r.id}">${midaWaste===null?'—':`<span class="amp-num">${midaWaste}</span><span class="amp-unit"> mL</span>`}</span></td>
           <td data-label="프로포폴 mL"><input class="cell-input" type="number" data-field="propDose" value="${esc(r.propDose)}" placeholder="0.0" step="0.5" min="0" style="text-align:right" oninput="updateAmp('${r.id}','prop',this.value)"></td>
           <td data-label="프로포폴 제품번호"><input class="cell-input" type="text" data-field="propLot" value="${esc(r.propLot)}" placeholder="LOT번호"></td>
-          <td class="amp-td" data-label="프로포폴 amp"><span class="cell-amp${r.propDose===''?' empty':''}" id="amp-prop-${r.id}">${propAmp}</span></td>
+          <td class="amp-td" data-label="amp"><span class="cell-amp${r.propDose===''?' empty':''}" id="amp-prop-${r.id}">${r.propDose!==''?`<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>`:'—'}</span></td>
+          <td class="amp-td" data-label="폐기(mL)"><span class="cell-amp${propWaste===null?' empty':''}" id="waste-prop-${r.id}">${propWaste===null?'—':`<span class="amp-num">${propWaste}</span><span class="amp-unit"> mL</span>`}</span></td>
           <td data-label="비고"><input class="cell-input" type="text" data-field="memo" value="${esc(r.memo)}" placeholder="비고"></td>
           <td class="cell-actions">
             <button class="act-btn act-save"   onclick="saveRow('${r.id}')">💾 저장</button>
@@ -914,10 +958,10 @@ function render() {
           </td>
         </tr>`;
       } else {
-        const midaVal = r.midaDose !== '' ? r.midaDose + ' mL' : '—';
-        const propVal = r.propDose !== '' ? r.propDose + ' mL' : '—';
-        const midaAmp = r.midaDose !== '' ? `<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
-        const propAmp = r.propDose !== '' ? `<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>` : '—';
+        const midaVal   = r.midaDose !== '' ? r.midaDose + ' mL' : '—';
+        const propVal   = r.propDose !== '' ? r.propDose + ' mL' : '—';
+        const midaWaste = calcWaste(r.midaDose, 5);
+        const propWaste = calcWaste(r.propDose, 12);
         html += `<tr class="row-saved" data-id="${r.id}">
           <td class="row-num">${rowNum}</td>
           <td class="cell-text" data-label="시술일" style="color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00').toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '—'}</td>
@@ -925,10 +969,12 @@ function render() {
           <td class="cell-text" data-label="성명"><b>${esc(r.name)||'<span style="color:var(--muted)">—</span>'}</b></td>
           <td class="cell-text num" data-label="미다졸람 mL">${midaVal}</td>
           <td class="cell-text" data-label="미다졸람 제품번호" style="font-size:12px;color:var(--muted)">${esc(r.midaLot)||'—'}</td>
-          <td class="amp-td" data-label="미다졸람 amp"><span class="cell-amp${r.midaDose===''?' empty':''}">${midaAmp}</span></td>
+          <td class="amp-td" data-label="amp"><span class="cell-amp${r.midaDose===''?' empty':''}">${r.midaDose!==''?`<span class="amp-num">${(parseFloat(r.midaDose)/5).toFixed(2)}</span><span class="amp-unit"> amp</span>`:'—'}</span></td>
+          <td class="amp-td" data-label="폐기(mL)"><span class="cell-amp${midaWaste===null?' empty':''}">${midaWaste===null?'—':`<span class="amp-num">${midaWaste}</span><span class="amp-unit"> mL</span>`}</span></td>
           <td class="cell-text num" data-label="프로포폴 mL">${propVal}</td>
           <td class="cell-text" data-label="프로포폴 제품번호" style="font-size:12px;color:var(--muted)">${esc(r.propLot)||'—'}</td>
-          <td class="amp-td" data-label="프로포폴 amp"><span class="cell-amp${r.propDose===''?' empty':''}">${propAmp}</span></td>
+          <td class="amp-td" data-label="amp"><span class="cell-amp${r.propDose===''?' empty':''}">${r.propDose!==''?`<span class="amp-num">${(parseFloat(r.propDose)/12).toFixed(2)}</span><span class="amp-unit"> amp</span>`:'—'}</span></td>
+          <td class="amp-td" data-label="폐기(mL)"><span class="cell-amp${propWaste===null?' empty':''}">${propWaste===null?'—':`<span class="amp-num">${propWaste}</span><span class="amp-unit"> mL</span>`}</span></td>
           <td class="cell-text" data-label="비고" style="color:var(--muted);font-size:12px">${esc(r.memo)||''}</td>
           <td class="cell-actions">
             <button class="act-btn act-edit" onclick="editRow('${r.id}')">✏️ 수정</button>
@@ -939,12 +985,46 @@ function render() {
     });
   });
 
+  // 삭제된 기록 섹션
+  if (showDeleted) {
+    const deletedRows = rows.filter(r => r.deleted);
+    if (deletedRows.length === 0) {
+      html += `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:16px;background:#fff8f8;">삭제된 기록이 없습니다.</td></tr>`;
+    } else {
+      html += `<tr class="date-group-row"><td colspan="14" style="background:#fdecea;color:#c0392b;">🗑️ 삭제된 기록 — ${deletedRows.length}건 (복원 가능)</td></tr>`;
+      deletedRows.forEach((r, i) => {
+        const midaVal   = r.midaDose ? r.midaDose + ' mL' : '—';
+        const propVal   = r.propDose ? r.propDose + ' mL' : '—';
+        const midaWaste = calcWaste(r.midaDose, 5);
+        const propWaste = calcWaste(r.propDose, 12);
+        const dateStr   = r.date ? new Date(r.date+'T00:00').toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '—';
+        html += `<tr style="opacity:.7;background:#fff8f8;" data-id="${r.id}">
+          <td class="row-num" style="color:#c0392b;">✕</td>
+          <td class="cell-text" style="color:var(--muted);font-size:12px">${dateStr}</td>
+          <td class="cell-text">${esc(r.chartNo)||'—'}</td>
+          <td class="cell-text"><b style="text-decoration:line-through">${esc(r.name)||'—'}</b></td>
+          <td class="cell-text num">${midaVal}</td>
+          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.midaLot)||'—'}</td>
+          <td class="amp-td"><span class="cell-amp${midaWaste===null?' empty':''}">${midaWaste===null?'—':`${midaWaste} mL`}</span></td>
+          <td class="cell-text num">${propVal}</td>
+          <td class="cell-text" style="font-size:12px;color:var(--muted)">${esc(r.propLot)||'—'}</td>
+          <td class="amp-td"><span class="cell-amp${propWaste===null?' empty':''}">${propWaste===null?'—':`${propWaste} mL`}</span></td>
+          <td class="cell-text" style="color:var(--muted);font-size:12px">${esc(r.memo)||''}</td>
+          <td class="cell-actions">
+            <button class="act-btn act-edit" onclick="restoreRow('${r.id}')">♻️ 복원</button>
+          </td>
+        </tr>`;
+      });
+    }
+  }
+
   tbody.innerHTML = html;
 
   // 월 합계
   // amp 카운트: 환자별 ceil(투여량/앰플용량) 합산 (미다졸람 5mL, 프로포폴 12mL)
-  const midaAmpCount = rows.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
-  const propAmpCount = rows.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
+  const activeRows = rows.filter(r => !r.deleted);
+  const midaAmpCount = activeRows.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
+  const propAmpCount = activeRows.reduce((s,r) => s + (parseFloat(r.propDose) > 0 ? Math.ceil(parseFloat(r.propDose) / 12) : 0), 0);
   document.getElementById('month-summary').innerHTML = `
     <div class="ms-title">월 amp 사용수 <span class="ms-note">(폐기량 포함)</span></div>
     <div class="ms-items">
