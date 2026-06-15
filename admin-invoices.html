@@ -204,13 +204,12 @@ tbody tr.main-row:hover { background: #f9fcfb; }
         직원이 텔레그램 봇에게 명세서 사진을 보내면, <b>이 페이지가 열려 있는 동안</b> 자동으로 받아 AI 인식합니다.<br>
         봇 토큰은 텔레그램 <b>@BotFather</b>에서 <code>/newbot</code>으로 발급받으세요.
       </p>
-      <label style="font-size:12px;color:var(--muted);font-weight:600">봇 토큰</label>
-      <input type="password" id="tgTokenInput" placeholder="1234567:ABCdef..." class="fin" style="margin-bottom:14px;margin-top:5px;">
-      <div id="tgStatus" style="font-size:13px;font-weight:700;margin-bottom:14px;"></div>
+      <div style="background:#e8f6f3;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#16895f;margin-bottom:14px;">
+        🟢 <b>서버 자동 연동 중</b><br>
+        직원이 텔레그램 봇에게 명세서 사진을 보내면, <b>이 페이지를 켜지 않아도</b> 서버가 24시간 자동으로 받아 AI 인식 후 목록에 추가합니다.
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button class="btn" onclick="closeTgModal()" style="background:#eef0f3;color:#555;">닫기</button>
-        <button class="btn" id="tgStopBtn" onclick="stopTelegram()" style="background:#fdecea;color:var(--danger);display:none;">⏹️ 연동 중지</button>
-        <button class="btn" id="tgStartBtn" onclick="startTelegram()" style="background:var(--accent);color:#fff;">▶️ 연동 시작</button>
+        <button class="btn" onclick="closeTgModal()" style="background:var(--accent);color:#fff;">확인</button>
       </div>
     </div>
   </div>
@@ -283,7 +282,7 @@ function doLogin() {
 auth.onAuthStateChanged(user => {
   const gate = document.getElementById('authGate');
   const lo = document.getElementById('logoutBtn');
-  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); updateTgUi(); if (localStorage.getItem(TG_ON) === '1') runTgLoop(); } }
+  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); localStorage.setItem(TG_ON, '0'); } }
   else { gate.classList.remove('hidden'); lo.style.display = 'none'; }
 });
 document.getElementById('btnLogin').addEventListener('click', doLogin);
@@ -534,11 +533,7 @@ async function quickDelete(id) {
 const TG_TOKEN = 'sf_tg_token', TG_OFFSET = 'sf_tg_offset', TG_ON = 'sf_tg_on';
 let tgTimer = null, tgBusy = false;
 
-function openTgModal() {
-  document.getElementById('tgTokenInput').value = localStorage.getItem(TG_TOKEN) || '';
-  updateTgUi();
-  document.getElementById('tgModal').classList.add('on');
-}
+function openTgModal() { document.getElementById('tgModal').classList.add('on'); }
 function closeTgModal() { document.getElementById('tgModal').classList.remove('on'); }
 function updateTgUi() {
   const on = localStorage.getItem(TG_ON) === '1';

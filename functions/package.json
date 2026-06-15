@@ -1,0 +1,13 @@
+{
+  "name": "seoulfirst-functions",
+  "description": "서울퍼스트내과 거래명세서 텔레그램 수신 함수",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.1.0"
+  },
+  "private": true
+}
