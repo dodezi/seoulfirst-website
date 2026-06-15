@@ -113,6 +113,7 @@ tbody tr.main-row:hover { background: #f9fcfb; }
   <span class="header-sep"></span>
   <span class="header-title">🧾 거래명세서 관리</span>
   <span class="header-spacer"></span>
+  <button class="btn" id="tgBtn" onclick="openTgModal()" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)">📨 텔레그램</button>
   <button class="btn" id="apiKeyBtn" onclick="openApiModal()" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)">🔑 AI 키</button>
   <a class="btn btn-home" href="admin.html">🏠 관리홈</a>
   <button class="btn" id="logoutBtn" style="display:none">로그아웃</button>
@@ -194,6 +195,27 @@ tbody tr.main-row:hover { background: #f9fcfb; }
   </div>
 </div>
 
+<!-- 텔레그램 모달 -->
+<div class="modal-bg" id="tgModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-body">
+      <h2 style="color:var(--primary);font-size:18px;margin-bottom:8px;">📨 텔레그램 연동</h2>
+      <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px;">
+        직원이 텔레그램 봇에게 명세서 사진을 보내면, <b>이 페이지가 열려 있는 동안</b> 자동으로 받아 AI 인식합니다.<br>
+        봇 토큰은 텔레그램 <b>@BotFather</b>에서 <code>/newbot</code>으로 발급받으세요.
+      </p>
+      <label style="font-size:12px;color:var(--muted);font-weight:600">봇 토큰</label>
+      <input type="password" id="tgTokenInput" placeholder="1234567:ABCdef..." class="fin" style="margin-bottom:14px;margin-top:5px;">
+      <div id="tgStatus" style="font-size:13px;font-weight:700;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn" onclick="closeTgModal()" style="background:#eef0f3;color:#555;">닫기</button>
+        <button class="btn" id="tgStopBtn" onclick="stopTelegram()" style="background:#fdecea;color:var(--danger);display:none;">⏹️ 연동 중지</button>
+        <button class="btn" id="tgStartBtn" onclick="startTelegram()" style="background:var(--accent);color:#fff;">▶️ 연동 시작</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- API 키 모달 -->
 <div class="modal-bg" id="apiModal">
   <div class="modal" style="width:440px">
@@ -261,7 +283,7 @@ function doLogin() {
 auth.onAuthStateChanged(user => {
   const gate = document.getElementById('authGate');
   const lo = document.getElementById('logoutBtn');
-  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); } }
+  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); updateTgUi(); if (localStorage.getItem(TG_ON) === '1') runTgLoop(); } }
   else { gate.classList.remove('hidden'); lo.style.display = 'none'; }
 });
 document.getElementById('btnLogin').addEventListener('click', doLogin);
@@ -285,7 +307,7 @@ function showToast(msg) { const t = document.getElementById('toast'); t.textCont
 function openImg(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').classList.add('on'); }
 function lineItems(b) { return Array.isArray(b.items) ? b.items : []; }
 function invoiceTotal(b) { if (b.totalAmount != null && b.totalAmount !== '') return num(b.totalAmount); return lineItems(b).reduce((s,it)=>s+num(it.amount),0); }
-function isParsed(b) { return b.source === 'parsed' || b.source === 'telegram'; }
+function isParsed(b) { return b.source === 'parsed'; }
 
 // ── 파일 → base64 ──
 function fileToBase64(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); }); }
@@ -408,7 +430,9 @@ function render() {
   }
   tbody.innerHTML = list.map((b, i) => {
     const its = lineItems(b);
-    const badge = isParsed(b) ? '<span class="parsed-badge">자동</span>' : '<span class="manual-badge">수동</span>';
+    const badge = b.source === 'parsed' ? '<span class="parsed-badge">자동</span>'
+      : b.source === 'telegram' ? '<span class="parsed-badge" style="background:#e3f0fb;color:#2471a3">📨 텔레그램</span>'
+      : '<span class="manual-badge">수동</span>';
     const thumb = b.imageUrl ? `<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="명세서">` : `<div class="no-thumb">🧾</div>`;
     const itemSummary = its.length
       ? `<span class="items-link" onclick="openDetail('${b.id}')">${esc(its[0].name || '품목')}${its.length>1 ? ` 외 ${its.length-1}건` : ''}</span>`
@@ -504,6 +528,87 @@ async function quickDelete(id) {
     await fsdb.collection(COL).doc(id).delete();
     showToast('🗑️ 삭제되었습니다.');
   } catch (err) { alert('삭제 오류: ' + err.message); }
+}
+
+// ── 텔레그램 연동 (브라우저 폴링) ──
+const TG_TOKEN = 'sf_tg_token', TG_OFFSET = 'sf_tg_offset', TG_ON = 'sf_tg_on';
+let tgTimer = null, tgBusy = false;
+
+function openTgModal() {
+  document.getElementById('tgTokenInput').value = localStorage.getItem(TG_TOKEN) || '';
+  updateTgUi();
+  document.getElementById('tgModal').classList.add('on');
+}
+function closeTgModal() { document.getElementById('tgModal').classList.remove('on'); }
+function updateTgUi() {
+  const on = localStorage.getItem(TG_ON) === '1';
+  const st = document.getElementById('tgStatus');
+  if (st) { st.textContent = on ? '🟢 연동 중 — 새 사진을 기다리는 중입니다.' : '⚪ 연동 중지됨'; st.style.color = on ? '#16a085' : '#999'; }
+  const startB = document.getElementById('tgStartBtn'), stopB = document.getElementById('tgStopBtn');
+  if (startB) startB.style.display = on ? 'none' : '';
+  if (stopB) stopB.style.display = on ? '' : 'none';
+  const hb = document.getElementById('tgBtn');
+  if (hb) hb.textContent = on ? '📨 텔레그램 🟢' : '📨 텔레그램';
+}
+function startTelegram() {
+  const token = document.getElementById('tgTokenInput').value.trim();
+  if (!token) { showToast('봇 토큰을 입력하세요.'); return; }
+  localStorage.setItem(TG_TOKEN, token);
+  localStorage.setItem(TG_ON, '1');
+  updateTgUi();
+  showToast('📨 텔레그램 연동을 시작합니다.');
+  runTgLoop();
+}
+function stopTelegram() { localStorage.setItem(TG_ON, '0'); if (tgTimer) clearTimeout(tgTimer); tgTimer = null; updateTgUi(); showToast('텔레그램 연동을 중지했습니다.'); }
+
+function runTgLoop() {
+  if (localStorage.getItem(TG_ON) !== '1') return;
+  tgPoll().finally(() => {
+    if (localStorage.getItem(TG_ON) === '1') tgTimer = setTimeout(runTgLoop, 5000);
+  });
+}
+async function tgPoll() {
+  if (tgBusy) return; tgBusy = true;
+  const token = localStorage.getItem(TG_TOKEN);
+  if (!token) { tgBusy = false; return; }
+  try {
+    let offset = parseInt(localStorage.getItem(TG_OFFSET) || '0', 10);
+    const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${offset}&timeout=0&allowed_updates=%5B%22message%22%5D`);
+    const d = await r.json();
+    if (!d.ok) { showToast('텔레그램 오류: ' + (d.description || '토큰 확인')); if (d.error_code === 401) stopTelegram(); return; }
+    for (const u of d.result) {
+      localStorage.setItem(TG_OFFSET, String(u.update_id + 1));
+      const msg = u.message; if (!msg) continue;
+      let fileId = null, fname = `tg_${Date.now()}.jpg`;
+      if (msg.photo && msg.photo.length) fileId = msg.photo[msg.photo.length - 1].file_id;
+      else if (msg.document && (msg.document.mime_type || '').startsWith('image/')) { fileId = msg.document.file_id; fname = msg.document.file_name || fname; }
+      if (!fileId) continue;
+      await tgIngest(token, fileId, fname, msg);
+    }
+  } catch (err) { console.error('tgPoll', err); }
+  finally { tgBusy = false; }
+}
+async function tgIngest(token, fileId, fname, msg) {
+  try {
+    const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+    const fd = await fr.json(); if (!fd.ok) return;
+    const url = `https://api.telegram.org/file/bot${token}/${fd.result.file_path}`;
+    const blob = await (await fetch(url)).blob();
+    const type = blob.type || 'image/jpeg';
+    const file = new File([blob], fname, { type });
+    const id = fsdb.collection(COL).doc().id;
+    const spath = `invoices/${id}_${fname}`;
+    const snap = await storage.ref().child(spath).put(file);
+    const durl = await snap.ref.getDownloadURL();
+    await fsdb.collection(COL).doc(id).set({
+      date: new Date().toISOString().slice(0,10), vendor: '', items: [], totalAmount: '',
+      memo: msg.caption || '', imageUrl: durl, imagePath: spath, source: 'telegram',
+      tgFrom: (msg.from && (msg.from.first_name || msg.from.username)) || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(`📨 텔레그램 명세서 수신 (${(msg.from && msg.from.first_name) || ''}) — AI 인식 중…`);
+    await parseOne(id, file);
+  } catch (err) { console.error('tgIngest', err); showToast('텔레그램 사진 처리 실패: ' + err.message); }
 }
 
 // ── CSV (품목별 행) ──
