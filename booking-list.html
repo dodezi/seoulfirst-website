@@ -553,7 +553,7 @@ function renderTable() {
   } else if (!isDeletedTab) {
     if (currentFilter === '전체') {
       // 전체 탭: 대기중(전체) + 확정(오늘 날짜 한정)만 표시
-      const today = new Date().toISOString().slice(0, 10);
+      const today = (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
       list = list.filter(b => {
         const s = b.status || '대기중';
         if (s === '대기중') return true;
@@ -952,7 +952,7 @@ function buildMonthGrid(maxEvents) {
 
   const firstDow   = new Date(calYear, calMonth, 1).getDay();   // 0=일
   const daysInMon  = new Date(calYear, calMonth+1, 0).getDate();
-  const todayStr   = new Date().toISOString().slice(0,10);
+  const todayStr   = (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
 
   let html = '';
   for (let i = 0; i < firstDow; i++) html += `<div class="cal-cell empty"></div>`;
