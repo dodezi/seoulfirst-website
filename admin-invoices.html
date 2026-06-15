@@ -12,12 +12,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f9; color:var(--text); font-size:14px; }
 
-/* ── 헤더 ── */
-#header {
-  background: var(--primary); color: white; padding: 0 24px;
-  display: flex; align-items: center; gap: 16px; height: 54px;
-  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2);
-}
+#header { background: var(--primary); color: white; padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 54px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 .logo { font-size: 17px; font-weight: 900; cursor: pointer; }
 .logo span { color: #5dade2; }
 .header-title { font-size: 14px; opacity: .7; }
@@ -28,7 +23,6 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6
 .btn-home:hover { background: rgba(255,255,255,.25); }
 #logoutBtn { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.2); }
 
-/* ── 툴바 ── */
 #toolbar { background: white; border-bottom: 2px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tb-title { font-size: 16px; font-weight: 800; color: var(--primary); display:flex; align-items:center; gap:8px; }
 .toolbar-spacer { flex: 1; }
@@ -38,37 +32,34 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6
 .btn-upload:hover { background: #12876f; }
 .btn-csv { background: #ecf3f9; color: #2471a3; }
 .btn-csv:hover { background: #d6eaf8; }
+.btn-batch { background: #fef5e7; color: #e67e22; }
+.btn-batch:hover { background: #fdebd0; }
 
-/* ── 통계 ── */
 #stats { padding: 14px 24px 0; display: flex; gap: 10px; flex-wrap: wrap; }
 .stat-chip { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
 .chip-total { background: #e8f6f3; color: #16a085; }
 .chip-month { background: #eaf2fb; color: #2471a3; }
 .chip-sum   { background: #fef5e7; color: #e67e22; }
 
-/* ── 표 ── */
 #wrap { padding: 16px 24px 60px; }
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 thead th { background: #f8fafc; padding: 12px 12px; font-size: 12px; font-weight: 700; color: #555; border-bottom: 2px solid #e8ecf0; text-align: left; white-space: nowrap; }
 tbody td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid #f0f2f4; vertical-align: middle; }
-tbody tr:hover { background: #f9fcfb; }
+tbody tr.main-row:hover { background: #f9fcfb; }
 .td-date { white-space: nowrap; color: #555; }
 .td-vendor { font-weight: 700; color: var(--primary); }
 .td-amount { text-align: right; font-weight: 800; color: #16895f; white-space: nowrap; }
-.td-items { color: #555; font-size: 12.5px; max-width: 320px; }
+.td-items { color: #555; font-size: 12.5px; }
+.items-link { color: var(--accent); cursor: pointer; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #e0e4ea; }
 .no-thumb { width: 46px; height: 46px; border-radius: 6px; background: #f0f2f4; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 18px; }
-.cell-input { width: 100%; border: 1px solid #cdd5dd; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; }
-.cell-input:focus { outline: none; border-color: var(--accent); }
 .parsed-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #e8f6f3; color: #16a085; margin-left: 6px; }
 .manual-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #eef0f3; color: #888; margin-left: 6px; }
 .act-btn { border: none; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.act-edit { background: #e0e4ea; color: #555; }
-.act-save { background: var(--accent); color: #fff; }
+.act-open { background: #e8f6f3; color: #16a085; }
 .act-del  { background: #fdecea; color: var(--danger); }
 .empty-msg { text-align: center; color: var(--muted); padding: 40px; }
 
-/* ── 로그인 게이트 ── */
 #authGate { position: fixed; inset: 0; background: linear-gradient(135deg,#1a3a5c,#16a085); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 #authGate.hidden { display: none; }
 .login-box { background: #fff; border-radius: 16px; padding: 44px 38px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
@@ -79,16 +70,39 @@ tbody tr:hover { background: #f9fcfb; }
 .btn-login { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
 .login-error { color: var(--danger); font-size: 12.5px; text-align: center; min-height: 18px; margin-top: 8px; }
 
-/* ── 이미지 라이트박스 ── */
-#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1100; align-items: center; justify-content: center; padding: 30px; }
+/* 모달 공통 */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1100; align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.on { display: flex; }
+.modal { background: #fff; border-radius: 14px; width: 760px; max-width: 96vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.modal-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: #fff; z-index: 2; }
+.modal-head h2 { font-size: 17px; color: var(--primary); }
+.modal-head .spacer { flex: 1; }
+.modal-body { padding: 20px 24px; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; position: sticky; bottom: 0; background: #fff; }
+
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.meta-grid label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+.fin { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; }
+.fin:focus { outline: none; border-color: var(--accent); }
+
+.items-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.items-table th { background: #f4f8f7; padding: 8px; font-size: 12px; color: #555; border: 1px solid #e3e9e7; }
+.items-table td { padding: 5px; border: 1px solid #eef2f1; }
+.items-table input { width: 100%; border: none; padding: 6px; font-size: 13px; font-family: inherit; background: transparent; }
+.items-table input:focus { outline: 1.5px solid var(--accent); border-radius: 4px; }
+.it-name { width: 42%; } .it-num { text-align: right; }
+.row-del { background: #fdecea; color: var(--danger); border: none; border-radius: 5px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+.add-item { margin-top: 10px; background: #eef6f4; color: #16a085; border: 1px dashed #9ad3c6; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+.modal-img { width: 100%; max-height: 320px; object-fit: contain; background: #f4f6f9; border-radius: 8px; margin-bottom: 18px; cursor: zoom-in; }
+.sum-line { text-align: right; margin-top: 12px; font-size: 14px; }
+.sum-line b { color: #16895f; font-size: 16px; }
+
+#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 1300; align-items: center; justify-content: center; padding: 30px; }
 #lightbox.on { display: flex; }
-#lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+#lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; }
 
-/* ── 토스트 ── */
-#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .25s; z-index: 1200; pointer-events: none; }
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .25s; z-index: 1400; pointer-events: none; max-width: 90vw; text-align:center; }
 #toast.show { opacity: 1; }
-
-/* ── 업로드 진행 ── */
 #uploadBar { display: none; position: fixed; top: 54px; left: 0; right: 0; background: #16a085; color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; z-index: 90; }
 </style>
 </head>
@@ -110,6 +124,7 @@ tbody tr:hover { background: #f9fcfb; }
   <span class="tb-title">🧾 거래명세서</span>
   <div class="toolbar-spacer"></div>
   <div class="search-box"><input type="text" id="searchInput" placeholder="업체·품목 검색…"></div>
+  <button class="btn btn-batch" onclick="batchParse()" title="AI 미인식 명세서를 한 번에 인식">🤖 미인식 일괄 인식</button>
   <button class="btn btn-csv" onclick="exportCsv()">⬇️ CSV 내보내기</button>
   <button class="btn btn-upload" onclick="document.getElementById('photoInput').click()">📷 명세서 사진 추가</button>
   <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
@@ -123,18 +138,18 @@ tbody tr:hover { background: #f9fcfb; }
       <tr>
         <th style="width:40px">#</th>
         <th style="width:110px">거래일</th>
-        <th style="width:160px">업체</th>
-        <th>품목 요약</th>
-        <th style="width:120px;text-align:right">금액(원)</th>
+        <th style="width:170px">업체</th>
+        <th>품목</th>
+        <th style="width:130px;text-align:right">합계(원)</th>
         <th style="width:60px">사진</th>
-        <th style="width:140px">메모</th>
-        <th style="width:150px;text-align:center">작업</th>
+        <th style="width:170px;text-align:center">작업</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
 </div>
 
+<!-- 로그인 -->
 <div id="authGate">
   <div class="login-box">
     <h2>거래명세서 관리</h2>
@@ -146,31 +161,63 @@ tbody tr:hover { background: #f9fcfb; }
   </div>
 </div>
 
-<div id="lightbox" onclick="this.classList.remove('on')"><img id="lightboxImg" src="" alt=""></div>
-
-<!-- API 키 설정 모달 -->
-<div id="apiModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:14px;padding:30px 28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-    <h2 style="color:var(--primary);font-size:18px;margin-bottom:8px;">🔑 Anthropic API 키 설정</h2>
-    <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px;">사진을 자동으로 읽어 업체·금액을 채우는 데 사용됩니다. 종합검진에서 쓰는 키와 동일합니다.<br>키 발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:14px;">
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button class="btn" onclick="closeApiModal()" style="background:#eef0f3;color:#555;">취소</button>
-      <button class="btn" onclick="saveApiKey()" style="background:var(--accent);color:#fff;">저장</button>
+<!-- 품목 상세/편집 모달 -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🧾 명세서 상세</h2>
+      <span class="spacer"></span>
+      <button class="btn" style="background:#e8f6f3;color:#16a085" id="reparseBtn" onclick="reparseCurrent()">🔄 AI 다시 인식</button>
+      <button class="btn" style="background:#eef0f3;color:#555" onclick="closeDetail()">닫기 ✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" class="modal-img" src="" alt="명세서" onclick="openImg(this.src)">
+      <div class="meta-grid">
+        <div><label>거래일</label><input type="date" class="fin" id="mDate"></div>
+        <div><label>업체(공급자)</label><input type="text" class="fin" id="mVendor" placeholder="업체명"></div>
+      </div>
+      <label style="font-size:12px;color:var(--muted);font-weight:600">품목 내역</label>
+      <table class="items-table">
+        <thead><tr><th class="it-name">품명·규격</th><th style="width:14%">수량</th><th style="width:20%">단가</th><th style="width:20%">금액</th><th style="width:40px"></th></tr></thead>
+        <tbody id="mItems"></tbody>
+      </table>
+      <button class="add-item" onclick="addItemRow()">＋ 품목 추가</button>
+      <div class="sum-line">품목 금액 합: <b id="mSum">0</b> 원
+        &nbsp;|&nbsp; 명세서 합계: <input type="text" class="fin" id="mTotal" style="width:140px;display:inline-block;text-align:right" placeholder="합계"></div>
+      <div style="margin-top:14px"><label style="font-size:12px;color:var(--muted);font-weight:600">메모</label>
+        <input type="text" class="fin" id="mMemo" placeholder="메모(선택)"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:#fdecea;color:var(--danger)" onclick="deleteCurrent()">🗑️ 삭제</button>
+      <button class="btn" style="background:var(--accent);color:#fff" onclick="saveDetail()">💾 저장</button>
     </div>
   </div>
 </div>
 
+<!-- API 키 모달 -->
+<div class="modal-bg" id="apiModal">
+  <div class="modal" style="width:440px">
+    <div class="modal-body">
+      <h2 style="color:var(--primary);font-size:18px;margin-bottom:8px;">🔑 Anthropic API 키 설정</h2>
+      <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px;">사진을 자동으로 읽는 데 사용됩니다. 종합검진과 동일한 키입니다.<br>키 발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." class="fin" style="margin-bottom:14px;">
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn" onclick="closeApiModal()" style="background:#eef0f3;color:#555;">취소</button>
+        <button class="btn" onclick="saveApiKey()" style="background:var(--accent);color:#fff;">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="this.classList.remove('on')"><img id="lightboxImg" src="" alt=""></div>
 <div id="toast"></div>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
 <script>
-// ── Firebase 초기화 ──
 if (!firebase.apps.length) {
   firebase.initializeApp({
     apiKey: "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
@@ -185,25 +232,17 @@ const fsdb = firebase.firestore();
 const auth = firebase.auth();
 const storage = firebase.storage();
 const COL = 'invoices';
-const API_KEY_STORE = 'sf_api_key';  // 종합검진과 동일 키 공유
+const API_KEY_STORE = 'sf_api_key';
+const MODEL = 'claude-opus-4-8';
 
-let invoices = [];          // 전체 목록
-let editingIds = new Set(); // 편집 중 id
-let parsingIds = new Set(); // 자동 인식 중 id
+let invoices = [];
 let _started = false;
+let currentId = null; // 상세 모달에서 보고 있는 id
 
 // ── API 키 모달 ──
-function openApiModal() {
-  document.getElementById('apiKeyInput').value = localStorage.getItem(API_KEY_STORE) || '';
-  document.getElementById('apiModal').style.display = 'flex';
-}
-function closeApiModal() { document.getElementById('apiModal').style.display = 'none'; }
-function saveApiKey() {
-  const v = document.getElementById('apiKeyInput').value.trim();
-  localStorage.setItem(API_KEY_STORE, v);
-  closeApiModal();
-  showToast('🔑 API 키가 저장되었습니다.');
-}
+function openApiModal() { document.getElementById('apiKeyInput').value = localStorage.getItem(API_KEY_STORE) || ''; document.getElementById('apiModal').classList.add('on'); }
+function closeApiModal() { document.getElementById('apiModal').classList.remove('on'); }
+function saveApiKey() { localStorage.setItem(API_KEY_STORE, document.getElementById('apiKeyInput').value.trim()); closeApiModal(); showToast('🔑 API 키가 저장되었습니다.'); }
 
 // ── 로그인 ──
 function doLogin() {
@@ -222,216 +261,241 @@ function doLogin() {
 auth.onAuthStateChanged(user => {
   const gate = document.getElementById('authGate');
   const lo = document.getElementById('logoutBtn');
-  if (user) {
-    gate.classList.add('hidden');
-    lo.style.display = ''; lo.title = user.email + ' — 로그아웃';
-    if (!_started) { _started = true; startRealtime(); }
-  } else {
-    gate.classList.remove('hidden');
-    lo.style.display = 'none';
-  }
+  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); } }
+  else { gate.classList.remove('hidden'); lo.style.display = 'none'; }
 });
 document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('lPw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
 document.getElementById('searchInput').addEventListener('input', render);
 
-// ── 실시간 동기화 ──
 function startRealtime() {
   fsdb.collection(COL).orderBy('date', 'desc').onSnapshot(snap => {
     invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
-  }, err => {
-    console.error(err);
-    showToast('⚠️ 데이터 로드 실패: ' + err.message);
-  });
+    if (currentId) { const it = invoices.find(b => b.id === currentId); if (it) fillDetail(it); }
+  }, err => { console.error(err); showToast('⚠️ 데이터 로드 실패: ' + err.message); });
 }
 
 // ── 유틸 ──
 function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
-function fmtAmount(n) { const x = parseFloat(n); return isNaN(x) ? '' : x.toLocaleString('ko-KR'); }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2600);
-}
-function openImg(url) {
-  document.getElementById('lightboxImg').src = url;
-  document.getElementById('lightbox').classList.add('on');
-}
-
-// ── 사진 추가 → Storage 업로드 → 자동 파싱 ──
-async function handlePhoto(e) {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (!file) return;
-  const bar = document.getElementById('uploadBar');
-  bar.style.display = 'block';
-  let newId = null;
-  try {
-    const id = fsdb.collection(COL).doc().id;
-    newId = id;
-    const path = `invoices/${id}_${file.name}`;
-    const ref = storage.ref().child(path);
-    const snap = await ref.put(file);
-    const url = await snap.ref.getDownloadURL();
-    await fsdb.collection(COL).doc(id).set({
-      date: new Date().toISOString().slice(0,10),
-      vendor: '', items: '', amount: '', memo: '',
-      imageUrl: url, imagePath: path, source: 'manual',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showToast('✅ 사진 업로드 완료 — AI가 내용을 읽는 중…');
-  } catch (err) {
-    console.error(err);
-    showToast('⚠️ 업로드 실패: ' + err.message);
-    bar.style.display = 'none';
-    return;
-  }
-  bar.style.display = 'none';
-  // 자동 파싱 (실패해도 행은 남고 수동 입력 가능)
-  await parseInvoice(newId, file);
-}
+function num(v) { const x = parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x) ? 0 : x; }
+function fmt(n) { const x = num(n); return x ? x.toLocaleString('ko-KR') : ''; }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000); }
+function openImg(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').classList.add('on'); }
+function lineItems(b) { return Array.isArray(b.items) ? b.items : []; }
+function invoiceTotal(b) { if (b.totalAmount != null && b.totalAmount !== '') return num(b.totalAmount); return lineItems(b).reduce((s,it)=>s+num(it.amount),0); }
+function isParsed(b) { return b.source === 'parsed' || b.source === 'telegram'; }
 
 // ── 파일 → base64 ──
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
+function fileToBase64(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); }); }
 
-// ── Claude Vision 호출 → 명세서 항목 추출 ──
+// ── Claude Vision 호출 ──
 async function callClaudeVision(apiKey, b64, mediaType) {
-  const prompt = `이 이미지는 거래명세서 또는 세금계산서입니다. 다음 항목을 추출해서 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만.
+  const prompt = `이 이미지는 거래명세서 또는 세금계산서입니다. 표에 적힌 품목들을 정확히 읽어 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만 출력합니다.
 {
-  "date": "거래일자 YYYY-MM-DD 형식, 없으면 빈 문자열",
+  "date": "거래일자 YYYY-MM-DD, 없으면 빈 문자열",
   "vendor": "공급자(판매처) 상호명",
-  "items": "명세서에 적힌 모든 품목명을 표기된 순서대로 쉼표(, )로 구분해 그대로 나열. 임의로 요약·생략하지 말 것. 규격·수량은 품목명 옆에 적힌 그대로 포함",
-  "amount": 합계금액 숫자만 (콤마·원 제외, 없으면 0)
-}`;
+  "items": [
+    { "name": "품명(규격 포함, 표기 그대로)", "qty": 수량숫자, "unitPrice": 단가숫자, "amount": 공급가액 또는 금액숫자 }
+  ],
+  "totalAmount": 합계금액숫자(총액, 부가세 포함 최종 청구금액)
+}
+규칙: 숫자는 콤마·원 없이 숫자만. 칸이 비었으면 0. 품목은 표에 있는 행 순서대로 모두 포함. 품명을 임의로 바꾸거나 요약하지 말 것.`;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      temperature: 0,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
-          { type: 'text', text: prompt }
-        ]
-      }]
+      model: MODEL, max_tokens: 2048, temperature: 0,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+        { type: 'text', text: prompt }
+      ]}]
     })
   });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`API ${res.status}: ${t.slice(0,120)}`);
-  }
+  if (!res.ok) { const t = await res.text(); throw new Error(`API ${res.status}: ${t.slice(0,140)}`); }
   const data = await res.json();
   let txt = (data.content?.[0]?.text || '').trim();
   const m = txt.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('추출 결과를 해석할 수 없습니다.');
-  return JSON.parse(m[0]);
+  const r = JSON.parse(m[0]);
+  const items = Array.isArray(r.items) ? r.items.map(it => ({
+    name: String(it.name || '').trim(), qty: num(it.qty), unitPrice: num(it.unitPrice), amount: num(it.amount)
+  })) : [];
+  return { date: r.date || '', vendor: String(r.vendor || '').trim(), items, totalAmount: num(r.totalAmount) };
 }
 
-// ── 한 건 자동 파싱 ──
-async function parseInvoice(id, file) {
-  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
-  if (!apiKey) {
-    showToast('🔑 AI 키가 없어 자동인식을 건너뜁니다. 우측 상단 🔑 AI 키에서 설정하세요.');
-    editingIds.add(id); render();
-    return;
-  }
-  const supported = ['image/jpeg','image/png','image/webp','image/gif'];
-  if (!supported.includes(file.type)) {
-    showToast('⚠️ 이 사진 형식은 AI 인식이 안 됩니다(JPEG/PNG 권장). 수동 입력하세요.');
-    editingIds.add(id); render();
-    return;
-  }
-  parsingIds.add(id); render();
-  try {
-    const b64 = await fileToBase64(file);
-    const r = await callClaudeVision(apiKey, b64, file.type);
-    const upd = {
-      date: r.date || new Date().toISOString().slice(0,10),
-      vendor: (r.vendor || '').toString().trim(),
-      items: (r.items || '').toString().trim(),
-      amount: String(r.amount || '').replace(/[^0-9.]/g,''),
-      source: 'parsed',
-      parsedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    await fsdb.collection(COL).doc(id).update(upd);
-    showToast('🤖 AI 자동 인식 완료 — 내용을 확인해 주세요.');
-  } catch (err) {
-    console.error(err);
-    showToast('⚠️ 자동 인식 실패: ' + err.message + ' (수동 입력 가능)');
-    editingIds.add(id);
-  } finally {
-    parsingIds.delete(id);
-    render();
-  }
-}
+const SUPPORTED = ['image/jpeg','image/png','image/webp','image/gif'];
 
-// ── 기존 명세서 다시 인식 (저장된 이미지로) ──
-async function reparse(id) {
-  const it = invoices.find(b => b.id === id);
-  if (!it || !it.imageUrl) { showToast('사진이 없어 인식할 수 없습니다.'); return; }
-  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
-  if (!apiKey) { openApiModal(); return; }
-  parsingIds.add(id); render();
+// ── 사진 추가 ──
+async function handlePhoto(e) {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  const bar = document.getElementById('uploadBar'); bar.style.display = 'block';
+  let id = null;
   try {
-    const resp = await fetch(it.imageUrl);
-    const blob = await resp.blob();
-    const file = new File([blob], 'invoice', { type: blob.type });
-    const supported = ['image/jpeg','image/png','image/webp','image/gif'];
-    if (!supported.includes(blob.type)) throw new Error('지원하지 않는 이미지 형식');
-    const b64 = await fileToBase64(file);
-    const r = await callClaudeVision(apiKey, b64, blob.type);
-    await fsdb.collection(COL).doc(id).update({
-      date: r.date || it.date || '',
-      vendor: (r.vendor || '').toString().trim(),
-      items: (r.items || '').toString().trim(),
-      amount: String(r.amount || '').replace(/[^0-9.]/g,''),
-      source: 'parsed',
-      parsedAt: firebase.firestore.FieldValue.serverTimestamp()
+    id = fsdb.collection(COL).doc().id;
+    const path = `invoices/${id}_${file.name}`;
+    const snap = await storage.ref().child(path).put(file);
+    const url = await snap.ref.getDownloadURL();
+    await fsdb.collection(COL).doc(id).set({
+      date: new Date().toISOString().slice(0,10), vendor: '', items: [], totalAmount: '', memo: '',
+      imageUrl: url, imagePath: path, source: 'manual',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    showToast('🤖 다시 인식 완료.');
-  } catch (err) {
-    showToast('⚠️ 인식 실패: ' + err.message);
-  } finally {
-    parsingIds.delete(id); render();
-  }
+    showToast('✅ 업로드 완료 — AI가 내용을 읽는 중…');
+  } catch (err) { console.error(err); showToast('⚠️ 업로드 실패: ' + err.message); bar.style.display = 'none'; return; }
+  bar.style.display = 'none';
+  await parseOne(id, file);
 }
 
-// ── 편집/저장/삭제 ──
-function editRow(id) { editingIds.add(id); render(); }
-async function saveRow(id) {
-  const tr = document.querySelector(`tr[data-id="${id}"]`);
-  if (!tr) return;
-  const get = f => tr.querySelector(`[data-field="${f}"]`)?.value ?? '';
-  const upd = {
-    date: get('date'), vendor: get('vendor').trim(),
-    items: get('items').trim(), amount: get('amount').replace(/[^0-9.]/g,''),
-    memo: get('memo').trim()
-  };
+// ── 한 건 파싱 (file 또는 저장 이미지) ──
+async function parseOne(id, file) {
+  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
+  if (!apiKey) { showToast('🔑 AI 키가 없습니다. 우측 상단 🔑 AI 키에서 설정하세요.'); return false; }
   try {
-    await fsdb.collection(COL).doc(id).update(upd);
-    editingIds.delete(id);
-    showToast('💾 저장되었습니다.');
-  } catch (err) { alert('저장 오류: ' + err.message); }
+    let b64, type;
+    if (file) { type = file.type; if (!SUPPORTED.includes(type)) { showToast('⚠️ JPEG/PNG 형식만 AI 인식이 됩니다.'); return false; } b64 = await fileToBase64(file); }
+    else {
+      const it = invoices.find(b => b.id === id);
+      if (!it?.imageUrl) { showToast('사진이 없습니다.'); return false; }
+      const resp = await fetch(it.imageUrl); const blob = await resp.blob();
+      type = blob.type; if (!SUPPORTED.includes(type)) { showToast('⚠️ 지원하지 않는 이미지 형식'); return false; }
+      b64 = await fileToBase64(new File([blob], 'img', { type }));
+    }
+    const r = await callClaudeVision(apiKey, b64, type);
+    await fsdb.collection(COL).doc(id).update({
+      date: r.date || new Date().toISOString().slice(0,10),
+      vendor: r.vendor, items: r.items, totalAmount: r.totalAmount,
+      source: 'parsed', parsedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return true;
+  } catch (err) { console.error(err); showToast('⚠️ AI 인식 실패: ' + err.message); return false; }
 }
-let pendingDel = null;
-async function delRow(id) {
+
+// ── 미인식 일괄 인식 ──
+async function batchParse() {
+  const targets = invoices.filter(b => !isParsed(b) && b.imageUrl);
+  if (!targets.length) { showToast('인식할 미인식 명세서가 없습니다.'); return; }
+  if (!localStorage.getItem(API_KEY_STORE)) { openApiModal(); return; }
+  if (!confirm(`미인식 명세서 ${targets.length}건을 AI로 인식합니다. 진행할까요?`)) return;
+  let ok = 0;
+  for (let i = 0; i < targets.length; i++) {
+    showToast(`🤖 인식 중… (${i+1}/${targets.length})`);
+    if (await parseOne(targets[i].id, null)) ok++;
+  }
+  showToast(`✅ 완료: ${ok}/${targets.length}건 인식`);
+}
+
+// ── 렌더 ──
+function render() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let list = invoices.slice();
+  if (q) list = list.filter(b => (b.vendor||'').toLowerCase().includes(q) || lineItems(b).some(it => (it.name||'').toLowerCase().includes(q)));
+
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthList = invoices.filter(b => (b.date||'').startsWith(thisMonth));
+  const monthSum = monthList.reduce((s,b) => s + invoiceTotal(b), 0);
+  document.getElementById('stats').innerHTML =
+    `<span class="stat-chip chip-total">전체 ${invoices.length}건</span>
+     <span class="stat-chip chip-month">이번 달 ${monthList.length}건</span>
+     <span class="stat-chip chip-sum">이번 달 합계 ${monthSum.toLocaleString('ko-KR')}원</span>`;
+
+  const tbody = document.getElementById('tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">${invoices.length ? '검색 결과가 없습니다.' : '아직 등록된 명세서가 없습니다. [📷 명세서 사진 추가]로 시작하세요.'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((b, i) => {
+    const its = lineItems(b);
+    const badge = isParsed(b) ? '<span class="parsed-badge">자동</span>' : '<span class="manual-badge">수동</span>';
+    const thumb = b.imageUrl ? `<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="명세서">` : `<div class="no-thumb">🧾</div>`;
+    const itemSummary = its.length
+      ? `<span class="items-link" onclick="openDetail('${b.id}')">${esc(its[0].name || '품목')}${its.length>1 ? ` 외 ${its.length-1}건` : ''}</span>`
+      : `<span class="items-link" onclick="openDetail('${b.id}')" style="color:#bbb">품목 입력</span>`;
+    return `<tr class="main-row">
+      <td>${i+1}</td>
+      <td class="td-date">${esc(b.date)||'—'}</td>
+      <td class="td-vendor">${esc(b.vendor)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
+      <td class="td-items">${itemSummary}</td>
+      <td class="td-amount">${fmt(invoiceTotal(b))||'—'}</td>
+      <td>${thumb}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="act-btn act-open" onclick="openDetail('${b.id}')">📂 상세·수정</button>
+        <button class="act-btn act-del" onclick="quickDelete('${b.id}')">삭제</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 상세 모달 ──
+function openDetail(id) { currentId = id; const it = invoices.find(b => b.id === id); if (!it) return; fillDetail(it); document.getElementById('detailModal').classList.add('on'); }
+function closeDetail() { currentId = null; document.getElementById('detailModal').classList.remove('on'); }
+function fillDetail(it) {
+  document.getElementById('modalImg').src = it.imageUrl || '';
+  document.getElementById('modalImg').style.display = it.imageUrl ? '' : 'none';
+  document.getElementById('mDate').value = it.date || '';
+  document.getElementById('mVendor').value = it.vendor || '';
+  document.getElementById('mTotal').value = (it.totalAmount != null && it.totalAmount !== '') ? num(it.totalAmount) : '';
+  document.getElementById('mMemo').value = it.memo || '';
+  const tb = document.getElementById('mItems'); tb.innerHTML = '';
+  const its = lineItems(it);
+  if (!its.length) addItemRow();
+  else its.forEach(addItemRow);
+  recalcSum();
+}
+function addItemRow(it) {
+  it = it || { name:'', qty:'', unitPrice:'', amount:'' };
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="it-name-in" type="text" value="${esc(it.name)}" placeholder="품명·규격"></td>
+    <td><input class="it-qty it-num" type="text" value="${it.qty||''}" oninput="recalcRow(this)"></td>
+    <td><input class="it-price it-num" type="text" value="${it.unitPrice||''}" oninput="recalcRow(this)"></td>
+    <td><input class="it-amt it-num" type="text" value="${it.amount||''}"></td>
+    <td style="text-align:center"><button class="row-del" onclick="this.closest('tr').remove();recalcSum()">✕</button></td>`;
+  document.getElementById('mItems').appendChild(tr);
+}
+function recalcRow(el) { // 수량·단가 입력 시 금액 자동(금액이 비어있을 때만 채움 안 함 → 항상 계산)
+  const tr = el.closest('tr');
+  const q = num(tr.querySelector('.it-qty').value), p = num(tr.querySelector('.it-price').value);
+  if (q && p) tr.querySelector('.it-amt').value = q * p;
+  recalcSum();
+}
+function recalcSum() {
+  let s = 0; document.querySelectorAll('#mItems tr').forEach(tr => s += num(tr.querySelector('.it-amt').value));
+  document.getElementById('mSum').textContent = s.toLocaleString('ko-KR');
+}
+function collectItems() {
+  return [...document.querySelectorAll('#mItems tr')].map(tr => ({
+    name: tr.querySelector('.it-name-in').value.trim(),
+    qty: num(tr.querySelector('.it-qty').value),
+    unitPrice: num(tr.querySelector('.it-price').value),
+    amount: num(tr.querySelector('.it-amt').value)
+  })).filter(it => it.name || it.amount);
+}
+async function saveDetail() {
+  if (!currentId) return;
+  const upd = {
+    date: document.getElementById('mDate').value,
+    vendor: document.getElementById('mVendor').value.trim(),
+    items: collectItems(),
+    totalAmount: num(document.getElementById('mTotal').value),
+    memo: document.getElementById('mMemo').value.trim()
+  };
+  try { await fsdb.collection(COL).doc(currentId).update(upd); showToast('💾 저장되었습니다.'); closeDetail(); }
+  catch (err) { alert('저장 오류: ' + err.message); }
+}
+async function reparseCurrent() {
+  if (!currentId) return;
+  if (!localStorage.getItem(API_KEY_STORE)) { openApiModal(); return; }
+  const btn = document.getElementById('reparseBtn'); btn.textContent = '🔄 인식 중…'; btn.disabled = true;
+  const ok = await parseOne(currentId, null);
+  btn.textContent = '🔄 AI 다시 인식'; btn.disabled = false;
+  if (ok) showToast('🤖 다시 인식 완료 — 내용을 확인하세요.');
+}
+async function deleteCurrent() { if (currentId) { const id = currentId; closeDetail(); await quickDelete(id); } }
+
+async function quickDelete(id) {
   const it = invoices.find(b => b.id === id);
   const label = it ? `${it.vendor || '(업체 미입력)'} / ${it.date || ''}` : '이 명세서';
   if (!confirm(`"${label}" 명세서를 삭제하시겠습니까?\n사진도 함께 삭제됩니다.`)) return;
@@ -442,93 +506,19 @@ async function delRow(id) {
   } catch (err) { alert('삭제 오류: ' + err.message); }
 }
 
-// ── 렌더 ──
-function render() {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  let list = invoices.slice();
-  if (q) list = list.filter(b =>
-    (b.vendor||'').toLowerCase().includes(q) || (b.items||'').toLowerCase().includes(q)
-  );
-
-  // 통계
-  const thisMonth = new Date().toISOString().slice(0,7);
-  const monthList = invoices.filter(b => (b.date||'').startsWith(thisMonth));
-  const monthSum = monthList.reduce((s,b) => s + (parseFloat(b.amount)||0), 0);
-  document.getElementById('stats').innerHTML = `
-    <span class="stat-chip chip-total">전체 ${invoices.length}건</span>
-    <span class="stat-chip chip-month">이번 달 ${monthList.length}건</span>
-    <span class="stat-chip chip-sum">이번 달 합계 ${monthSum.toLocaleString('ko-KR')}원</span>`;
-
-  const tbody = document.getElementById('tbody');
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">${invoices.length ? '검색 결과가 없습니다.' : '아직 등록된 명세서가 없습니다. [📷 명세서 사진 추가]로 시작하세요.'}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map((b, i) => {
-    const editing = editingIds.has(b.id);
-    const parsing = parsingIds.has(b.id);
-    const badge = b.source === 'telegram' || b.source === 'parsed'
-      ? '<span class="parsed-badge">자동</span>' : '<span class="manual-badge">수동</span>';
-    const thumb = b.imageUrl
-      ? `<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="명세서">`
-      : `<div class="no-thumb">🧾</div>`;
-
-    if (parsing) {
-      return `<tr data-id="${b.id}">
-        <td>${i+1}</td>
-        <td class="td-date">${esc(b.date)||'—'}</td>
-        <td colspan="4" style="color:#16a085;font-weight:600">🤖 AI가 명세서를 읽는 중입니다…</td>
-        <td>${thumb}</td>
-        <td style="text-align:center;color:#aaa">잠시만요</td>
-      </tr>`;
-    }
-
-    if (editing) {
-      return `<tr data-id="${b.id}">
-        <td>${i+1}</td>
-        <td><input class="cell-input" type="date" data-field="date" value="${esc(b.date)}"></td>
-        <td><input class="cell-input" type="text" data-field="vendor" value="${esc(b.vendor)}" placeholder="업체명"></td>
-        <td><input class="cell-input" type="text" data-field="items" value="${esc(b.items)}" placeholder="품목 요약"></td>
-        <td><input class="cell-input" type="text" data-field="amount" value="${esc(b.amount)}" placeholder="금액" style="text-align:right"></td>
-        <td>${thumb}</td>
-        <td><input class="cell-input" type="text" data-field="memo" value="${esc(b.memo)}" placeholder="메모"></td>
-        <td style="text-align:center">
-          <button class="act-btn act-save" onclick="saveRow('${b.id}')">💾 저장</button>
-        </td>
-      </tr>`;
-    }
-    return `<tr data-id="${b.id}">
-      <td>${i+1}</td>
-      <td class="td-date">${esc(b.date)||'—'}</td>
-      <td class="td-vendor">${esc(b.vendor)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
-      <td class="td-items">${esc(b.items)||'<span style="color:#ccc">—</span>'}</td>
-      <td class="td-amount">${fmtAmount(b.amount)||'—'}</td>
-      <td>${thumb}</td>
-      <td style="color:#888;font-size:12px">${esc(b.memo)||''}</td>
-      <td style="text-align:center;white-space:nowrap">
-        ${b.imageUrl ? `<button class="act-btn" style="background:#e8f6f3;color:#16a085" onclick="reparse('${b.id}')" title="AI로 다시 인식">🔄</button>` : ''}
-        <button class="act-btn act-edit" onclick="editRow('${b.id}')">✏️ 수정</button>
-        <button class="act-btn act-del" onclick="delRow('${b.id}')">삭제</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── CSV 내보내기 ──
+// ── CSV (품목별 행) ──
 function exportCsv() {
   if (!invoices.length) { showToast('내보낼 데이터가 없습니다.'); return; }
-  const rows = [['거래일','업체','품목요약','금액','메모','등록방식']];
-  invoices.forEach(b => rows.push([
-    b.date||'', b.vendor||'', b.items||'', b.amount||'', b.memo||'',
-    (b.source==='telegram'||b.source==='parsed')?'자동':'수동'
-  ]));
+  const rows = [['거래일','업체','품명','수량','단가','금액','명세서합계','등록방식']];
+  invoices.forEach(b => {
+    const its = lineItems(b);
+    if (!its.length) rows.push([b.date||'', b.vendor||'', '', '', '', '', invoiceTotal(b)||'', isParsed(b)?'자동':'수동']);
+    else its.forEach(it => rows.push([b.date||'', b.vendor||'', it.name||'', it.qty||'', it.unitPrice||'', it.amount||'', invoiceTotal(b)||'', isParsed(b)?'자동':'수동']));
+  });
   const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `거래명세서_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `거래명세서_${new Date().toISOString().slice(0,10)}.csv`; a.click();
   showToast('⬇️ CSV를 내려받았습니다.');
 }
 </script>
