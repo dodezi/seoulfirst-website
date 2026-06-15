@@ -90,6 +90,10 @@
     .btn-name-edit { margin-left: 6px; border: none; background: transparent; cursor: pointer; font-size: 12px; opacity: .35; padding: 2px; border-radius: 4px; transition: opacity .12s, background .12s; }
     .td-name:hover .btn-name-edit { opacity: 1; }
     .btn-name-edit:hover { background: #e8f4f4; }
+    .btn-status-cancel { margin-left: 7px; border: 1px solid #f1b0a8; background: #fdecea; color: #c0392b; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; cursor: pointer; vertical-align: middle; font-family: inherit; }
+    .btn-status-cancel:hover { background: #f9d9d4; }
+    .btn-status-restore { margin-left: 7px; border: 1px solid #cdd5dd; background: #f4f6f9; color: #555; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; cursor: pointer; vertical-align: middle; font-family: inherit; }
+    .btn-status-restore:hover { background: #e8ecf0; }
     .td-phone { font-size: 14px; font-weight: 800; color: #0a5c5f; letter-spacing: .3px; white-space: nowrap; }
     .td-date  { font-size: 13px; white-space: nowrap; }
     .td-recv  { font-size: 11px; color: #aaa; white-space: nowrap; }
@@ -662,7 +666,9 @@ function renderTable() {
         <td>${confCell}</td>
         <td>${isDeleted
           ? `<span class="status-badge s-deleted">삭제됨</span>`
-          : `<span class="status-badge s-${status}" onclick="cycleStatus('${b.id}','${status}')" title="클릭하여 상태 변경">${status}</span>`
+          : status === '취소'
+            ? `<span class="status-badge s-취소">취소</span><button class="btn-status-restore" onclick="setStatus('${b.id}','대기중','↩ 취소를 해제했습니다.')" title="취소 해제">취소해제</button>`
+            : `<span class="status-badge s-${status}" onclick="cycleStatus('${b.id}','${status}')" title="클릭하여 상태 변경">${status}</span><button class="btn-status-cancel" onclick="setStatus('${b.id}','취소','🚫 취소 처리되었습니다.')" title="취소 처리">취소</button>`
         }</td>
         <td>${checkerCell}</td>
         <td>${reasonCell}</td>
@@ -702,16 +708,21 @@ function fmtDateHeader(d) {
   return `📅 ${y}년 ${m}월 ${day}일 (${dow})`;
 }
 
-// ── 상태 순환 ─────────────────────────────────────────────
-const statusCycle = ['대기중','확정','검사완료','취소'];
+// ── 상태 순환 (취소 제외) ─────────────────────────────────
+const statusCycle = ['대기중','확정','검사완료'];
 async function cycleStatus(id, current) {
+  // 현재가 취소(목록에 없음)면 indexOf=-1 → 대기중부터 시작
   const next = statusCycle[(statusCycle.indexOf(current)+1) % statusCycle.length];
+  await setStatus(id, next, `✅ 상태: ${current} → ${next}`);
+}
+// ── 상태 직접 지정 (취소/취소해제 버튼) ───────────────────
+async function setStatus(id, value, msg) {
   try {
-    await db.collection('bookings').doc(id).update({ status: next });
+    await db.collection('bookings').doc(id).update({ status: value });
     const item = allBookings.find(b => b.id === id);
-    if (item) item.status = next;
+    if (item) item.status = value;
     renderTable();
-    showToast(`✅ 상태: ${current} → ${next}`);
+    showToast(msg || `✅ 상태: ${value}`);
   } catch(e) { alert('상태 변경 오류: '+e.message); }
 }
 
