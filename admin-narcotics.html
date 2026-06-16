@@ -92,6 +92,9 @@ thead th {
 thead th:first-child { width: 40px; text-align: center; }
 thead th.num-col { text-align: center; }
 
+/* 성명 칸: 한 줄로 고정(좁은 폭에서 두 줄로 깨지는 것 방지) */
+#main-table th:nth-child(4), #main-table td:nth-child(4) { white-space: nowrap; min-width: 68px; }
+
 /* 제품번호 셀 중앙정렬 (미다lot=6, 프폴lot=10) */
 thead th:nth-child(6), thead th:nth-child(10),
 tbody td:nth-child(6), tbody td:nth-child(10),
@@ -731,7 +734,7 @@ function displayMonth(ym) {
 /* ── 행 추가 (편집 상태로 생성) ── */
 function addRow() {
   ensureMonth(currentMonth);
-  const today = new Date().toISOString().slice(0,10);
+  const today = (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
   const id = uuid();
   db[currentMonth].push({ id, date:today, chartNo:'', name:'', midaDose:'', midaLot:'', propDose:'', propLot:'', memo:'', saved:false });
   saveDb();
@@ -739,9 +742,16 @@ function addRow() {
   render();
   setTimeout(() => {
     const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (tr) { const inp = tr.querySelectorAll('.cell-input')[2]; if (inp) inp.focus(); }
+    if (tr) {
+      tr.scrollIntoView({ block: 'center', behavior: 'smooth' }); // 새 행(맨 위)으로 이동
+      const inp = tr.querySelectorAll('.cell-input')[2]; if (inp) inp.focus();
+    }
   }, 50);
 }
+
+// 인쇄 시에는 날짜 오름차순(오래된 날 먼저)으로 출력, 끝나면 화면(최신 위)으로 복원
+window.addEventListener('beforeprint', () => render('asc'));
+window.addEventListener('afterprint', () => render('desc'));
 
 /* ── 행 저장 ── */
 function saveRow(id) {
@@ -861,7 +871,9 @@ function toggleDeleted() {
 }
 
 /* ── 렌더 ── */
-function render() {
+// dir: 'desc'(화면 기본, 최신 위) | 'asc'(인쇄, 오래된 날 먼저)
+function render(dir) {
+  dir = dir || 'desc';
   document.getElementById('month-display').textContent = displayMonth(currentMonth);
   document.getElementById('month-picker').value = currentMonth;
 
@@ -876,16 +888,9 @@ function render() {
     return;
   }
 
-  // 날짜 기준 정렬 (미저장 새 행은 맨 아래)
-  const sorted = [...rows].sort((a, b) => {
-    if (!a.saved && b.saved) return 1;
-    if (a.saved && !b.saved) return -1;
-    return (a.date||'').localeCompare(b.date||'');
-  });
-
-  // 날짜별 그룹화
+  // 날짜별 그룹화 (입력 순서 유지)
   const groups = {};
-  sorted.forEach(r => {
+  rows.forEach(r => {
     const key = (r.saved && r.date) ? r.date : '__new__';
     if (!groups[key]) groups[key] = [];
     groups[key].push(r);
@@ -895,11 +900,18 @@ function render() {
   let rowNum = 0;
   let html = '';
 
-  const dateKeys = Object.keys(groups).filter(k => k !== '__new__').sort();
-  if (groups['__new__']) dateKeys.push('__new__');
+  // 날짜 그룹 정렬: 화면은 내림차순(최신 위), 인쇄는 오름차순
+  let dateKeys = Object.keys(groups).filter(k => k !== '__new__').sort();
+  if (dir === 'desc') dateKeys.reverse();
+  // 미저장 새 행: 화면에선 맨 위, 인쇄에선 맨 아래
+  if (groups['__new__']) {
+    if (dir === 'desc') dateKeys.unshift('__new__');
+    else dateKeys.push('__new__');
+  }
 
   dateKeys.forEach(dateKey => {
-    const groupRows = groups[dateKey];
+    // 같은 날짜 안에서도 화면(desc)은 최신 입력이 위로
+    const groupRows = dir === 'desc' ? [...groups[dateKey]].reverse() : groups[dateKey];
     // 앰플 수 = 환자별 ceil(투여량/앰플용량) 합산 (미다졸람 5mL, 프로포폴 12mL)
     const activeGroup = groupRows.filter(r => !r.deleted);
     const dayMidaAmp = activeGroup.reduce((s,r) => s + (parseFloat(r.midaDose) > 0 ? Math.ceil(parseFloat(r.midaDose) / 5) : 0), 0);
