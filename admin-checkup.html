@@ -451,6 +451,17 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
   /* JS가 붙여주는 클래스 — 내용 없는 섹션·탭 통째로 숨김 */
   .exam-section.print-hide { display:none !important; }
   .tab-content.print-hide { display:none !important; }
+
+  /* 혈액검사 표 — 인쇄 시 격자·헤더 색 유지 */
+  .blood-table { font-size:9pt; }
+  .blood-table th { background:#1a3a5c !important; color:#fff !important; print-color-adjust:exact; border:1px solid #333; padding:4px 6px; }
+  .blood-table td { border:1px solid #bbb; padding:3px 6px; }
+  .blood-table thead { display:table-header-group; } /* 페이지 넘어갈 때 머리행 반복 */
+  .blood-table tr { break-inside:avoid; }
+  #blood-table-wrap { overflow:visible !important; }
+  .blood-toolbar { display:none !important; }
+  /* 혈액검사 섹션은 길어서 페이지에 걸쳐 채워지도록(통째로 다음 장으로 밀려 빈 페이지 생기는 것 방지) */
+  #tab-blood .exam-section.keep-print { break-inside:auto; }
 }
 
 /* 인쇄 헤더 (화면에선 숨김) */
@@ -708,6 +719,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
         <button class="tab-btn active" onclick="showTab('endoscopy',this)">🔭 내시경</button>
         <button class="tab-btn" onclick="showTab('ultrasound',this)">🫀 초음파</button>
         <button class="tab-btn" onclick="showTab('xray',this)">🩻 영상검사</button>
+        <button class="tab-btn" onclick="showTab('blood',this)">🩸 혈액검사</button>
         <button class="tab-btn" onclick="showTab('summary',this)">📋 종합소견</button>
       </div>
 
@@ -932,6 +944,45 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 
       </div>
 
+      <!-- ── 혈액검사 탭 ── -->
+      <div id="tab-blood" class="tab-content">
+        <div class="exam-section keep-print">
+          <div class="exam-header"><h3>🩸 혈액검사 결과</h3></div>
+          <div class="exam-body">
+            <div class="blood-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+              <button class="btn btn-primary btn-xs" onclick="document.getElementById('blood-file').click()">📎 엑셀 결과지 첨부</button>
+              <input type="file" id="blood-file" accept=".xlsx,.xls" style="display:none" onchange="handleBloodFile(event)">
+              <button class="btn btn-light btn-xs" onclick="clearBlood()">초기화</button>
+              <span id="blood-fileinfo" style="font-size:12px;color:var(--gray);"></span>
+            </div>
+            <div id="blood-empty" style="color:var(--gray);font-size:13px;padding:10px 0;">엑셀 결과지(.xlsx)를 첨부하면 결과가 표로 표시됩니다.</div>
+            <div id="blood-table-wrap" style="display:none;overflow-x:auto;">
+              <table class="blood-table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                <thead><tr>
+                  <th style="text-align:left;padding:6px 8px;background:#1a3a5c;color:#fff;">검사명</th>
+                  <th style="padding:6px 8px;background:#1a3a5c;color:#fff;width:90px;">결과</th>
+                  <th style="padding:6px 8px;background:#1a3a5c;color:#fff;width:50px;">판정</th>
+                  <th style="padding:6px 8px;background:#1a3a5c;color:#fff;width:80px;">단위</th>
+                  <th style="text-align:left;padding:6px 8px;background:#1a3a5c;color:#fff;">참고치</th>
+                </tr></thead>
+                <tbody id="blood-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-section keep-print" id="blood-finding-sec" style="display:none;">
+          <div class="exam-header"><h3>🔎 혈액검사 소견</h3></div>
+          <div class="exam-body">
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-xs" onclick="bloodSummary()">⚡ AI 혈액검사 소견 생성</button>
+              <button class="btn btn-light btn-xs" onclick="document.getElementById('blood-note').value=''">초기화</button>
+            </div>
+            <textarea class="summary-textarea" id="blood-note" placeholder="이상 수치 중심의 소견. 직접 입력하거나 위 버튼으로 AI 자동 생성하세요."></textarea>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 종합소견 탭 ── -->
       <div id="tab-summary" class="tab-content">
 
@@ -1000,6 +1051,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 </div>
 
 <!-- Firebase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -1471,6 +1523,7 @@ function openPatient(id) {
   updateHeader();
   updateSigName();
   renderTree();
+  renderBlood();
   setReadonlyMode();
 
   // 첫 번째 탭으로 이동
@@ -1498,7 +1551,153 @@ function collectData() {
   p.checkHp = document.getElementById('check-hp')?.checked || false;
   p.checkPoly = document.getElementById('check-poly')?.checked || false;
   p.summary = document.getElementById('summary-text').value;
+  if (p.bloodTest) p.bloodTest.note = document.getElementById('blood-note')?.value || '';
   p.updatedAt = new Date().toISOString();
+}
+
+// ──── 혈액검사 (엑셀 첨부) ────
+function escBlood(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+// 검사명 영문 → 한글 병기 사전 (흔한 건강검진 항목)
+const BLOOD_KO = {
+  // 신장·전해질
+  'BUN':'요소질소','Creatinine':'크레아티닌','eGFR':'사구체여과율','eGFR (CKD-EPI Creatinine)':'사구체여과율',
+  'Sodium':'나트륨','Sodium (Na)':'나트륨','Potassium':'칼륨','Potassium (K)':'칼륨',
+  'Chloride':'염소','Chloride (Cl)':'염소','Calcium':'칼슘','Phosphorus':'인','Uric acid':'요산','Uric Acid':'요산',
+  // 당뇨
+  'Glucose':'혈당','Fasting Glucose':'공복혈당','HbA1c':'당화혈색소','HbA1c-NGSP':'당화혈색소(NGSP)','HbA1c-IFCC':'당화혈색소(IFCC)','HbA1c-eAG':'평균추정혈당',
+  'Microalbumin':'미세알부민','Microalbumin/creatinine':'미세알부민/크레아티닌비',
+  // 간기능
+  'AST':'AST(간효소)','ALT':'ALT(간효소)','AST (SGOT)':'AST(간효소)','ALT (SGPT)':'ALT(간효소)',
+  'GGT':'감마지티피','r-GTP':'감마지티피','γ-GTP':'감마지티피','ALP':'알칼리인산분해효소',
+  'Total Bilirubin':'총빌리루빈','Total bilirubin':'총빌리루빈','Total Protein':'총단백','Albumin':'알부민',
+  // 지질
+  'Total Cholesterol':'총콜레스테롤','Cholesterol':'총콜레스테롤','HDL-Cholesterol':'HDL콜레스테롤','HDL Cholesterol':'HDL콜레스테롤',
+  'LDL-Cholesterol':'LDL콜레스테롤','LDL Cholesterol':'LDL콜레스테롤','Triglyceride':'중성지방','Triglycerides':'중성지방',
+  // 혈구(CBC)
+  'WBC':'백혈구수','RBC':'적혈구수','Hemoglobin':'혈색소','Hematocrit':'적혈구용적률','Platelet':'혈소판수','Platelet Count':'혈소판수',
+  'MCV':'평균적혈구용적','MCH':'평균적혈구혈색소량','MCHC':'평균적혈구혈색소농도',
+  // 갑상선·기타
+  'TSH':'갑상선자극호르몬','Free T4':'유리티록신','CRP':'씨반응단백','ESR':'적혈구침강속도',
+  // 요검사
+  'Leukocyte':'요백혈구','Bilirubin':'요빌리루빈','Ketone':'요케톤','Specific Gravity':'요비중',
+  'Blood':'요잠혈','pH':'산도','Protein':'요단백','Urobilinogen':'유로빌리노겐','Nitrite':'아질산염',
+  'Micro RBC':'적혈구','Micro WBC':'백혈구','Micro Epithelial cell':'상피세포'
+};
+function koName(name) {
+  const raw = String(name || '').replace(/\s+/g, ' ').trim();
+  if (BLOOD_KO[raw]) return `${raw} (${BLOOD_KO[raw]})`;
+  const base = raw.split(' (')[0].trim(); // 괄호 앞 핵심 단어
+  if (BLOOD_KO[base]) return `${raw} (${BLOOD_KO[base]})`;
+  return raw;
+}
+
+function handleBloodFile(e) {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  if (!currentId) { showToast('먼저 환자를 선택하세요.'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const label = (aoa[0] && aoa[0][0]) ? String(aoa[0][0]).trim() : '';
+      let hi = aoa.findIndex(r => r.some(c => String(c).trim() === '검사명'));
+      if (hi < 0) hi = 0;
+      const hdr = aoa[hi].map(c => String(c).trim());
+      const ci = {
+        name: hdr.indexOf('검사명'),
+        result: hdr.indexOf('결과'),
+        flag: hdr.findIndex(h => h === 'H/L' || h === '판정'),
+        unit: hdr.indexOf('단위'),
+        ref: hdr.indexOf('참고치')
+      };
+      if (ci.name < 0 || ci.result < 0) { alert('이 엑셀에서 검사명/결과 열을 찾지 못했습니다. 결과조회 엑셀이 맞는지 확인해 주세요.'); return; }
+      const rows = [];
+      for (let i = hi + 1; i < aoa.length; i++) {
+        const r = aoa[i];
+        const name = String(r[ci.name] || '').replace(/\s+/g, ' ').trim();
+        if (!name) continue;
+        const result = String(r[ci.result] || '').trim();
+        const flag = ci.flag >= 0 ? String(r[ci.flag] || '').trim() : '';
+        const unit = ci.unit >= 0 ? String(r[ci.unit] || '').trim() : '';
+        const ref = ci.ref >= 0 ? String(r[ci.ref] || '').replace(/\n/g, ' ').trim() : '';
+        rows.push({ name, result, flag, unit, ref, group: !result && !unit && !ref });
+      }
+      const p = db[currentId];
+      p.bloodTest = { label, fileName: file.name, rows, note: (p.bloodTest && p.bloodTest.note) || '' };
+      saveDb();
+      renderBlood();
+      const cnt = rows.filter(x => !x.group).length;
+      showToast(`🩸 혈액검사 결과 ${cnt}항목을 불러왔습니다.`);
+    } catch (err) { alert('엑셀 읽기 오류: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderBlood() {
+  const p = db[currentId];
+  const bt = p && p.bloodTest;
+  const empty = document.getElementById('blood-empty');
+  const wrap = document.getElementById('blood-table-wrap');
+  const info = document.getElementById('blood-fileinfo');
+  const findSec = document.getElementById('blood-finding-sec');
+  const note = document.getElementById('blood-note');
+  if (!empty) return;
+  if (!bt || !bt.rows || !bt.rows.length) {
+    empty.style.display = ''; wrap.style.display = 'none'; info.textContent = '';
+    findSec.style.display = 'none'; if (note) note.value = '';
+    return;
+  }
+  empty.style.display = 'none'; wrap.style.display = ''; findSec.style.display = '';
+  info.textContent = (bt.label ? bt.label + ' · ' : '') + (bt.fileName || '');
+  if (note) { note.value = bt.note || ''; setTimeout(() => autoResizeTextarea(note), 50); }
+  document.getElementById('blood-tbody').innerHTML = bt.rows.map(r => {
+    if (r.group) return `<tr><td colspan="5" style="font-weight:700;background:#eef3f8;padding:5px 8px;">${escBlood(koName(r.name))}</td></tr>`;
+    const abn = r.flag && r.flag.trim() !== '';
+    const color = /▲|H/.test(r.flag) ? '#c0392b' : /▼|L/.test(r.flag) ? '#2471a3' : '#666';
+    return `<tr style="${abn ? 'background:#fff6f6;' : ''}">
+      <td style="padding:5px 8px;border-bottom:1px solid #eee;">${escBlood(koName(r.name))}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:${abn ? '700' : '400'};color:${abn ? color : '#000'};">${escBlood(r.result)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;color:${color};font-weight:700;">${escBlood(r.flag)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;color:#666;">${escBlood(r.unit)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #eee;color:#888;font-size:11.5px;">${escBlood(r.ref)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function clearBlood() {
+  if (!currentId || !db[currentId]) return;
+  if (!confirm('첨부한 혈액검사 결과를 삭제할까요?')) return;
+  delete db[currentId].bloodTest;
+  saveDb(); renderBlood();
+  showToast('혈액검사 결과를 삭제했습니다.');
+}
+
+async function bloodSummary() {
+  const p = db[currentId];
+  const bt = p && p.bloodTest;
+  if (!bt || !bt.rows || !bt.rows.length) { showToast('먼저 엑셀 결과지를 첨부하세요.'); return; }
+  if (!apiKey) { showApiModal(); return; }
+  const el = document.getElementById('blood-note');
+  const lines = bt.rows.filter(r => !r.group && r.result)
+    .map(r => `${r.name}: ${r.result} ${r.unit} (참고 ${r.ref})${r.flag ? ' [' + r.flag + ']' : ''}`).join('\n');
+  const prev = el.value;
+  el.value = '⏳ AI가 혈액검사 소견을 생성 중입니다...';
+  try {
+    const prompt = `다음은 건강검진 혈액·소변 검사 결과입니다. 환자에게 설명하듯 한국어로 핵심 소견을 작성하세요.
+[작성 지침]
+- 참고치를 벗어난 이상 항목 위주로 2~5문장
+- 정상이면 "검사 결과 특별한 이상 소견은 없습니다." 한 문장
+- 수치를 일부 인용하되 과하지 않게
+- 마크다운 기호(**, ##) 금지, 공식 의료보고서 격식체
+[검사 결과]
+${lines}`;
+    const txt = await callClaude(prompt, 700);
+    el.value = (txt || '').trim();
+    bt.note = el.value; saveDb(); autoResizeTextarea(el);
+  } catch (err) { el.value = prev; alert('소견 생성 오류: ' + err.message); }
 }
 
 // ──── 저장 ────
@@ -1778,6 +1977,13 @@ async function autoSummary() {
       parts.push(`[${name} - raw]\n${raw}`);
     }
   });
+  // 혈액·소변 검사 결과 포함 (첨부된 경우)
+  const bt = db[currentId] && db[currentId].bloodTest;
+  if (bt && bt.rows && bt.rows.length) {
+    const lines = bt.rows.filter(r => !r.group && r.result)
+      .map(r => `${koName(r.name)}: ${r.result} ${r.unit} (참고 ${r.ref})${r.flag ? ' [이상]' : ''}`).join('\n');
+    if (lines) parts.push((isKo ? '[혈액·소변검사]\n' : '[Blood/Urine Tests]\n') + lines);
+  }
   if (parts.length === 0) { alert('검사 결과를 먼저 입력해주세요.'); return; }
   const prompt = isKo ? `당신은 종합건강검진 전문의입니다.
 아래 검사 결과를 바탕으로 한국어로 종합소견 및 권고사항을 작성해주세요.
@@ -1898,8 +2104,8 @@ function prepareForPrint() {
     div.textContent = ta.value;
   });
 
-  // 2) 원문도 소견도 없는 exam-section 숨기기
-  document.querySelectorAll('.exam-section').forEach(section => {
+  // 2) 원문도 소견도 없는 exam-section 숨기기 (혈액검사 섹션은 별도 처리이므로 제외)
+  document.querySelectorAll('.exam-section:not(.keep-print)').forEach(section => {
     const raw    = section.querySelector('textarea.raw-input');
     const result = section.querySelector('.result-box');
     const rawEmpty    = !raw    || raw.value.trim() === '';
@@ -1908,17 +2114,41 @@ function prepareForPrint() {
   });
 
   // 3) 검사 항목이 모두 비어 숨겨진 탭은 통째로 숨김 → 빈 페이지 방지
-  //    (검사 섹션이 없는 탭(종합소견 등)은 그대로 유지)
+  //    (keep-print 섹션만 있는 혈액검사 탭, 검사 섹션 없는 종합소견 탭은 제외)
   document.querySelectorAll('.tab-content').forEach(tc => {
+    if (tc.id === 'tab-blood') return;
     const sections = tc.querySelectorAll('.exam-section');
     if (sections.length === 0) return;
     const anyVisible = [...sections].some(s => !s.classList.contains('print-hide'));
     if (!anyVisible) tc.classList.add('print-hide');
   });
+
+  // 4) 혈액검사: 데이터 없으면 탭 숨김 / 있으면 맨 앞(첫 페이지)으로 이동
+  const bp = db[currentId];
+  const hasBlood = bp && bp.bloodTest && bp.bloodTest.rows && bp.bloodTest.rows.some(r => !r.group && r.result);
+  const bloodTab = document.getElementById('tab-blood');
+  if (bloodTab) {
+    if (!hasBlood) {
+      bloodTab.classList.add('print-hide');
+    } else {
+      const firstTab = bloodTab.parentNode.querySelector('.tab-content');
+      if (firstTab && firstTab !== bloodTab) {
+        bloodTab._origParent = bloodTab.parentNode;
+        bloodTab._origNext = bloodTab.nextElementSibling;
+        bloodTab.parentNode.insertBefore(bloodTab, firstTab);
+      }
+    }
+  }
 }
 
 function restoreAfterPrint() {
   document.querySelectorAll('.exam-section.print-hide, .tab-content.print-hide').forEach(s => s.classList.remove('print-hide'));
+  // 혈액검사 탭을 원래 위치(영상검사와 종합소견 사이)로 복원
+  const bloodTab = document.getElementById('tab-blood');
+  if (bloodTab && bloodTab._origParent) {
+    bloodTab._origParent.insertBefore(bloodTab, bloodTab._origNext);
+    bloodTab._origParent = null; bloodTab._origNext = null;
+  }
   // print-raw / print-summary div 내용 비우기 (다음 인쇄 때 다시 채움)
   document.querySelectorAll('.print-raw').forEach(d => d.textContent = '');
   document.querySelectorAll('.print-summary').forEach(d => d.textContent = '');
