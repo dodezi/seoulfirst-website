@@ -448,8 +448,9 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
   }
   .result-box.empty { display:none; }
 
-  /* JS가 붙여주는 클래스 — 내용 없는 섹션 통째로 숨김 */
+  /* JS가 붙여주는 클래스 — 내용 없는 섹션·탭 통째로 숨김 */
   .exam-section.print-hide { display:none !important; }
+  .tab-content.print-hide { display:none !important; }
 }
 
 /* 인쇄 헤더 (화면에선 숨김) */
@@ -1905,10 +1906,19 @@ function prepareForPrint() {
     const resultEmpty = !result || result.classList.contains('empty') || result.textContent.trim() === '';
     if (rawEmpty && resultEmpty) section.classList.add('print-hide');
   });
+
+  // 3) 검사 항목이 모두 비어 숨겨진 탭은 통째로 숨김 → 빈 페이지 방지
+  //    (검사 섹션이 없는 탭(종합소견 등)은 그대로 유지)
+  document.querySelectorAll('.tab-content').forEach(tc => {
+    const sections = tc.querySelectorAll('.exam-section');
+    if (sections.length === 0) return;
+    const anyVisible = [...sections].some(s => !s.classList.contains('print-hide'));
+    if (!anyVisible) tc.classList.add('print-hide');
+  });
 }
 
 function restoreAfterPrint() {
-  document.querySelectorAll('.exam-section.print-hide').forEach(s => s.classList.remove('print-hide'));
+  document.querySelectorAll('.exam-section.print-hide, .tab-content.print-hide').forEach(s => s.classList.remove('print-hide'));
   // print-raw / print-summary div 내용 비우기 (다음 인쇄 때 다시 채움)
   document.querySelectorAll('.print-raw').forEach(d => d.textContent = '');
   document.querySelectorAll('.print-summary').forEach(d => d.textContent = '');
