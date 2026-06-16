@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 관리자 판별: 로그인 + 등록된 관리자 이메일만
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+             'dodezi82@gmail.com',
+             'seoulfirst2023@gmail.com'
+           ];
+    }
+
+    // 공지사항: 누구나 읽기 / 관리자만 작성·수정·삭제
+    match /notices/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 온라인 예약: 누구나 신청(생성) / 관리자만 조회·수정·삭제
+    match /bookings/{doc} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 검진 환자 정보 (민감): 관리자 전용
+    match /checkup_patients/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // 거래명세서 (민감): 관리자 전용
+    match /invoices/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // 마약류 기록 (민감): 관리자 전용
+    match /narcotics_records/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // 그 외 모든 경로: 기본 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
