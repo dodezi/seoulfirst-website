@@ -117,10 +117,44 @@
     .book-badge.b3 { background: #e67e22; color: #fff; }
     .leave-chip { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; color: #fff; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .leave-chip .lc-half { opacity: .85; font-weight: 400; font-size: 10px; }
-    .book-row { font-size: 10.5px; color: #8a5a23; background: #fdf2e6; border-left: 2px solid #e9a667; padding: 1px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
-    .book-row .br-time { font-weight: 700; color: #c47c2c; margin-right: 4px; }
+    .cal-event { font-size: 10.5px; padding: 1px 5px 1px 6px; border-radius: 4px; border-left: 3px solid #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.55; }
+    .cal-event.cat-blue   { background:#eaf2fd; color:#1b5fb0; border-left-color:#2563eb; }
+    .cal-event.cat-green  { background:#e8f8e8; color:#1e7a3a; border-left-color:#27ae60; }
+    .cal-event.cat-red    { background:#fdecea; color:#c0392b; border-left-color:#e74c3c; }
+    .cal-event.cat-purple { background:#f3eafa; color:#7d3c98; border-left-color:#8e44ad; }
+    .cal-event.cat-orange { background:#fef0e3; color:#b9651b; border-left-color:#e67e22; }
+    .cal-event.cat-yellow { background:#fef9e0; color:#927608; border-left-color:#f1c40f; }
+    .cal-event.ev-취소    { background:#f0f0f0; color:#999; border-left-color:#bbb; text-decoration: line-through; }
+    .cal-event.ev-done    { opacity:.6; }
+    .cal-event .ev-time   { font-weight: 700; margin-right: 3px; }
+    .cdot { display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:middle; margin-right:3px; }
+    .d-blue{background:#2563eb;} .d-green{background:#27ae60;} .d-red{background:#e74c3c;}
+    .d-purple{background:#8e44ad;} .d-orange{background:#e67e22;} .d-yellow{background:#f1c40f;}
     .cal-cell .more-mini { font-size: 10.5px; color: #8a96a2; font-weight: 600; }
-    .cal-cell .more-mini.book { color: #b9651b; }
+    .cal-cell .more-mini.book { color: #51606e; }
+
+    /* 날짜 팝업 (검진 명단 읽기전용 + 연차) */
+    .day-section-label { font-size: 13px; font-weight: 700; color: #0f2b3d; margin: 4px 0 7px; display: flex; align-items: center; gap: 6px; }
+    .day-section-label small { font-weight: 400; color: #aab4bd; font-size: 11px; }
+    .day-section-label .cnt { background: #0d7377; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 12px; }
+    .day-books { max-height: 240px; overflow-y: auto; margin-bottom: 16px; border: 1px solid #eef1f5; border-radius: 10px; }
+    .dbk-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #f3f5f7; }
+    .dbk-row:last-child { border-bottom: none; }
+    .dbk-time { font-weight: 700; color: #0f2b3d; font-size: 13px; min-width: 46px; }
+    .dbk-main { flex: 1; min-width: 0; }
+    .dbk-name { font-weight: 700; font-size: 13.5px; color: #0f2b3d; }
+    .dbk-name .chart-no { color: #1b5e8a; font-weight: 700; font-size: 11.5px; background: #eef4fb; padding: 1px 5px; border-radius: 5px; margin-right: 4px; }
+    .dbk-svc { font-size: 12px; color: #7a8794; margin-top: 1px; }
+    .dbk-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .dbk-status.s-확정 { background:#e8f8e8; color:#1e7a3a; }
+    .dbk-status.s-검사완료 { background:#eef1f5; color:#51606e; }
+    .dbk-status.s-취소 { background:#fdecea; color:#c0392b; }
+    .dbk-status.s-대기중 { background:#fff3e0; color:#e67e22; }
+    .dbk-row.done { opacity:.6; }
+    .day-empty { color: #b3bcc5; font-size: 13px; padding: 14px 0; text-align: center; }
+    .day-leaves { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+    .day-lv-chip { font-size: 12.5px; font-weight: 600; color: #fff; padding: 5px 11px; border-radius: 16px; cursor: pointer; }
+    .day-lv-chip .lc-half { opacity: .85; font-weight: 400; font-size: 11px; }
     .cal-empty-note { text-align: center; color: #b3bcc5; font-size: 13px; padding: 16px; }
 
     /* ── 모달 공통 ── */
@@ -330,6 +364,25 @@
   </div>
 </div>
 
+<!-- ── 날짜 상세 팝업 (검진 명단 읽기전용 + 연차) ── -->
+<div class="modal" id="dayModal">
+  <div class="modal-box">
+    <div class="mb-title">📅 <span id="dayModalTitle"></span></div>
+    <div class="mb-sub">검진 예약은 보기 전용입니다(수정·삭제 불가). 아래에서 이 날 연차를 등록하세요.</div>
+
+    <div class="day-section-label">🔍 검진 예약 <span class="cnt" id="dayBookCnt">0</span> <small>읽기 전용</small></div>
+    <div class="day-books" id="dayBooks"></div>
+
+    <div class="day-section-label">🌴 이 날 연차</div>
+    <div class="day-leaves" id="dayLeaves"></div>
+
+    <div class="mb-btns">
+      <button class="btn-cancel" onclick="closeDayModal()">닫기</button>
+      <button class="btn-save" onclick="addLeaveFromDay()">➕ 연차 등록</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -376,6 +429,18 @@ let allLeaves  = [];    // {id, staffId, staffName, date, portion, memo}
 let bookByDate = {};     // 'yyyy-mm-dd' → [예약,...] (읽기 전용)
 const STAFF_COLORS = ['#2563eb','#27ae60','#e74c3c','#8e44ad','#e67e22','#16a085','#d63384','#0f7b8a','#c0392b','#7048c0','#0d7377','#b9651b'];
 
+// 검진 예약 색 판정 (예약명단과 동일 로직, 읽기 전용)
+const BK_COLOR_TAGS = ['blue','green','red','purple','orange','yellow'];
+function isEndoscopy(svc) {
+  const s = String(svc || '').replace(/\s/g, '');
+  if (!s) return false;
+  return ['내시경','수면','대장','자비','위암','대장암','용종','폴립','위장','위'].some(k => s.includes(k));
+}
+function bookColor(b) {
+  if (BK_COLOR_TAGS.includes(b.colorTag)) return b.colorTag;
+  return isEndoscopy(b.service) ? 'green' : 'red';
+}
+
 function startRealtime() {
   if (staffUnsub) staffUnsub();
   staffUnsub = db.collection('staff').onSnapshot(snap => {
@@ -399,9 +464,8 @@ async function loadBookings() {
     const snap = await db.collection('bookings').get();
     bookByDate = {};
     snap.docs.forEach(d => {
-      const b = d.data();
+      const b = { id: d.id, ...d.data() };
       if (b.deleted) return;
-      if ((b.status || '확정') === '취소') return;
       if (!b.confirmedDate) return;
       (bookByDate[b.confirmedDate] = bookByDate[b.confirmedDate] || []).push(b);
     });
@@ -552,19 +616,22 @@ function renderCalendar() {
     const isToday = dateStr === todayStr;
 
     const books = bookByDate[dateStr] || [];
-    const bc = books.length;
-    if (bc) hasAny = true;
+    const liveCnt = books.filter(b => (b.status||'확정') !== '취소').length;
+    if (books.length) hasAny = true;
     let bookBadge = '';
-    if (bc) {
-      const lvl = bc >= 8 ? 'b3' : (bc >= 4 ? 'b2' : 'b1');
-      bookBadge = `<span class="book-badge ${lvl}" title="검진 예약 ${bc}건">🔍${bc}</span>`;
+    if (liveCnt) {
+      const lvl = liveCnt >= 8 ? 'b3' : (liveCnt >= 4 ? 'b2' : 'b1');
+      bookBadge = `<span class="book-badge ${lvl}" title="검진 예약 ${liveCnt}건">🔍${liveCnt}</span>`;
     }
-    // 검진 예약자 목록 (읽기 전용) — 시간 + 이름
-    const bookRows = books.slice(0, 3).map(b => {
-      const t = b.confirmedTime ? `<span class="br-time">${esc(b.confirmedTime)}</span>` : '';
-      return `<div class="book-row" title="${esc(b.confirmedTime||'')} ${esc(b.name||'')}${b.service ? ' · '+esc(b.service) : ''} (검진 예약 · 읽기 전용)">${t}${esc(b.name||'-')}</div>`;
+    // 검진 예약 — 예약명단과 동일하게 색 동그라미 포함 (읽기 전용)
+    const bookEvents = books.slice(0, 3).map(b => {
+      const st = b.status || '확정';
+      const evClass = (st === '취소' ? 'ev-취소' : 'cat-' + bookColor(b)) + (st === '검사완료' ? ' ev-done' : '');
+      const t = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span>` : '';
+      const dot = st === '취소' ? '' : `<span class="cdot d-${bookColor(b)}"></span>`;
+      return `<div class="cal-event ${evClass}" title="${esc(b.confirmedTime||'')} ${esc(b.name||'')}${b.service ? ' · '+esc(b.service) : ''} (${st} · 읽기 전용)">${dot}${t}${b.chartNo ? esc(b.chartNo)+' ' : ''}${esc(b.name||'-')}</div>`;
     }).join('');
-    const moreBk = bc > 3 ? `<div class="more-mini book">+${bc-3}건 검진</div>` : '';
+    const moreBk = books.length > 3 ? `<div class="more-mini book">+${books.length-3}건 검진</div>` : '';
 
     const lvs = (lvMap[dateStr] || []);
     if (lvs.length) hasAny = true;
@@ -574,9 +641,9 @@ function renderCalendar() {
     }).join('');
     const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 연차</div>` : '';
 
-    html += `<div class="cal-cell${isToday ? ' today' : ''}" onclick="openLeaveModal(null,null,'${dateStr}')" title="클릭하여 ${dateStr} 연차 등록">
+    html += `<div class="cal-cell${isToday ? ' today' : ''}" onclick="openDayModal('${dateStr}')" title="클릭하면 ${dateStr} 검진 명단 보기 · 연차 등록">
       <div class="cal-daynum ${dnClass}">${d}${bookBadge}</div>
-      ${chips}${moreLv}${bookRows}${moreBk}
+      ${chips}${moreLv}${bookEvents}${moreBk}
     </div>`;
   }
   const totalCells = firstDow + daysInMon;
@@ -585,9 +652,61 @@ function renderCalendar() {
 
   document.getElementById('calBody').innerHTML = html;
   document.getElementById('calEmptyNote').style.display = hasAny ? 'none' : 'block';
+  // 날짜 팝업이 열려 있으면 함께 갱신
+  if (_dayModalDate && document.getElementById('dayModal').classList.contains('on')) renderDayModal();
 }
 
 function portionLabel(p) { return p === 'am' ? '오전 반차' : (p === 'pm' ? '오후 반차' : '종일'); }
+
+// ── 날짜 상세 팝업 ──────────────────────────────────────────
+let _dayModalDate = null;
+function openDayModal(dateStr) {
+  _dayModalDate = dateStr;
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dow = ['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
+  document.getElementById('dayModalTitle').textContent = `${m}월 ${d}일 (${dow})`;
+  renderDayModal();
+  document.getElementById('dayModal').classList.add('on');
+}
+function renderDayModal() {
+  if (!_dayModalDate) return;
+  // 검진 예약 (읽기 전용)
+  const books = (bookByDate[_dayModalDate] || []).slice()
+    .sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+  const live = books.filter(b => (b.status||'확정') !== '취소').length;
+  document.getElementById('dayBookCnt').textContent = live;
+  document.getElementById('dayBooks').innerHTML = books.length ? books.map(b => {
+    const st = b.status || '확정';
+    const dot = st === '취소' ? '' : `<span class="cdot d-${bookColor(b)}"></span>`;
+    return `<div class="dbk-row${st === '검사완료' ? ' done' : ''}">
+      <span class="dbk-time">${esc(b.confirmedTime || '--:--')}</span>
+      <div class="dbk-main">
+        <div class="dbk-name">${dot}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name || '-')}</div>
+        ${b.service ? `<div class="dbk-svc">${esc(b.service)}</div>` : ''}
+      </div>
+      <span class="dbk-status s-${st}">${st}</span>
+    </div>`;
+  }).join('') : `<div class="day-empty">이 날 확정된 검진 예약이 없습니다.</div>`;
+
+  // 이 날 연차
+  const lvs = (allLeaves.filter(l => l.date === _dayModalDate))
+    .sort((a,b) => (a.staffName||'').localeCompare(b.staffName||''));
+  document.getElementById('dayLeaves').innerHTML = lvs.length ? lvs.map(l => {
+    const half = l.portion === 'am' ? ' <span class="lc-half">오전</span>' : (l.portion === 'pm' ? ' <span class="lc-half">오후</span>' : '');
+    return `<span class="day-lv-chip" style="background:${staffColor(l.staffId)};" title="클릭하여 수정" onclick="editLeaveFromDay('${l.id}')">${esc(l.staffName)}${half}</span>`;
+  }).join('') : `<span class="day-empty" style="padding:4px 0;">등록된 연차가 없습니다.</span>`;
+}
+function closeDayModal() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; }
+document.getElementById('dayModal').addEventListener('click', e => { if (e.target.id === 'dayModal') closeDayModal(); });
+function addLeaveFromDay() {
+  const date = _dayModalDate;
+  closeDayModal();
+  openLeaveModal(null, null, date);
+}
+function editLeaveFromDay(id) {
+  closeDayModal();
+  openLeaveModal(id);
+}
 
 // ── 연차 등록/수정 모달 ─────────────────────────────────────
 function refreshStaffSelect() {
