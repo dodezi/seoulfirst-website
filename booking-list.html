@@ -107,6 +107,8 @@
     .btn-status-restore { margin-left: 7px; border: 1px solid #cdd5dd; background: #f4f6f9; color: #555; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; cursor: pointer; vertical-align: middle; font-family: inherit; }
     .btn-status-restore:hover { background: #e8ecf0; }
     .td-phone { font-size: 14px; font-weight: 800; color: #0a5c5f; letter-spacing: .3px; white-space: nowrap; }
+    .phone-edit { cursor: pointer; }
+    .phone-edit:hover { text-decoration: underline dotted; }
     .td-date  { font-size: 13px; white-space: nowrap; }
     .td-recv  { font-size: 11px; color: #aaa; white-space: nowrap; }
     .td-service { font-size: 12px; max-width: 120px; }
@@ -237,11 +239,12 @@
     .color-dot { cursor: pointer; margin-right: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.1); }
 
     /* 색 선택 팝업 */
-    .color-picker { display: none; position: fixed; z-index: 1200; background: #fff; border-radius: 11px; box-shadow: 0 10px 36px rgba(0,0,0,.25); padding: 8px; min-width: 248px; }
+    .color-picker { display: none; position: fixed; z-index: 1200; background: #fff; border-radius: 12px; box-shadow: 0 10px 36px rgba(0,0,0,.25); padding: 10px; }
     .color-picker.on { display: block; }
-    .color-picker .cp-title { font-size: 11px; color: #888; font-weight: 700; padding: 5px 8px 8px; }
-    .color-picker button { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: transparent; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; color: #333; text-align: left; }
-    .color-picker button:hover { background: #f4f6f9; }
+    .cp-swatches { display: flex; gap: 9px; }
+    .cp-sw { width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(0,0,0,.18); transition: transform .1s, box-shadow .1s; }
+    .cp-sw:hover { transform: scale(1.15); box-shadow: 0 0 0 2px #0d7377; }
+    .cp-sw.d-auto { box-shadow: 0 0 0 1px #b9c0c8; }
 
     /* 달력 범례 */
     .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 11.5px; color: #666; margin: 2px 0 12px; }
@@ -267,6 +270,7 @@
     /* 날짜 팝업 — 인라인 편집 폼 */
     .day-edit { border: 1.5px solid #0d7377; border-radius: 10px; padding: 14px; margin: 8px 0; background: #f6fbfb; }
     .day-edit .de-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .day-edit .de-wide { grid-column: 1 / -1; }
     .day-edit label { display: block; font-size: 11px; font-weight: 600; color: #5a6b7a; margin-bottom: 4px; }
     .day-edit .de-in { width: 100%; padding: 8px 10px; border: 1.5px solid #dde1e7; border-radius: 7px; font-size: 13px; font-family: inherit; background: #fff; }
     .day-edit .de-in:focus { outline: none; border-color: #0d7377; }
@@ -531,14 +535,15 @@
 
 <!-- ── 검사 구분 색 선택 팝업 ── -->
 <div id="colorPicker" class="color-picker">
-  <div class="cp-title">검사 구분 색</div>
-  <button onclick="setColor('blue')"><span class="cdot d-blue"></span> 🔵 내시경 (장정결제 처방 완료)</button>
-  <button onclick="setColor('green')"><span class="cdot d-green"></span> 🟢 내시경 (처방 전)</button>
-  <button onclick="setColor('red')"><span class="cdot d-red"></span> 🔴 비내시경 (초음파 등)</button>
-  <button onclick="setColor('purple')"><span class="cdot d-purple"></span> 🟣 보라 (자유 지정)</button>
-  <button onclick="setColor('orange')"><span class="cdot d-orange"></span> 🟠 주황 (자유 지정)</button>
-  <button onclick="setColor('yellow')"><span class="cdot d-yellow"></span> 🟡 노랑 (자유 지정)</button>
-  <button onclick="setColor('')"><span class="cdot d-auto"></span> ⚪ 자동 (검사항목 기준)</button>
+  <div class="cp-swatches">
+    <button class="cp-sw d-blue"   title="파랑" onclick="setColor('blue')"></button>
+    <button class="cp-sw d-green"  title="초록" onclick="setColor('green')"></button>
+    <button class="cp-sw d-red"    title="빨강" onclick="setColor('red')"></button>
+    <button class="cp-sw d-purple" title="보라" onclick="setColor('purple')"></button>
+    <button class="cp-sw d-orange" title="주황" onclick="setColor('orange')"></button>
+    <button class="cp-sw d-yellow" title="노랑" onclick="setColor('yellow')"></button>
+    <button class="cp-sw d-auto"   title="자동" onclick="setColor('')"></button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -625,6 +630,22 @@ async function editChartNo(id) {
     renderTable(); renderCalendars();
     showToast(v ? `🔢 등록번호: ${v}` : '등록번호를 비웠습니다.');
   } catch(e) { alert('등록번호 수정 오류: ' + e.message); }
+}
+// 연락처 입력/수정
+async function editPhone(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (!item) return;
+  const nv = prompt('연락처를 입력/수정하세요', item.phone || '');
+  if (nv === null) return;
+  const v = nv.trim();
+  if (v === (item.phone || '')) return;
+  try {
+    await db.collection('bookings').doc(id).update({ phone: v });
+    item.phone = v;
+    renderTable();
+    if (_dayModalDate && document.getElementById('dayModal').classList.contains('on')) renderDayList();
+    showToast('📞 연락처가 수정되었습니다.');
+  } catch(e) { alert('연락처 수정 오류: ' + e.message); }
 }
 
 // ── 색 선택 팝업 ──────────────────────────────────────────
@@ -797,7 +818,7 @@ function renderTable() {
       <tr class="${rowCls}">
         <td class="td-num">${i+1}</td>
         <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${chartNoHtml(b, isDeleted)}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
-        <td class="td-phone">${esc(formatPhone(b.phone))}</td>
+        <td class="td-phone">${isDeleted ? esc(formatPhone(b.phone)) : `<span class="phone-edit" title="연락처 수정" onclick="editPhone('${b.id}')">${esc(formatPhone(b.phone))}</span>`}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
         <td class="td-service">${esc(b.service||'-')}</td>
@@ -1216,10 +1237,11 @@ function colorSelectOptions(sel) {
 function dayEditRow(b) {
   return `<div class="day-edit">
     <div class="de-grid">
-      <div><label>시간</label><select id="de-time" class="de-in">${timeSlotOptions(b.confirmedTime || '09:00')}</select></div>
-      <div><label>환자등록번호</label><input id="de-chart" class="de-in" value="${esc(b.chartNo||'')}" placeholder="등록번호" maxlength="20"></div>
       <div><label>이름</label><input id="de-name" class="de-in" value="${esc(b.name||'')}" maxlength="20"></div>
-      <div><label>색상</label><select id="de-color" class="de-in">${colorSelectOptions(b.colorTag)}</select></div>
+      <div><label>연락처</label><input id="de-phone" class="de-in" value="${esc(b.phone||'')}" placeholder="010-0000-0000" maxlength="20"></div>
+      <div><label>환자등록번호</label><input id="de-chart" class="de-in" value="${esc(b.chartNo||'')}" placeholder="등록번호" maxlength="20"></div>
+      <div><label>시간</label><select id="de-time" class="de-in">${timeSlotOptions(b.confirmedTime || '09:00')}</select></div>
+      <div class="de-wide"><label>색상</label><select id="de-color" class="de-in">${colorSelectOptions(b.colorTag)}</select></div>
     </div>
     <div class="de-full"><label>검사항목</label><input id="de-svc" class="de-in" value="${esc(b.service||'')}" placeholder="검사항목" maxlength="60"></div>
     <div class="de-btns">
@@ -1237,6 +1259,7 @@ async function saveDayEdit(id) {
     confirmedTime: document.getElementById('de-time').value || '',
     chartNo: document.getElementById('de-chart').value.trim(),
     name,
+    phone: document.getElementById('de-phone').value.trim(),
     service: document.getElementById('de-svc').value.trim(),
     colorTag: document.getElementById('de-color').value
   };
