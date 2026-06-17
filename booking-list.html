@@ -256,6 +256,7 @@
     .cal-more { font-size: 10px; color: #0d7377; padding: 1px 6px; cursor: pointer; font-weight: 700; border-radius: 4px; }
     .cal-leave { font-size: 10.5px; font-weight: 700; color: #fff; padding: 2px 7px; border-radius: 11px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-leave .cl-half { font-weight: 400; opacity: .85; }
+    .cal-leave .cl-cnt { background: rgba(255,255,255,.32); border-radius: 8px; padding: 0 5px; font-weight: 800; margin-left: 4px; font-size: 9.5px; }
     .cal-grid.mini .cal-leave { font-size: 9.5px; padding: 1px 5px; }
     .cal-more:hover { background: #e8f4f4; text-decoration: underline; }
     .cal-daynum.clickable { cursor: pointer; display: inline-block; border-radius: 5px; padding: 0 4px; }
@@ -263,6 +264,10 @@
     .cal-empty-note { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
 
     /* ── 날짜 상세 모달 행 ── */
+    .day-leave-banner { background: #f3faf9; border: 1px solid #cfe7e6; border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .day-leave-banner .dlb-title { font-size: 12.5px; font-weight: 800; color: #0d7377; }
+    .day-leave-banner .dlb-chip { font-size: 12px; font-weight: 600; color: #fff; padding: 3px 10px; border-radius: 13px; }
+    .day-leave-banner .dlb-chip b { background: rgba(255,255,255,.3); border-radius: 8px; padding: 0 5px; margin-left: 2px; }
     .day-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-bottom: 1px solid #f0f2f4; cursor: pointer; border-radius: 8px; transition: background .12s; }
     .day-row:hover { background: #f4f8fb; }
     .day-row .day-time { font-weight: 700; color: #1b5e8a; font-size: 14px; min-width: 48px; padding-top: 2px; }
@@ -713,11 +718,34 @@ async function loadStaffLeaves() {
     ]);
     allStaffLeaves = lvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     staffMap = {};
-    stSnap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377' }; });
+    stSnap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
     renderCalendars();
+    if (document.getElementById('dayModal').classList.contains('on')) renderDayList();
   } catch(e) {
     // 보안규칙 미배포 등으로 읽기 실패 시 조용히 무시 (연차 미표시)
   }
+}
+
+// 연차 누적 사용일수 (입사일 기준 연차연도, 연차관리와 동일 계산)
+function _lvPd(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
+function _lvCompletedYears(h,r){ let y=r.getFullYear()-h.getFullYear(); const m=r.getMonth()-h.getMonth(); if(m<0||(m===0&&r.getDate()<h.getDate()))y--; return y; }
+function _lvFmt(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+function leaveUsedCount(staffId, dateStr) {
+  const st = staffMap[staffId];
+  let start = null, end = null;
+  if (st && st.hireDate) {
+    const hire = _lvPd(st.hireDate);
+    const Y = Math.max(0, _lvCompletedYears(hire, _lvPd(dateStr)));
+    start = new Date(hire.getFullYear()+Y, hire.getMonth(), hire.getDate());
+    end   = new Date(hire.getFullYear()+Y+1, hire.getMonth(), hire.getDate());
+  }
+  let sum = 0;
+  allStaffLeaves.forEach(l => {
+    if (l.staffId !== staffId) return;
+    if (start) { const d = _lvPd(l.date); if (!(d >= start && d < end)) return; }
+    sum += (l.portion === 'full' ? 1 : 0.5);
+  });
+  return _lvFmt(sum);
 }
 
 // ── 렌더링 ────────────────────────────────────────────────
@@ -1198,7 +1226,8 @@ function buildMonthGrid(maxEvents) {
       const c = (staffMap[l.staffId] || {}).color || '#0d7377';
       const half = l.portion === 'am' ? ' 오전' : (l.portion === 'pm' ? ' 오후' : '');
       const req  = l.deleteRequested ? '⏳' : '';
-      return `<div class="cal-leave" style="background:${c};" title="🌴 연차: ${esc(l.staffName)}${half}${l.deleteRequested ? ' · 삭제요청' : ''}">🌴${req}${esc(l.staffName)}<span class="cl-half">${half}</span></div>`;
+      const cnt = leaveUsedCount(l.staffId, l.date);
+      return `<div class="cal-leave" style="background:${c};" title="🌴 연차: ${esc(l.staffName)}${half} · 누적 ${cnt}일${l.deleteRequested ? ' · 삭제요청' : ''}">🌴${req}${esc(l.staffName)}<span class="cl-half">${half}</span><span class="cl-cnt">${cnt}</span></div>`;
     }).join('');
 
     // 일정이 있는 날은 날짜 숫자 클릭으로 그날 전체 보기
@@ -1258,9 +1287,21 @@ function dayList() {
 function renderDayList() {
   const list = dayList();
   document.getElementById('dayModalSub').textContent = `확정 검사 예약 ${list.length}건 · 행을 더블클릭하면 수정`;
-  document.getElementById('dayModalList').innerHTML = list.length
+  // 직원 연차 배너 (읽기 전용)
+  const dayLvs = allStaffLeaves.filter(l => l.date === _dayModalDate)
+    .sort((a,b) => (a.staffName||'').localeCompare(b.staffName||''));
+  const lvBanner = dayLvs.length ? `<div class="day-leave-banner">
+      <span class="dlb-title">🌴 직원 연차 ${dayLvs.length}명</span>
+      ${dayLvs.map(l => {
+        const c = (staffMap[l.staffId] || {}).color || '#0d7377';
+        const half = l.portion === 'am' ? ' 오전' : (l.portion === 'pm' ? ' 오후' : '');
+        return `<span class="dlb-chip" style="background:${c};">${l.deleteRequested ? '⏳' : ''}${esc(l.staffName)}${half} <b>${leaveUsedCount(l.staffId, l.date)}</b></span>`;
+      }).join('')}
+    </div>` : '';
+  const bookHtml = list.length
     ? list.map(b => b.id === _dayEditId ? dayEditRow(b) : dayViewRow(b)).join('')
     : `<div style="padding:20px;text-align:center;color:#aaa;">확정된 예약이 없습니다.</div>`;
+  document.getElementById('dayModalList').innerHTML = lvBanner + bookHtml;
 }
 function dayViewRow(b) {
   const st = b.status || '확정';
