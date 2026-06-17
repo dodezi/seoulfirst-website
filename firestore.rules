@@ -38,6 +38,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 점심 영수증: 관리자 전용 (서버 Functions는 admin SDK라 규칙 우회)
+    match /lunch_receipts/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 그 외 모든 경로: 기본 차단
     match /{document=**} {
       allow read, write: if false;

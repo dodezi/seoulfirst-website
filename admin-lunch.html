@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>점심 영수증 관리 — 서울퍼스트내과</title>
+<style>
+:root { --primary:#1a3a5c; --accent:#e67e22; --border:#dde3ea; --text:#2c3e50; --muted:#8a9ab0; --danger:#e74c3c; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f9; color:var(--text); font-size:14px; }
+#header { background:var(--primary); color:#fff; padding:0 24px; display:flex; align-items:center; gap:16px; height:54px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+.logo { font-size:17px; font-weight:900; cursor:pointer; }
+.logo span { color:#5dade2; }
+.header-title { font-size:14px; opacity:.7; }
+.header-sep { width:1px; height:20px; background:rgba(255,255,255,.2); }
+.header-spacer { flex:1; }
+.btn { padding:7px 14px; border:none; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; transition:.15s; font-family:inherit; }
+.btn-home { background:rgba(255,255,255,.15); color:#fff; text-decoration:none; display:inline-flex; align-items:center; }
+.btn-home:hover { background:rgba(255,255,255,.25); }
+#logoutBtn { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.2); }
+#toolbar { background:#fff; border-bottom:2px solid var(--border); padding:12px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.tb-title { font-size:16px; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:8px; }
+.toolbar-spacer { flex:1; }
+.search-box input { padding:8px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; width:200px; }
+.search-box input:focus { outline:none; border-color:var(--accent); }
+.btn-upload { background:var(--accent); color:#fff; font-size:14px; padding:9px 18px; }
+.btn-csv { background:#ecf3f9; color:#2471a3; }
+.btn-batch { background:#fef5e7; color:#e67e22; }
+#monthbar { padding:14px 24px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.stat-chip { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; }
+.chip-month { background:#fdebd0; color:#d35400; }
+.chip-sum { background:#fef5e7; color:#e67e22; }
+.chip-total { background:#eef0f3; color:#666; }
+#summaryRow { padding:12px 24px 0; display:flex; gap:14px; flex-wrap:wrap; }
+.sum-card { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.06); padding:12px 16px; flex:1 1 280px; min-width:260px; }
+.sum-card h4 { font-size:12px; color:var(--muted); margin-bottom:8px; font-weight:700; }
+.sum-item { display:flex; justify-content:space-between; padding:3px 0; font-size:13px; }
+.sum-item b { color:var(--primary); }
+.sum-item span { color:#16895f; font-weight:700; }
+#wrap { padding:16px 24px 60px; }
+table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+thead th { background:#f8fafc; padding:12px; font-size:12px; font-weight:700; color:#555; border-bottom:2px solid #e8ecf0; text-align:left; white-space:nowrap; }
+tbody td { padding:11px 12px; font-size:13px; border-bottom:1px solid #f0f2f4; vertical-align:middle; }
+tbody tr:hover { background:#fffaf4; }
+.td-amount { text-align:right; font-weight:800; color:#d35400; white-space:nowrap; }
+.td-store { font-weight:700; color:var(--primary); }
+.td-from { color:#555; }
+.thumb { width:46px; height:46px; object-fit:cover; border-radius:6px; cursor:pointer; border:1px solid #e0e4ea; }
+.no-thumb { width:46px; height:46px; border-radius:6px; background:#f0f2f4; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:18px; }
+.parsed-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:#fdebd0; color:#d35400; margin-left:6px; }
+.tg-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:#e3f0fb; color:#2471a3; margin-left:6px; }
+.manual-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:#eef0f3; color:#888; margin-left:6px; }
+.act-btn { border:none; border-radius:6px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+.act-edit { background:#e0e4ea; color:#555; }
+.act-del { background:#fdecea; color:var(--danger); }
+.empty-msg { text-align:center; color:var(--muted); padding:40px; }
+#authGate { position:fixed; inset:0; background:linear-gradient(135deg,#1a3a5c,#e67e22); display:flex; align-items:center; justify-content:center; z-index:1000; }
+#authGate.hidden { display:none; }
+.login-box { background:#fff; border-radius:16px; padding:44px 38px; width:360px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.login-box h2 { color:var(--primary); font-size:20px; margin-bottom:6px; text-align:center; }
+.login-box p { color:var(--muted); font-size:13px; text-align:center; margin-bottom:24px; }
+.login-box input { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; margin-bottom:12px; font-family:inherit; }
+.btn-login { width:100%; padding:13px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+.login-error { color:var(--danger); font-size:12.5px; text-align:center; min-height:18px; margin-top:8px; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1100; align-items:center; justify-content:center; padding:20px; }
+.modal-bg.on { display:flex; }
+.modal { background:#fff; border-radius:14px; width:520px; max-width:96vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); padding:22px 24px; }
+.modal h2 { font-size:17px; color:var(--primary); margin-bottom:14px; }
+.modal img.recpt { width:100%; max-height:300px; object-fit:contain; background:#f4f6f9; border-radius:8px; margin-bottom:14px; cursor:zoom-in; }
+.fin { width:100%; padding:9px 11px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; }
+.fin:focus { outline:none; border-color:var(--accent); }
+.frow { margin-bottom:12px; }
+.frow label { display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+.modal-foot { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+#lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1300; align-items:center; justify-content:center; padding:30px; }
+#lightbox.on { display:flex; }
+#lightbox img { max-width:95%; max-height:95%; border-radius:8px; }
+#toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:#2c3e50; color:#fff; padding:12px 22px; border-radius:24px; font-size:14px; font-weight:600; opacity:0; transition:opacity .25s; z-index:1400; pointer-events:none; max-width:90vw; text-align:center; }
+#toast.show { opacity:1; }
+#uploadBar { display:none; position:fixed; top:54px; left:0; right:0; background:var(--accent); color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600; z-index:90; }
+</style>
+</head>
+<body>
+<div id="header">
+  <span class="logo" onclick="location.href='admin.html'">서울<span>퍼스트</span>내과</span>
+  <span class="header-sep"></span>
+  <span class="header-title">🍚 점심 영수증 관리</span>
+  <span class="header-spacer"></span>
+  <button class="btn" onclick="openApiModal()" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)">🔑 AI 키</button>
+  <button class="btn" onclick="document.getElementById('tgModal').classList.add('on')" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)">📨 텔레그램</button>
+  <a class="btn btn-home" href="admin.html">🏠 관리홈</a>
+  <button class="btn" id="logoutBtn" style="display:none">로그아웃</button>
+</div>
+<div id="uploadBar">📤 사진 업로드 중…</div>
+<div id="toolbar">
+  <span class="tb-title">🍚 점심 영수증</span>
+  <div class="toolbar-spacer"></div>
+  <div class="search-box"><input type="text" id="searchInput" placeholder="식당·제출자 검색…"></div>
+  <button class="btn btn-batch" onclick="batchParse()">🤖 미인식 일괄 인식</button>
+  <button class="btn btn-csv" onclick="exportCsv()">⬇️ CSV 내보내기</button>
+  <button class="btn btn-upload" onclick="document.getElementById('photoInput').click()">📷 영수증 사진 추가</button>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+</div>
+<div id="monthbar">
+  <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:4px 6px;">
+    <button class="btn" onclick="shiftMonth(-1)" style="background:#f4f6f9;color:#555;padding:6px 10px;">◀</button>
+    <span id="monthLabel" style="font-weight:800;color:var(--primary);min-width:120px;text-align:center;font-size:14px;"></span>
+    <button class="btn" onclick="shiftMonth(1)" style="background:#f4f6f9;color:#555;padding:6px 10px;">▶</button>
+  </div>
+  <button class="btn" id="allBtn" onclick="setAllMonths()" style="background:#eef0f3;color:#555;">전체 기간</button>
+  <span id="stats" style="display:flex;gap:10px;flex-wrap:wrap;"></span>
+</div>
+<div id="summaryRow"></div>
+<div id="wrap">
+  <table>
+    <thead><tr>
+      <th style="width:40px">#</th>
+      <th style="width:110px">날짜</th>
+      <th>식당</th>
+      <th style="width:120px;text-align:right">금액(원)</th>
+      <th style="width:120px">제출자</th>
+      <th style="width:60px">사진</th>
+      <th style="width:150px;text-align:center">작업</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div id="authGate">
+  <div class="login-box">
+    <h2>점심 영수증 관리</h2>
+    <p>관리자 로그인이 필요합니다</p>
+    <input type="email" id="lEmail" placeholder="이메일" autocomplete="username">
+    <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password">
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="editModal"><div class="modal">
+  <h2>🍚 영수증 상세</h2>
+  <img id="mImg" class="recpt" src="" alt="영수증" onclick="openImg(this.src)">
+  <div class="frow"><label>날짜</label><input type="date" class="fin" id="mDate"></div>
+  <div class="frow"><label>식당(가맹점)</label><input type="text" class="fin" id="mStore" placeholder="식당명"></div>
+  <div class="frow"><label>금액(원)</label><input type="text" class="fin" id="mAmount" placeholder="금액" style="text-align:right"></div>
+  <div class="frow"><label>메뉴</label><input type="text" class="fin" id="mItems" placeholder="주요 메뉴(선택)"></div>
+  <div class="frow"><label>제출자</label><input type="text" class="fin" id="mFrom" placeholder="제출자(선택)"></div>
+  <div class="frow"><label>메모</label><input type="text" class="fin" id="mMemo" placeholder="메모(선택)"></div>
+  <div class="modal-foot">
+    <button class="btn" style="background:#fdecea;color:var(--danger)" onclick="deleteCurrent()">🗑️ 삭제</button>
+    <button class="btn" style="background:#fef5e7;color:#d35400" onclick="reparseCurrent()">🔄 다시 인식</button>
+    <button class="btn" style="background:#eef0f3;color:#555" onclick="closeEdit()">닫기</button>
+    <button class="btn" style="background:var(--accent);color:#fff" onclick="saveEdit()">💾 저장</button>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="apiModal"><div class="modal" style="width:440px">
+  <h2>🔑 Anthropic API 키 설정</h2>
+  <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px;">사진을 직접 추가할 때 자동 인식에 쓰입니다. 종합검진과 동일한 키입니다. (텔레그램 수신은 서버에서 처리되어 키가 필요 없습니다.)</p>
+  <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." class="fin" style="margin-bottom:14px;">
+  <div class="modal-foot"><button class="btn" onclick="closeApiModal()" style="background:#eef0f3;color:#555">취소</button><button class="btn" onclick="saveApiKey()" style="background:var(--accent);color:#fff">저장</button></div>
+</div></div>
+
+<div class="modal-bg" id="tgModal"><div class="modal" style="width:500px">
+  <h2>📨 텔레그램 연동</h2>
+  <div style="background:#fdebd0;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#a04000;margin-bottom:14px;">
+    🟢 <b>서버 자동 연동 중</b><br>
+    직원이 점심 영수증 봇에게 사진을 보내면, <b>PC를 켜지 않아도</b> 서버가 24시간 자동으로 받아 식당·금액을 인식해 목록에 추가합니다.
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="document.getElementById('tgModal').classList.remove('on')" style="background:var(--accent);color:#fff">확인</button></div>
+</div></div>
+
+<div id="lightbox" onclick="this.classList.remove('on')"><img id="lightboxImg" src="" alt=""></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script>
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey:"AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+    authDomain:"seoulfirst-ba9d4.firebaseapp.com",
+    projectId:"seoulfirst-ba9d4",
+    storageBucket:"seoulfirst-ba9d4.firebasestorage.app",
+    messagingSenderId:"702099053597",
+    appId:"1:702099053597:web:27efd596ee2156a8fefaf4"
+  });
+}
+const fsdb=firebase.firestore(), auth=firebase.auth(), storage=firebase.storage();
+const COL='lunch_receipts', API_KEY_STORE='sf_api_key', MODEL='claude-opus-4-8';
+let receipts=[], _started=false, currentId=null;
+let viewMonth=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)(new Date());
+
+function openApiModal(){ document.getElementById('apiKeyInput').value=localStorage.getItem(API_KEY_STORE)||''; document.getElementById('apiModal').classList.add('on'); }
+function closeApiModal(){ document.getElementById('apiModal').classList.remove('on'); }
+function saveApiKey(){ localStorage.setItem(API_KEY_STORE,document.getElementById('apiKeyInput').value.trim()); closeApiModal(); showToast('🔑 저장되었습니다.'); }
+
+function doLogin(){
+  const email=document.getElementById('lEmail').value.trim(), pw=document.getElementById('lPw').value, err=document.getElementById('loginError');
+  err.textContent='';
+  if(!email||!pw){ err.textContent='이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn=document.getElementById('btnLogin'); btn.textContent='로그인 중…'; btn.disabled=true;
+  auth.signInWithEmailAndPassword(email,pw).catch(()=>{ err.textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; btn.textContent='로그인'; btn.disabled=false; });
+}
+auth.onAuthStateChanged(u=>{
+  const gate=document.getElementById('authGate'), lo=document.getElementById('logoutBtn');
+  if(u){ gate.classList.add('hidden'); lo.style.display=''; lo.title=u.email; if(!_started){_started=true; startRealtime();} }
+  else { gate.classList.remove('hidden'); lo.style.display='none'; }
+});
+document.getElementById('btnLogin').addEventListener('click',doLogin);
+document.getElementById('lPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
+document.getElementById('searchInput').addEventListener('input',render);
+
+function startRealtime(){
+  fsdb.collection(COL).orderBy('date','desc').onSnapshot(snap=>{
+    receipts=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  }, err=>{ console.error(err); showToast('⚠️ 데이터 로드 실패: '+err.message); });
+}
+
+function esc(v){ return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function num(v){ const x=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; }
+function fmt(n){ const x=num(n); return x?x.toLocaleString('ko-KR'):''; }
+function showToast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3000); }
+function openImg(u){ document.getElementById('lightboxImg').src=u; document.getElementById('lightbox').classList.add('on'); }
+function isParsed(b){ return b.source==='parsed'; }
+function ymOf(dt){ return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; }
+function shiftMonth(d){ if(!viewMonth) viewMonth=ymOf(new Date()); const [y,m]=viewMonth.split('-').map(Number); viewMonth=ymOf(new Date(y,m-1+d,1)); render(); }
+function setAllMonths(){ viewMonth=viewMonth?null:ymOf(new Date()); render(); }
+
+function visibleList(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  let list=receipts.slice();
+  if(q) list=list.filter(b=>(b.store||'').toLowerCase().includes(q)||(b.tgFrom||'').toLowerCase().includes(q));
+  else if(viewMonth) list=list.filter(b=>(b.date||'').startsWith(viewMonth));
+  return list;
+}
+
+function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(file); }); }
+const SUPPORTED=['image/jpeg','image/png','image/webp','image/gif'];
+
+async function callClaude(apiKey,b64,mt){
+  const prompt=`이 이미지는 음식점 결제 영수증입니다. JSON으로만 답하세요. 순수 JSON만.
+{"date":"결제일 YYYY-MM-DD, 없으면 빈문자열","store":"가맹점 상호명","amount":총결제금액 숫자만,"items":"주요 메뉴 쉼표로, 없으면 빈문자열"}
+숫자는 숫자만. 안보이면 0/빈문자열.`;
+  const res=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body:JSON.stringify({model:MODEL,max_tokens:1024,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]}) });
+  if(!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0,140)}`);
+  const data=await res.json(); const txt=(data.content?.[0]?.text||'').trim(); const m=txt.match(/\{[\s\S]*\}/);
+  if(!m) throw new Error('해석 불가');
+  const p=JSON.parse(m[0]);
+  return { date:p.date||'', store:String(p.store||'').trim(), amount:num(p.amount), items:String(p.items||'').trim() };
+}
+
+async function handlePhoto(e){
+  const file=e.target.files[0]; e.target.value='';
+  if(!file) return;
+  const bar=document.getElementById('uploadBar'); bar.style.display='block';
+  let id=null;
+  try{
+    id=fsdb.collection(COL).doc().id;
+    const path=`lunch_receipts/${id}_${file.name}`;
+    const snap=await storage.ref().child(path).put(file);
+    const url=await snap.ref.getDownloadURL();
+    await fsdb.collection(COL).doc(id).set({ date:ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:'', amount:'', items:'', memo:'', tgFrom:'', imageUrl:url, imagePath:path, source:'manual', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('✅ 업로드 완료 — AI 인식 중…');
+  }catch(err){ console.error(err); showToast('⚠️ 업로드 실패: '+err.message); bar.style.display='none'; return; }
+  bar.style.display='none';
+  await parseOne(id,file);
+}
+
+async function parseOne(id,file){
+  const apiKey=localStorage.getItem(API_KEY_STORE)||'';
+  if(!apiKey){ showToast('🔑 AI 키가 없습니다. 우측 상단 🔑 AI 키에서 설정하세요.'); return false; }
+  try{
+    let b64,type;
+    if(file){ type=file.type; if(!SUPPORTED.includes(type)){ showToast('⚠️ JPEG/PNG만 인식 가능'); return false; } b64=await fileToBase64(file); }
+    else { const it=receipts.find(b=>b.id===id); if(!it?.imageUrl){ showToast('사진 없음'); return false; } const resp=await fetch(it.imageUrl); const blob=await resp.blob(); type=blob.type; if(!SUPPORTED.includes(type)){ showToast('⚠️ 지원하지 않는 형식'); return false; } b64=await fileToBase64(new File([blob],'img',{type})); }
+    const r=await callClaude(apiKey,b64,type);
+    await fsdb.collection(COL).doc(id).update({ date:r.date||ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:r.store, amount:r.amount, items:r.items, source:'parsed', parsedAt:firebase.firestore.FieldValue.serverTimestamp() });
+    return true;
+  }catch(err){ console.error(err); showToast('⚠️ 인식 실패: '+err.message); return false; }
+}
+
+async function batchParse(){
+  const targets=receipts.filter(b=>!isParsed(b)&&b.imageUrl);
+  if(!targets.length){ showToast('인식할 미인식 영수증이 없습니다.'); return; }
+  if(!localStorage.getItem(API_KEY_STORE)){ openApiModal(); return; }
+  if(!confirm(`미인식 영수증 ${targets.length}건을 AI로 인식합니다. 진행할까요?`)) return;
+  let ok=0;
+  for(let i=0;i<targets.length;i++){ showToast(`🤖 인식 중… (${i+1}/${targets.length})`); if(await parseOne(targets[i].id,null)) ok++; }
+  showToast(`✅ 완료: ${ok}/${targets.length}건`);
+}
+
+function render(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const list=visibleList();
+  const ml=document.getElementById('monthLabel');
+  if(viewMonth){ const [y,m]=viewMonth.split('-'); ml.textContent=`${y}년 ${parseInt(m,10)}월`; } else ml.textContent='전체 기간';
+  document.getElementById('allBtn').style.background=viewMonth?'#eef0f3':'var(--accent)';
+  document.getElementById('allBtn').style.color=viewMonth?'#555':'#fff';
+
+  const sum=list.reduce((s,b)=>s+num(b.amount),0);
+  const label=q?'검색':(viewMonth?'이 달':'전체');
+  document.getElementById('stats').innerHTML=
+    `<span class="stat-chip chip-month">${label} ${list.length}건</span>
+     <span class="stat-chip chip-sum">${label} 합계 ${sum.toLocaleString('ko-KR')}원</span>
+     <span class="stat-chip chip-total">전체 ${receipts.length}건</span>`;
+
+  // 제출자별 / 식당별 합계
+  const byFrom={}, byStore={};
+  list.forEach(b=>{ const f=b.tgFrom||'(미상)'; byFrom[f]=(byFrom[f]||0)+num(b.amount); const s=b.store||'(미입력)'; byStore[s]=(byStore[s]||0)+num(b.amount); });
+  const fromArr=Object.entries(byFrom).sort((a,b)=>b[1]-a[1]);
+  const storeArr=Object.entries(byStore).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('summaryRow').innerHTML = list.length ? `
+    <div class="sum-card"><h4>제출자별 합계 (${label})</h4>${fromArr.map(([k,v])=>`<div class="sum-item"><b>${esc(k)}</b><span>${v.toLocaleString('ko-KR')}원</span></div>`).join('')||'<div class="sum-item">—</div>'}</div>
+    <div class="sum-card"><h4>식당별 합계 (${label}, 상위 10)</h4>${storeArr.map(([k,v])=>`<div class="sum-item"><b>${esc(k)}</b><span>${v.toLocaleString('ko-KR')}원</span></div>`).join('')||'<div class="sum-item">—</div>'}</div>` : '';
+
+  const tbody=document.getElementById('tbody');
+  if(!list.length){
+    const msg=!receipts.length?'아직 등록된 영수증이 없습니다. 텔레그램 봇으로 보내거나 [📷 영수증 사진 추가]로 시작하세요.':q?'검색 결과가 없습니다.':viewMonth?'이 달에 등록된 영수증이 없습니다.':'영수증이 없습니다.';
+    tbody.innerHTML=`<tr><td colspan="7" class="empty-msg">${msg}</td></tr>`; return;
+  }
+  tbody.innerHTML=list.map((b,i)=>{
+    const badge=b.source==='parsed'?'<span class="parsed-badge">자동</span>':b.source==='telegram'?'<span class="tg-badge">📨 미인식</span>':'<span class="manual-badge">수동</span>';
+    const thumb=b.imageUrl?`<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="영수증">`:`<div class="no-thumb">🍚</div>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(b.date)||'—'}</td>
+      <td class="td-store">${esc(b.store)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
+      <td class="td-amount">${fmt(b.amount)||'—'}</td>
+      <td class="td-from">${esc(b.tgFrom)||'<span style="color:#ccc">—</span>'}</td>
+      <td>${thumb}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="act-btn act-edit" onclick="openEdit('${b.id}')">📂 상세·수정</button>
+        <button class="act-btn act-del" onclick="quickDelete('${b.id}')">삭제</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function openEdit(id){ currentId=id; const b=receipts.find(x=>x.id===id); if(!b) return;
+  document.getElementById('mImg').src=b.imageUrl||''; document.getElementById('mImg').style.display=b.imageUrl?'':'none';
+  document.getElementById('mDate').value=b.date||''; document.getElementById('mStore').value=b.store||'';
+  document.getElementById('mAmount').value=(b.amount!=null&&b.amount!=='')?num(b.amount):''; document.getElementById('mItems').value=b.items||'';
+  document.getElementById('mFrom').value=b.tgFrom||''; document.getElementById('mMemo').value=b.memo||'';
+  document.getElementById('editModal').classList.add('on');
+}
+function closeEdit(){ currentId=null; document.getElementById('editModal').classList.remove('on'); }
+async function saveEdit(){
+  if(!currentId) return;
+  try{ await fsdb.collection(COL).doc(currentId).update({ date:document.getElementById('mDate').value, store:document.getElementById('mStore').value.trim(), amount:num(document.getElementById('mAmount').value), items:document.getElementById('mItems').value.trim(), tgFrom:document.getElementById('mFrom').value.trim(), memo:document.getElementById('mMemo').value.trim() }); showToast('💾 저장되었습니다.'); closeEdit(); }
+  catch(err){ alert('저장 오류: '+err.message); }
+}
+async function reparseCurrent(){ if(!currentId) return; if(!localStorage.getItem(API_KEY_STORE)){ openApiModal(); return; } showToast('🔄 인식 중…'); if(await parseOne(currentId,null)){ const b=receipts.find(x=>x.id===currentId); if(b) openEdit(currentId); showToast('🤖 다시 인식 완료'); } }
+async function deleteCurrent(){ if(currentId){ const id=currentId; closeEdit(); await quickDelete(id); } }
+async function quickDelete(id){
+  const b=receipts.find(x=>x.id===id); const label=b?`${b.store||'(미입력)'} / ${b.date||''}`:'이 영수증';
+  if(!confirm(`"${label}" 영수증을 삭제하시겠습니까?\n사진도 함께 삭제됩니다.`)) return;
+  try{ if(b?.imagePath){ try{ await storage.ref().child(b.imagePath).delete(); }catch(_){} } await fsdb.collection(COL).doc(id).delete(); showToast('🗑️ 삭제되었습니다.'); }
+  catch(err){ alert('삭제 오류: '+err.message); }
+}
+
+function exportCsv(){
+  const data=visibleList();
+  if(!data.length){ showToast('내보낼 데이터가 없습니다.'); return; }
+  const rows=[['날짜','식당','금액','메뉴','제출자','메모','등록방식']];
+  data.forEach(b=>rows.push([b.date||'',b.store||'',b.amount||'',b.items||'',b.tgFrom||'',b.memo||'',isParsed(b)?'자동':(b.source==='telegram'?'텔레그램(미인식)':'수동')]));
+  const csv='﻿'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`점심영수증_${viewMonth||'전체'}.csv`; a.click(); showToast('⬇️ CSV를 내려받았습니다.');
+}
+</script>
+</body>
+</html>
