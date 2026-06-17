@@ -103,7 +103,7 @@
     .cal-grid .cal-dow .sun { color: #e74c3c; }
     .cal-grid .cal-dow .sat { color: #2563eb; }
     .cal-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-    .cal-cell { min-height: 104px; border: 1px solid #eef1f5; border-radius: 9px; padding: 5px 6px; background: #fcfdfe; cursor: pointer; transition: background .12s, box-shadow .12s; display: flex; flex-direction: column; gap: 3px; }
+    .cal-cell { min-height: 118px; border: 1px solid #eef1f5; border-radius: 9px; padding: 5px 6px; background: #fcfdfe; cursor: pointer; transition: background .12s, box-shadow .12s; display: flex; flex-direction: column; gap: 3px; }
     .cal-cell:hover { background: #f3faf9; box-shadow: 0 0 0 2px #bfe0e0 inset; }
     .cal-cell.empty { background: transparent; border: none; cursor: default; }
     .cal-cell.empty:hover { box-shadow: none; }
@@ -117,7 +117,10 @@
     .book-badge.b3 { background: #e67e22; color: #fff; }
     .leave-chip { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; color: #fff; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .leave-chip .lc-half { opacity: .85; font-weight: 400; font-size: 10px; }
+    .book-row { font-size: 10.5px; color: #8a5a23; background: #fdf2e6; border-left: 2px solid #e9a667; padding: 1px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
+    .book-row .br-time { font-weight: 700; color: #c47c2c; margin-right: 4px; }
     .cal-cell .more-mini { font-size: 10.5px; color: #8a96a2; font-weight: 600; }
+    .cal-cell .more-mini.book { color: #b9651b; }
     .cal-empty-note { text-align: center; color: #b3bcc5; font-size: 13px; padding: 16px; }
 
     /* ── 모달 공통 ── */
@@ -209,7 +212,7 @@
 
     <div class="ro-note">
       📌 이 화면에서는 <b>검진 예약 일정을 함께 보여주기만</b> 합니다(읽기 전용). 예약 내용은 여기서 수정·삭제되지 않으며, 예약명단 프로그램에서도 연차 기록은 건드리지 않습니다. ·
-      연차 부여 기준: <b>입사 1년 미만</b>은 매월 개근 시 1일씩(최대 11일), <b>1년 이상</b> 15일, 3년 이상부터 2년마다 +1일(최대 25일) — 입사일로 자동 계산됩니다.
+      연차 부여 기준: <b>입사 1년 미만</b>은 매월 개근 시 1일씩(최대 11일), <b>1년 이상</b> 15일 — 입사일로 자동 계산됩니다.
     </div>
 
     <!-- 직원 요약 카드 -->
@@ -227,7 +230,7 @@
         </div>
       </div>
       <div class="cal-legend">
-        <span class="lg"><span class="lg-book"></span> 검진 예약 건수(읽기 전용)</span>
+        <span class="lg"><span class="lg-book"></span> 검진 예약(시간·이름, 읽기 전용)</span>
         <span class="lg"><span class="lg-leave"></span> 직원 연차 (색=직원 / 클릭하면 수정)</span>
         <span class="lg">빈 칸 클릭 → 그날 연차 등록</span>
       </div>
@@ -370,7 +373,7 @@ document.getElementById('btnLogout').addEventListener('click', () => auth.signOu
 // ── 데이터 ────────────────────────────────────────────────
 let allStaff   = [];    // {id, name, hireDate, color, active, order}
 let allLeaves  = [];    // {id, staffId, staffName, date, portion, memo}
-let bookCount  = {};     // 'yyyy-mm-dd' → 검진 예약 건수 (읽기 전용)
+let bookByDate = {};     // 'yyyy-mm-dd' → [예약,...] (읽기 전용)
 const STAFF_COLORS = ['#2563eb','#27ae60','#e74c3c','#8e44ad','#e67e22','#16a085','#d63384','#0f7b8a','#c0392b','#7048c0','#0d7377','#b9651b'];
 
 function startRealtime() {
@@ -390,18 +393,20 @@ function startRealtime() {
   }, err => showToast('연차 기록을 불러오지 못했습니다: ' + err.message));
 }
 
-// 검진 예약: 읽기 전용으로 날짜별 건수만 집계
+// 검진 예약: 읽기 전용으로 날짜별 예약 목록 집계
 async function loadBookings() {
   try {
     const snap = await db.collection('bookings').get();
-    bookCount = {};
+    bookByDate = {};
     snap.docs.forEach(d => {
       const b = d.data();
       if (b.deleted) return;
       if ((b.status || '확정') === '취소') return;
       if (!b.confirmedDate) return;
-      bookCount[b.confirmedDate] = (bookCount[b.confirmedDate] || 0) + 1;
+      (bookByDate[b.confirmedDate] = bookByDate[b.confirmedDate] || []).push(b);
     });
+    Object.values(bookByDate).forEach(arr =>
+      arr.sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||'')));
     renderCalendar();
   } catch(e) {
     showToast('검진 일정을 불러오지 못했습니다: ' + e.message);
@@ -426,10 +431,10 @@ function completedMonths(hire, ref) {
   if (ref.getDate() < hire.getDate()) mo--;
   return mo;
 }
-// 근속연수 Y(>=1)에 따른 연 부여일수
+// 근속연수 Y(>=1)에 따른 연 부여일수 — 1년 이상은 15일 고정
 function allowanceForYear(Y) {
   if (Y < 1) return 0;
-  return Math.min(25, 15 + Math.floor((Y - 1) / 2));
+  return 15;
 }
 
 // 직원의 '현재 연차 기간' 정보 반환 (기준일 ref, 기본=오늘)
@@ -546,13 +551,20 @@ function renderCalendar() {
     const dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
     const isToday = dateStr === todayStr;
 
-    const bc = bookCount[dateStr] || 0;
+    const books = bookByDate[dateStr] || [];
+    const bc = books.length;
     if (bc) hasAny = true;
     let bookBadge = '';
     if (bc) {
       const lvl = bc >= 8 ? 'b3' : (bc >= 4 ? 'b2' : 'b1');
       bookBadge = `<span class="book-badge ${lvl}" title="검진 예약 ${bc}건">🔍${bc}</span>`;
     }
+    // 검진 예약자 목록 (읽기 전용) — 시간 + 이름
+    const bookRows = books.slice(0, 3).map(b => {
+      const t = b.confirmedTime ? `<span class="br-time">${esc(b.confirmedTime)}</span>` : '';
+      return `<div class="book-row" title="${esc(b.confirmedTime||'')} ${esc(b.name||'')}${b.service ? ' · '+esc(b.service) : ''} (검진 예약 · 읽기 전용)">${t}${esc(b.name||'-')}</div>`;
+    }).join('');
+    const moreBk = bc > 3 ? `<div class="more-mini book">+${bc-3}건 검진</div>` : '';
 
     const lvs = (lvMap[dateStr] || []);
     if (lvs.length) hasAny = true;
@@ -560,11 +572,11 @@ function renderCalendar() {
       const half = l.portion === 'am' ? '<span class="lc-half">오전</span>' : (l.portion === 'pm' ? '<span class="lc-half">오후</span>' : '');
       return `<div class="leave-chip" style="background:${staffColor(l.staffId)};" title="${esc(l.staffName)} ${portionLabel(l.portion)}${l.memo ? ' · '+esc(l.memo) : ''} (클릭하여 수정)" onclick="event.stopPropagation();openLeaveModal('${l.id}')">${esc(l.staffName)} ${half}</div>`;
     }).join('');
-    const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 더</div>` : '';
+    const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 연차</div>` : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}" onclick="openLeaveModal(null,null,'${dateStr}')" title="클릭하여 ${dateStr} 연차 등록">
       <div class="cal-daynum ${dnClass}">${d}${bookBadge}</div>
-      ${chips}${moreLv}
+      ${chips}${moreLv}${bookRows}${moreBk}
     </div>`;
   }
   const totalCells = firstDow + daysInMon;
