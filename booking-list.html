@@ -206,10 +206,31 @@
     .cal-daynum.sun { color: #e74c3c; }
     .cal-daynum.sat { color: #2980b9; }
     .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
-    .cal-event.ev-확정 { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
-    .cal-event.ev-검사완료 { background: #f0f0f0; color: #777; border-left-color: #aaa; }
-    .cal-event.ev-취소 { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; }
+    /* 검사 종목 색 구분 (파랑=내시경·처방완료, 초록=내시경·처방전, 빨강=비내시경) */
+    .cal-event.cat-blue  { background: #eaf2fd; color: #1b5fb0; border-left-color: #2563eb; }
+    .cal-event.cat-green { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
+    .cal-event.cat-red   { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; }
+    .cal-event.ev-취소   { background: #f0f0f0; color: #999; border-left-color: #bbb; }
     .cal-event.ev-취소 .ev-main { text-decoration: line-through; }
+    .cal-event.ev-done   { opacity: .55; }
+    .ev-dot { cursor: pointer; margin-right: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+
+    /* 색 동그라미 (표·달력 공용) */
+    .cdot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; vertical-align: middle; }
+    .d-blue { background: #2563eb; } .d-green { background: #27ae60; } .d-red { background: #e74c3c; } .d-auto { background: #cfd6df; }
+    .color-dot { cursor: pointer; margin-right: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.1); }
+
+    /* 색 선택 팝업 */
+    .color-picker { display: none; position: fixed; z-index: 1200; background: #fff; border-radius: 11px; box-shadow: 0 10px 36px rgba(0,0,0,.25); padding: 8px; min-width: 248px; }
+    .color-picker.on { display: block; }
+    .color-picker .cp-title { font-size: 11px; color: #888; font-weight: 700; padding: 5px 8px 8px; }
+    .color-picker button { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: transparent; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; color: #333; text-align: left; }
+    .color-picker button:hover { background: #f4f6f9; }
+
+    /* 달력 범례 */
+    .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 11.5px; color: #666; margin: 2px 0 12px; }
+    .cal-legend i.cdot { margin-right: 5px; }
+    .cal-legend .cl-tip { color: #aaa; }
     .cal-event .ev-main { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-event .ev-time { font-weight: 700; }
     .cal-event .ev-svc { font-size: 10px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -317,6 +338,12 @@
         </div>
         <button class="mini-collapse" id="miniCollapseBtn" onclick="toggleMini()">접기 ▲</button>
       </div>
+      <div class="cal-legend">
+        <span><i class="cdot d-blue"></i>내시경(처방완료)</span>
+        <span><i class="cdot d-green"></i>내시경(처방 전)</span>
+        <span><i class="cdot d-red"></i>비내시경</span>
+        <span class="cl-tip">· 예약 앞 ● 클릭 → 색 변경</span>
+      </div>
       <div id="miniGridWrap">
         <div class="cal-grid mini">
           <div class="cal-dow">
@@ -378,6 +405,12 @@
         <div class="cal-title" id="calTitle"></div>
         <button class="cal-nav" onclick="calNext()">›</button>
         <button class="cal-today-btn" onclick="calToday()">오늘</button>
+      </div>
+      <div class="cal-legend" style="justify-content:center;">
+        <span><i class="cdot d-blue"></i>내시경(처방완료)</span>
+        <span><i class="cdot d-green"></i>내시경(처방 전)</span>
+        <span><i class="cdot d-red"></i>비내시경</span>
+        <span class="cl-tip">· 예약 앞 ● 클릭 → 색 변경</span>
       </div>
       <div class="cal-grid">
         <div class="cal-dow">
@@ -476,6 +509,15 @@
   </div>
 </div>
 
+<!-- ── 검사 구분 색 선택 팝업 ── -->
+<div id="colorPicker" class="color-picker">
+  <div class="cp-title">검사 구분 색</div>
+  <button onclick="setColor('blue')"><span class="cdot d-blue"></span> 🔵 내시경 (장정결제 처방 완료)</button>
+  <button onclick="setColor('green')"><span class="cdot d-green"></span> 🟢 내시경 (처방 전)</button>
+  <button onclick="setColor('red')"><span class="cdot d-red"></span> 🔴 비내시경 (초음파 등)</button>
+  <button onclick="setColor('')"><span class="cdot d-auto"></span> ⚪ 자동 (검사항목 기준)</button>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -519,6 +561,55 @@ auth.onAuthStateChanged(user => {
   }
 });
 document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
+
+// ── 검사 구분 색 ──────────────────────────────────────────
+// 검사항목 글자로 내시경 여부 자동 판정
+function isEndoscopy(svc) {
+  const s = String(svc || '').replace(/\s/g, '');
+  if (!s) return false;
+  return ['내시경','수면','대장','자비','위암','대장암','용종','폴립','위장','위'].some(k => s.includes(k));
+}
+// 예약의 실제 색: 수동 지정(colorTag) 우선, 없으면 자동 (내시경=초록/처방전, 비내시경=빨강)
+function colorOf(b) {
+  if (b.colorTag === 'blue' || b.colorTag === 'green' || b.colorTag === 'red') return b.colorTag;
+  return isEndoscopy(b.service) ? 'green' : 'red';
+}
+// 표·모달용 색 동그라미 (클릭 → 색 선택)
+function colorDotHtml(b) {
+  return `<span class="cdot d-${colorOf(b)} color-dot" title="검사 구분 색 변경" onclick="event.stopPropagation();openColorPicker('${b.id}',this)"></span>`;
+}
+
+// ── 색 선택 팝업 ──────────────────────────────────────────
+let cpTargetId = null;
+function openColorPicker(id, anchor) {
+  cpTargetId = id;
+  const cp = document.getElementById('colorPicker');
+  cp.classList.add('on');
+  const r = anchor.getBoundingClientRect();
+  let left = r.left, top = r.bottom + 6;
+  if (left + cp.offsetWidth > window.innerWidth - 8)  left = window.innerWidth - cp.offsetWidth - 8;
+  if (top + cp.offsetHeight > window.innerHeight - 8) top = r.top - cp.offsetHeight - 6;
+  cp.style.left = Math.max(8, left) + 'px';
+  cp.style.top  = Math.max(8, top) + 'px';
+}
+function closeColorPicker() { document.getElementById('colorPicker').classList.remove('on'); cpTargetId = null; }
+async function setColor(tag) {
+  if (!cpTargetId) { closeColorPicker(); return; }
+  const id = cpTargetId;
+  try {
+    await db.collection('bookings').doc(id).update({ colorTag: tag });
+    const it = allBookings.find(b => b.id === id); if (it) it.colorTag = tag;
+    closeColorPicker();
+    renderTable(); renderCalendars();
+    if (_dayModalDate && document.getElementById('dayModal').classList.contains('on')) openDayDetail(_dayModalDate);
+    showToast('🎨 검사 구분 색이 변경되었습니다.');
+  } catch(e) { alert('색 변경 오류: ' + e.message); }
+}
+// 팝업 밖 클릭 시 닫기 (캡처 단계 → 여는 클릭보다 먼저 실행돼 즉시 닫힘 방지)
+document.addEventListener('click', e => {
+  const cp = document.getElementById('colorPicker');
+  if (cp.classList.contains('on') && !cp.contains(e.target)) closeColorPicker();
+}, true);
 
 // ── 데이터 로드 ───────────────────────────────────────────
 async function loadBookings() {
@@ -656,7 +747,7 @@ function renderTable() {
     return `
       <tr class="${isDeleted ? 'row-deleted' : ''}">
         <td class="td-num">${i+1}</td>
-        <td class="td-name">${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
+        <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
         <td class="td-phone">${esc(formatPhone(b.phone))}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
@@ -972,7 +1063,9 @@ function buildMonthGrid(maxEvents) {
       const t  = b.confirmedTime ? `<span class="ev-time">${esc(b.confirmedTime)}</span> ` : '';
       const svcFull  = b.service ? ' · ' + esc(b.service) : '';
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
-      evHtml += `<div class="cal-event ev-${st}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
+      const evClass = (st === '취소' ? 'ev-취소' : 'cat-' + colorOf(b)) + (st === '검사완료' ? ' ev-done' : '');
+      const dot = `<span class="cdot d-${colorOf(b)} ev-dot" title="검사 구분 색 변경" onclick="event.stopPropagation();openColorPicker('${b.id}',this)"></span>`;
+      evHtml += `<div class="cal-event ${evClass}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${dot}${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
     if (list.length > maxEvents) evHtml += `<div class="cal-more" onclick="openDayDetail('${dateStr}')">+${list.length - maxEvents}건 더 보기</div>`;
 
@@ -1014,7 +1107,9 @@ function renderCalendars() {
 }
 
 // 특정 날짜의 확정 예약 전체를 팝업으로 표시
+let _dayModalDate = null;
 function openDayDetail(dateStr) {
+  _dayModalDate = dateStr;
   const list = allBookings
     .filter(b => !b.deleted && b.confirmedDate === dateStr)
     .sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
@@ -1028,7 +1123,7 @@ function openDayDetail(dateStr) {
         return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
           <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
           <div class="day-info">
-            <span class="day-name">${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
+            <span class="day-name">${colorDotHtml(b)}${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
             <span class="day-svc">${esc(b.service||'')}</span>
           </div>
           <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
@@ -1037,7 +1132,7 @@ function openDayDetail(dateStr) {
     : `<div style="padding:20px;text-align:center;color:#aaa;">확정된 예약이 없습니다.</div>`;
   document.getElementById('dayModal').classList.add('on');
 }
-function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); }
+function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; }
 document.getElementById('dayModal').addEventListener('click', function(e){
   if (e.target === this) closeDayDetail();
 });
