@@ -43,6 +43,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 직원 명부 (연차 관리): 관리자 전용
+    match /staff/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // 직원 연차 기록: 관리자 전용
+    match /staff_leaves/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 그 외 모든 경로: 기본 차단
     match /{document=**} {
       allow read, write: if false;
