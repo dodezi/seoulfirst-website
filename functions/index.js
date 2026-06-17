@@ -175,21 +175,29 @@ exports.telegramWebhook = onRequest(
 // ───────────────────────────────────────────────────────────
 // 점심 영수증 수신 함수 (별도 봇)
 // ───────────────────────────────────────────────────────────
-const LUNCH_PROMPT = `이 이미지는 음식점/식당 결제 영수증입니다. 다음을 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만.
+const LUNCH_PROMPT = `이 이미지는 음식점 결제 영수증(신용카드 매출전표/간이영수증)입니다. 보이는 항목을 최대한 정확히 추출해 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만.
 {
   "date": "결제일자 YYYY-MM-DD, 없으면 빈 문자열",
   "store": "가맹점(상호)명",
-  "amount": 총 결제금액 숫자만(콤마·원 제외),
-  "items": "주요 메뉴를 쉼표로 나열, 없으면 빈 문자열"
+  "bizNo": "사업자등록번호(예 000-00-00000), 없으면 빈 문자열",
+  "address": "가맹점 주소, 없으면 빈 문자열",
+  "items": "구매 품목/메뉴를 쉼표로 나열(수량 있으면 포함), 없으면 빈 문자열",
+  "supplyAmount": 공급가액 숫자(없으면 0),
+  "vat": 부가세 숫자(없으면 0),
+  "amount": 총 결제(합계)금액 숫자,
+  "payMethod": "결제수단(예: 신용카드, 삼성카드 일시불, 현금 등), 없으면 빈 문자열",
+  "approvalNo": "카드 승인번호, 없으면 빈 문자열",
+  "people": 인원수 숫자(인원·테이블 표기 있으면, 없으면 0),
+  "memo": "승인번호·인원·단가 등 부가정보를 한 문장으로 요약(없으면 빈 문자열)"
 }
-규칙: 숫자는 숫자만. 안 보이면 0 또는 빈 문자열.`;
+규칙: 숫자는 콤마·원 없이 숫자만. 안 보이는 항목은 0 또는 빈 문자열.`;
 
 async function parseLunch(apiKey, b64, mediaType) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
-      model: "claude-opus-4-8", max_tokens: 1024,
+      model: "claude-opus-4-8", max_tokens: 1500,
       messages: [{ role: "user", content: [
         { type: "image", source: { type: "base64", media_type: mediaType, data: b64 } },
         { type: "text", text: LUNCH_PROMPT },
@@ -202,7 +210,14 @@ async function parseLunch(apiKey, b64, mediaType) {
   const m = txt.match(/\{[\s\S]*\}/);
   if (!m) throw new Error("파싱 결과 해석 불가");
   const p = JSON.parse(m[0]);
-  return { date: p.date || "", store: String(p.store || "").trim(), amount: num(p.amount), items: String(p.items || "").trim() };
+  return {
+    date: p.date || "", store: String(p.store || "").trim(),
+    bizNo: String(p.bizNo || "").trim(), address: String(p.address || "").trim(),
+    items: String(p.items || "").trim(),
+    supplyAmount: num(p.supplyAmount), vat: num(p.vat), amount: num(p.amount),
+    payMethod: String(p.payMethod || "").trim(), approvalNo: String(p.approvalNo || "").trim(),
+    people: num(p.people), memo: String(p.memo || "").trim(),
+  };
 }
 
 exports.lunchWebhook = onRequest(
@@ -250,8 +265,11 @@ exports.lunchWebhook = onRequest(
 
       const base = {
         date: new Date().toISOString().slice(0, 10),
-        store: "", amount: "", items: "",
-        memo: msg.caption || "", imageUrl, imagePath: spath,
+        store: "", bizNo: "", address: "", items: "",
+        supplyAmount: "", vat: "", amount: "",
+        payMethod: "", approvalNo: "", people: "",
+        category: "식비",
+        memo: msg.caption || "", imageUrl, imagePath: spath, fileName: fname,
         source: "telegram",
         tgFrom: (msg.from && (msg.from.first_name || msg.from.username)) || "",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -260,7 +278,10 @@ exports.lunchWebhook = onRequest(
       try {
         const p = await parseLunch(ANTHROPIC_KEY.value(), buf.toString("base64"), contentType);
         base.date = p.date || base.date;
-        base.store = p.store; base.amount = p.amount; base.items = p.items;
+        base.store = p.store; base.bizNo = p.bizNo; base.address = p.address; base.items = p.items;
+        base.supplyAmount = p.supplyAmount; base.vat = p.vat; base.amount = p.amount;
+        base.payMethod = p.payMethod; base.approvalNo = p.approvalNo; base.people = p.people;
+        if (!base.memo) base.memo = p.memo;
         base.source = "parsed";
         base.parsedAt = admin.firestore.FieldValue.serverTimestamp();
         okParse = true;

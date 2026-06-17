@@ -140,12 +140,25 @@ tbody tr:hover { background:#fffaf4; }
 <div class="modal-bg" id="editModal"><div class="modal">
   <h2>🍚 영수증 상세</h2>
   <img id="mImg" class="recpt" src="" alt="영수증" onclick="openImg(this.src)">
-  <div class="frow"><label>날짜</label><input type="date" class="fin" id="mDate"></div>
-  <div class="frow"><label>식당(가맹점)</label><input type="text" class="fin" id="mStore" placeholder="식당명"></div>
-  <div class="frow"><label>금액(원)</label><input type="text" class="fin" id="mAmount" placeholder="금액" style="text-align:right"></div>
-  <div class="frow"><label>메뉴</label><input type="text" class="fin" id="mItems" placeholder="주요 메뉴(선택)"></div>
-  <div class="frow"><label>제출자</label><input type="text" class="fin" id="mFrom" placeholder="제출자(선택)"></div>
-  <div class="frow"><label>메모</label><input type="text" class="fin" id="mMemo" placeholder="메모(선택)"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="frow" style="margin-bottom:0"><label>날짜</label><input type="date" class="fin" id="mDate"></div>
+    <div class="frow" style="margin-bottom:0"><label>식당(가맹점)</label><input type="text" class="fin" id="mStore" placeholder="식당명"></div>
+    <div class="frow" style="margin-bottom:0"><label>사업자등록번호</label><input type="text" class="fin" id="mBizNo" placeholder="000-00-00000"></div>
+    <div class="frow" style="margin-bottom:0"><label>결제수단</label><input type="text" class="fin" id="mPay" placeholder="신용카드 등"></div>
+  </div>
+  <div class="frow" style="margin-top:12px"><label>주소</label><input type="text" class="fin" id="mAddr" placeholder="가맹점 주소"></div>
+  <div class="frow"><label>품목·메뉴</label><input type="text" class="fin" id="mItems" placeholder="구매 품목"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+    <div class="frow" style="margin-bottom:0"><label>공급가액</label><input type="text" class="fin" id="mSupply" style="text-align:right"></div>
+    <div class="frow" style="margin-bottom:0"><label>부가세</label><input type="text" class="fin" id="mVat" style="text-align:right"></div>
+    <div class="frow" style="margin-bottom:0"><label>합계금액(원)</label><input type="text" class="fin" id="mAmount" style="text-align:right"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+    <div class="frow" style="margin-bottom:0"><label>카드 승인번호</label><input type="text" class="fin" id="mApproval"></div>
+    <div class="frow" style="margin-bottom:0"><label>인원</label><input type="text" class="fin" id="mPeople" style="text-align:right"></div>
+    <div class="frow" style="margin-bottom:0"><label>제출자</label><input type="text" class="fin" id="mFrom"></div>
+  </div>
+  <div class="frow" style="margin-top:12px"><label>메모</label><input type="text" class="fin" id="mMemo" placeholder="승인번호·인원·단가 등"></div>
   <div class="modal-foot">
     <button class="btn" style="background:#fdecea;color:var(--danger)" onclick="deleteCurrent()">🗑️ 삭제</button>
     <button class="btn" style="background:#fef5e7;color:#d35400" onclick="reparseCurrent()">🔄 다시 인식</button>
@@ -242,15 +255,15 @@ function fileToBase64(file){ return new Promise((res,rej)=>{ const r=new FileRea
 const SUPPORTED=['image/jpeg','image/png','image/webp','image/gif'];
 
 async function callClaude(apiKey,b64,mt){
-  const prompt=`이 이미지는 음식점 결제 영수증입니다. JSON으로만 답하세요. 순수 JSON만.
-{"date":"결제일 YYYY-MM-DD, 없으면 빈문자열","store":"가맹점 상호명","amount":총결제금액 숫자만,"items":"주요 메뉴 쉼표로, 없으면 빈문자열"}
-숫자는 숫자만. 안보이면 0/빈문자열.`;
-  const res=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body:JSON.stringify({model:MODEL,max_tokens:1024,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]}) });
+  const prompt=`이 이미지는 음식점 결제 영수증(신용카드 매출전표/간이영수증)입니다. 보이는 항목을 최대한 정확히 추출해 JSON으로만 답하세요. 순수 JSON만.
+{"date":"결제일 YYYY-MM-DD, 없으면 빈문자열","store":"가맹점 상호명","bizNo":"사업자등록번호(000-00-00000), 없으면 빈문자열","address":"가맹점 주소, 없으면 빈문자열","items":"구매 품목/메뉴 쉼표로(수량 포함), 없으면 빈문자열","supplyAmount":공급가액 숫자(없으면0),"vat":부가세 숫자(없으면0),"amount":합계금액 숫자,"payMethod":"결제수단(예 신용카드/삼성카드 일시불/현금)","approvalNo":"카드 승인번호, 없으면 빈문자열","people":인원수 숫자(없으면0),"memo":"승인번호·인원·단가 등 부가정보 한 문장"}
+숫자는 콤마·원 제외 숫자만. 안보이면 0/빈문자열.`;
+  const res=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]}) });
   if(!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0,140)}`);
   const data=await res.json(); const txt=(data.content?.[0]?.text||'').trim(); const m=txt.match(/\{[\s\S]*\}/);
   if(!m) throw new Error('해석 불가');
   const p=JSON.parse(m[0]);
-  return { date:p.date||'', store:String(p.store||'').trim(), amount:num(p.amount), items:String(p.items||'').trim() };
+  return { date:p.date||'', store:String(p.store||'').trim(), bizNo:String(p.bizNo||'').trim(), address:String(p.address||'').trim(), items:String(p.items||'').trim(), supplyAmount:num(p.supplyAmount), vat:num(p.vat), amount:num(p.amount), payMethod:String(p.payMethod||'').trim(), approvalNo:String(p.approvalNo||'').trim(), people:num(p.people), memo:String(p.memo||'').trim() };
 }
 
 async function handlePhoto(e){
@@ -263,7 +276,7 @@ async function handlePhoto(e){
     const path=`lunch_receipts/${id}_${file.name}`;
     const snap=await storage.ref().child(path).put(file);
     const url=await snap.ref.getDownloadURL();
-    await fsdb.collection(COL).doc(id).set({ date:ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:'', amount:'', items:'', memo:'', tgFrom:'', imageUrl:url, imagePath:path, source:'manual', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+    await fsdb.collection(COL).doc(id).set({ date:ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:'', bizNo:'', address:'', items:'', supplyAmount:'', vat:'', amount:'', payMethod:'', approvalNo:'', people:'', category:'식비', memo:'', tgFrom:'', imageUrl:url, imagePath:path, fileName:file.name, source:'manual', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
     showToast('✅ 업로드 완료 — AI 인식 중…');
   }catch(err){ console.error(err); showToast('⚠️ 업로드 실패: '+err.message); bar.style.display='none'; return; }
   bar.style.display='none';
@@ -278,7 +291,7 @@ async function parseOne(id,file){
     if(file){ type=file.type; if(!SUPPORTED.includes(type)){ showToast('⚠️ JPEG/PNG만 인식 가능'); return false; } b64=await fileToBase64(file); }
     else { const it=receipts.find(b=>b.id===id); if(!it?.imageUrl){ showToast('사진 없음'); return false; } const resp=await fetch(it.imageUrl); const blob=await resp.blob(); type=blob.type; if(!SUPPORTED.includes(type)){ showToast('⚠️ 지원하지 않는 형식'); return false; } b64=await fileToBase64(new File([blob],'img',{type})); }
     const r=await callClaude(apiKey,b64,type);
-    await fsdb.collection(COL).doc(id).update({ date:r.date||ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:r.store, amount:r.amount, items:r.items, source:'parsed', parsedAt:firebase.firestore.FieldValue.serverTimestamp() });
+    await fsdb.collection(COL).doc(id).update({ date:r.date||ymOf(new Date())+'-'+String(new Date().getDate()).padStart(2,'0'), store:r.store, bizNo:r.bizNo, address:r.address, items:r.items, supplyAmount:r.supplyAmount, vat:r.vat, amount:r.amount, payMethod:r.payMethod, approvalNo:r.approvalNo, people:r.people, memo:r.memo, source:'parsed', parsedAt:firebase.firestore.FieldValue.serverTimestamp() });
     return true;
   }catch(err){ console.error(err); showToast('⚠️ 인식 실패: '+err.message); return false; }
 }
@@ -340,16 +353,20 @@ function render(){
 }
 
 function openEdit(id){ currentId=id; const b=receipts.find(x=>x.id===id); if(!b) return;
+  const v=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val; };
+  const n=x=>(x!=null&&x!=='')?num(x):'';
   document.getElementById('mImg').src=b.imageUrl||''; document.getElementById('mImg').style.display=b.imageUrl?'':'none';
-  document.getElementById('mDate').value=b.date||''; document.getElementById('mStore').value=b.store||'';
-  document.getElementById('mAmount').value=(b.amount!=null&&b.amount!=='')?num(b.amount):''; document.getElementById('mItems').value=b.items||'';
-  document.getElementById('mFrom').value=b.tgFrom||''; document.getElementById('mMemo').value=b.memo||'';
+  v('mDate',b.date||''); v('mStore',b.store||''); v('mBizNo',b.bizNo||''); v('mPay',b.payMethod||'');
+  v('mAddr',b.address||''); v('mItems',b.items||'');
+  v('mSupply',n(b.supplyAmount)); v('mVat',n(b.vat)); v('mAmount',n(b.amount));
+  v('mApproval',b.approvalNo||''); v('mPeople',n(b.people)); v('mFrom',b.tgFrom||''); v('mMemo',b.memo||'');
   document.getElementById('editModal').classList.add('on');
 }
 function closeEdit(){ currentId=null; document.getElementById('editModal').classList.remove('on'); }
 async function saveEdit(){
   if(!currentId) return;
-  try{ await fsdb.collection(COL).doc(currentId).update({ date:document.getElementById('mDate').value, store:document.getElementById('mStore').value.trim(), amount:num(document.getElementById('mAmount').value), items:document.getElementById('mItems').value.trim(), tgFrom:document.getElementById('mFrom').value.trim(), memo:document.getElementById('mMemo').value.trim() }); showToast('💾 저장되었습니다.'); closeEdit(); }
+  const g=id=>document.getElementById(id).value;
+  try{ await fsdb.collection(COL).doc(currentId).update({ date:g('mDate'), store:g('mStore').trim(), bizNo:g('mBizNo').trim(), address:g('mAddr').trim(), items:g('mItems').trim(), payMethod:g('mPay').trim(), supplyAmount:num(g('mSupply')), vat:num(g('mVat')), amount:num(g('mAmount')), approvalNo:g('mApproval').trim(), people:num(g('mPeople')), tgFrom:g('mFrom').trim(), memo:g('mMemo').trim() }); showToast('💾 저장되었습니다.'); closeEdit(); }
   catch(err){ alert('저장 오류: '+err.message); }
 }
 async function reparseCurrent(){ if(!currentId) return; if(!localStorage.getItem(API_KEY_STORE)){ openApiModal(); return; } showToast('🔄 인식 중…'); if(await parseOne(currentId,null)){ const b=receipts.find(x=>x.id===currentId); if(b) openEdit(currentId); showToast('🤖 다시 인식 완료'); } }
@@ -364,8 +381,11 @@ async function quickDelete(id){
 function exportCsv(){
   const data=visibleList();
   if(!data.length){ showToast('내보낼 데이터가 없습니다.'); return; }
-  const rows=[['날짜','식당','금액','메뉴','제출자','메모','등록방식']];
-  data.forEach(b=>rows.push([b.date||'',b.store||'',b.amount||'',b.items||'',b.tgFrom||'',b.memo||'',isParsed(b)?'자동':(b.source==='telegram'?'텔레그램(미인식)':'수동')]));
+  const rows=[['No','날짜','상호명','사업자번호','주소','품목','공급가액','부가세','합계금액','결제방법','카테고리','승인번호','인원','제출자','메모','원본파일명','처리일시']];
+  data.forEach((b,i)=>{
+    let dt=''; if(b.createdAt&&b.createdAt.toDate){ try{ dt=b.createdAt.toDate().toLocaleString('ko-KR'); }catch(_){} }
+    rows.push([i+1, b.date||'', b.store||'', b.bizNo||'', b.address||'', b.items||'', b.supplyAmount||'', b.vat||'', b.amount||'', b.payMethod||'', b.category||'식비', b.approvalNo||'', b.people||'', b.tgFrom||'', b.memo||'', b.fileName||'', dt]);
+  });
   const csv='﻿'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`점심영수증_${viewMonth||'전체'}.csv`; a.click(); showToast('⬇️ CSV를 내려받았습니다.');
