@@ -87,6 +87,7 @@
     tbody td { padding: 11px 12px; font-size: 13px; color: #333; vertical-align: middle; }
     .td-num  { color: #aaa; font-size: 12px; width: 36px; text-align: center; }
     .td-name { font-weight: 600; white-space: nowrap; }
+    .chart-no { color: #1b5e8a; font-weight: 700; font-size: 12px; background: #eef4fb; padding: 1px 6px; border-radius: 5px; margin-right: 5px; }
     .btn-name-edit { margin-left: 6px; border: none; background: transparent; cursor: pointer; font-size: 12px; opacity: .35; padding: 2px; border-radius: 4px; transition: opacity .12s, background .12s; }
     .td-name:hover .btn-name-edit { opacity: 1; }
     .btn-name-edit:hover { background: #e8f4f4; }
@@ -463,9 +464,15 @@
     <h3>➕ 예약 직접 추가</h3>
     <p class="sub">전화·외래 내원 환자의 검진 예약을 직접 등록합니다.</p>
 
-    <div class="ff">
-      <label>이름 <span class="req">*</span></label>
-      <input type="text" id="aName" placeholder="환자 이름" maxlength="20" />
+    <div class="ff-grid">
+      <div class="ff">
+        <label>이름 <span class="req">*</span></label>
+        <input type="text" id="aName" placeholder="환자 이름" maxlength="20" />
+      </div>
+      <div class="ff">
+        <label>환자등록번호</label>
+        <input type="text" id="aChartNo" placeholder="등록번호 (선택)" maxlength="20" />
+      </div>
     </div>
     <div class="ff">
       <label>연락처 <span class="req">*</span></label>
@@ -755,7 +762,7 @@ function renderTable() {
     return `
       <tr class="${isDeleted ? 'row-deleted' : ''}">
         <td class="td-num">${i+1}</td>
-        <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
+        <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
         <td class="td-phone">${esc(formatPhone(b.phone))}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
@@ -969,7 +976,7 @@ function editConf(id) {
 
 // ── 직접 추가 ─────────────────────────────────────────────
 function openAdd() {
-  ['aName','aPhone','aDate','aTime','aService','aConfDate','aMemo']
+  ['aName','aChartNo','aPhone','aDate','aTime','aService','aConfDate','aMemo']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('aConfTime').innerHTML = timeSlotOptions('09:00'); // 기본 오전 9시
   document.getElementById('addError').textContent = '';
@@ -983,6 +990,7 @@ document.getElementById('addModal').addEventListener('click', function(e){
 
 async function saveAdd() {
   const name    = document.getElementById('aName').value.trim();
+  const chartNo = document.getElementById('aChartNo').value.trim();
   const phone   = document.getElementById('aPhone').value.trim();
   const date    = document.getElementById('aDate').value;
   const time    = document.getElementById('aTime').value.trim();
@@ -999,7 +1007,7 @@ async function saveAdd() {
   btn.textContent = '등록 중...'; btn.disabled = true;
   try {
     const doc = {
-      name, phone,
+      name, chartNo: chartNo || '', phone,
       date: date || '',
       time: time || '',
       service: service || '',
@@ -1073,7 +1081,7 @@ function buildMonthGrid(maxEvents) {
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
       const evClass = (st === '취소' ? 'ev-취소' : 'cat-' + colorOf(b)) + (st === '검사완료' ? ' ev-done' : '');
       const dot = `<span class="cdot d-${colorOf(b)} ev-dot" title="검사 구분 색 변경" onclick="event.stopPropagation();openColorPicker('${b.id}',this)"></span>`;
-      evHtml += `<div class="cal-event ${evClass}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${dot}${t}${esc(b.name||'-')}</div>${svcLine}</div>`;
+      evHtml += `<div class="cal-event ${evClass}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${dot}${t}${b.chartNo ? esc(b.chartNo)+' ' : ''}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
     if (list.length > maxEvents) evHtml += `<div class="cal-more" onclick="openDayDetail('${dateStr}')">+${list.length - maxEvents}건 더 보기</div>`;
 
@@ -1131,7 +1139,7 @@ function openDayDetail(dateStr) {
         return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
           <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
           <div class="day-info">
-            <span class="day-name">${colorDotHtml(b)}${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
+            <span class="day-name">${colorDotHtml(b)}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
             <span class="day-svc">${esc(b.service||'')}</span>
           </div>
           <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
