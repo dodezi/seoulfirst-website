@@ -536,13 +536,13 @@
 <!-- ── 검사 구분 색 선택 팝업 ── -->
 <div id="colorPicker" class="color-picker">
   <div class="cp-swatches">
-    <button class="cp-sw d-blue"   title="파랑" onclick="setColor('blue')"></button>
-    <button class="cp-sw d-green"  title="초록" onclick="setColor('green')"></button>
-    <button class="cp-sw d-red"    title="빨강" onclick="setColor('red')"></button>
-    <button class="cp-sw d-purple" title="보라" onclick="setColor('purple')"></button>
-    <button class="cp-sw d-orange" title="주황" onclick="setColor('orange')"></button>
-    <button class="cp-sw d-yellow" title="노랑" onclick="setColor('yellow')"></button>
-    <button class="cp-sw d-auto"   title="자동" onclick="setColor('')"></button>
+    <button class="cp-sw d-blue"   onclick="setColor('blue')"></button>
+    <button class="cp-sw d-green"  onclick="setColor('green')"></button>
+    <button class="cp-sw d-red"    onclick="setColor('red')"></button>
+    <button class="cp-sw d-purple" onclick="setColor('purple')"></button>
+    <button class="cp-sw d-orange" onclick="setColor('orange')"></button>
+    <button class="cp-sw d-yellow" onclick="setColor('yellow')"></button>
+    <button class="cp-sw d-auto"   onclick="setColor('')"></button>
   </div>
 </div>
 
@@ -1241,7 +1241,8 @@ function dayEditRow(b) {
       <div><label>연락처</label><input id="de-phone" class="de-in" value="${esc(b.phone||'')}" placeholder="010-0000-0000" maxlength="20"></div>
       <div><label>환자등록번호</label><input id="de-chart" class="de-in" value="${esc(b.chartNo||'')}" placeholder="등록번호" maxlength="20"></div>
       <div><label>시간</label><select id="de-time" class="de-in">${timeSlotOptions(b.confirmedTime || '09:00')}</select></div>
-      <div class="de-wide"><label>색상</label><select id="de-color" class="de-in">${colorSelectOptions(b.colorTag)}</select></div>
+      <div><label>날짜</label><input id="de-date" class="de-in" type="date" value="${esc(b.confirmedDate||'')}"></div>
+      <div><label>색상</label><select id="de-color" class="de-in">${colorSelectOptions(b.colorTag)}</select></div>
     </div>
     <div class="de-full"><label>검사항목</label><input id="de-svc" class="de-in" value="${esc(b.service||'')}" placeholder="검사항목" maxlength="60"></div>
     <div class="de-btns">
@@ -1255,8 +1256,10 @@ function cancelDayEdit() { _dayEditId = null; renderDayList(); }
 async function saveDayEdit(id) {
   const name = document.getElementById('de-name').value.trim();
   if (!name) { showToast('이름을 입력해 주세요.'); document.getElementById('de-name').focus(); return; }
+  const newDate = document.getElementById('de-date').value;
   const upd = {
     confirmedTime: document.getElementById('de-time').value || '',
+    confirmedDate: newDate || '',
     chartNo: document.getElementById('de-chart').value.trim(),
     name,
     phone: document.getElementById('de-phone').value.trim(),
@@ -1267,8 +1270,11 @@ async function saveDayEdit(id) {
     await db.collection('bookings').doc(id).update(upd);
     const it = allBookings.find(b => b.id === id); if (it) Object.assign(it, upd);
     _dayEditId = null;
-    renderDayList(); renderTable(); renderCalendars();
-    showToast('💾 수정되었습니다.');
+    const dateChanged = newDate && newDate !== _dayModalDate;
+    if (dateChanged) { closeDayDetail(); }
+    else { renderDayList(); }
+    renderTable(); renderCalendars();
+    showToast(dateChanged ? `📅 ${newDate}로 날짜 변경되었습니다.` : '💾 수정되었습니다.');
   } catch(e) { alert('수정 오류: ' + e.message); }
 }
 function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; _dayEditId = null; }
