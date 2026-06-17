@@ -186,6 +186,13 @@ tfoot .total-num { text-align: right; color: var(--accent); font-size: 13px; }
 td.amp-td { background: #f0faf5; }
 tr.row-editing td.amp-td { background: #e8f8f0; }
 
+/* 강조 정리(화면 전용·인쇄 미적용): 사용량(mL)·amp 굵게 / 폐기(mL)는 연하게 */
+@media screen {
+  td[data-label="미다졸람 mL"], td[data-label="프로포폴 mL"] { font-weight: 800; color: #0f2b3d; }
+  td[data-label="폐기(mL)"] { background: transparent; }
+  td[data-label="폐기(mL)"] .cell-amp { font-weight: 400; color: var(--muted); background: transparent; }
+}
+
 /* 화면/인쇄 전환 텍스트 */
 .print-only { display: none; }
 .screen-only { display: inline; }

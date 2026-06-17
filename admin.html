@@ -95,6 +95,31 @@ body {
   color: rgba(255,255,255,.35);
   font-size: 11px;
 }
+
+/* ── 모바일: 8개 카드를 2×4로 한 화면에 ── */
+@media screen and (max-width: 640px) {
+  body { align-items: flex-start; }
+  .container { padding: 18px 12px 24px; width: 100%; }
+  .logo { margin-bottom: 18px; }
+  .logo h1 { font-size: 23px; }
+  .logo p { font-size: 10px; margin-top: 3px; }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+  }
+  .card {
+    width: auto;
+    padding: 16px 10px;
+    border-radius: 14px;
+    gap: 7px;
+  }
+  .card .icon { font-size: 34px; }
+  .card h2 { font-size: 14px; line-height: 1.3; }
+  .card p { display: none; }       /* 설명문은 모바일에서 숨겨 한 화면에 */
+  .card .badge { display: none; }
+  .footer { margin-top: 22px; }
+}
 </style>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#1a3a5c" />
