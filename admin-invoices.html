@@ -325,7 +325,15 @@ function fmt(n) { const x = num(n); return x ? x.toLocaleString('ko-KR') : ''; }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000); }
 function openImg(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').classList.add('on'); }
 function lineItems(b) { return Array.isArray(b.items) ? b.items : []; }
-function invoiceTotal(b) { if (b.totalAmount != null && b.totalAmount !== '') return num(b.totalAmount); return lineItems(b).reduce((s,it)=>s+num(it.amount),0); }
+// 합계 = 그 장(사진)에 적힌 품목의 (금액=수량×단가) 합.
+// 여러 장짜리 명세서는 각 장마다 '전체 합계금액'이 똑같이 인쇄돼 있어, 인쇄된 합계(totalAmount)를
+// 그대로 쓰면 장 수만큼 중복 집계됨. 품목 합으로 계산하면 장마다 자기 품목만 더해져 중복이 사라진다.
+function invoiceTotal(b) {
+  const itemSum = lineItems(b).reduce((s,it) => s + (num(it.amount) || num(it.qty) * num(it.unitPrice)), 0);
+  if (itemSum > 0) return itemSum;
+  // 품목이 하나도 안 읽힌 경우에만 인쇄된 합계로 폴백
+  return (b.totalAmount != null && b.totalAmount !== '') ? num(b.totalAmount) : 0;
+}
 function isParsed(b) { return b.source === 'parsed'; }
 
 // ── 파일 → base64 ──
@@ -458,7 +466,7 @@ function render() {
   const rangeLabel = q ? '검색 결과' : (viewMonth ? '이 달' : '전체');
   document.getElementById('stats').innerHTML =
     `<span class="stat-chip chip-month">${rangeLabel} ${list.length}건</span>
-     <span class="stat-chip chip-sum">${rangeLabel} 합계 ${sum.toLocaleString('ko-KR')}원</span>
+     <span class="stat-chip chip-sum">${rangeLabel} 합계 ${sum.toLocaleString('ko-KR')}원 <span style="font-weight:400;opacity:.7">(부가세 별도)</span></span>
      <span class="stat-chip chip-total">전체 ${invoices.length}건</span>`;
 
   // 업체별 소계
@@ -468,7 +476,7 @@ function render() {
   const vs = document.getElementById('vendorSummary');
   if (vendors.length && list.length) {
     vs.innerHTML = `<div style="background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:12px 16px;">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">업체별 합계 (${rangeLabel})</div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">업체별 합계 (${rangeLabel}) <span style="font-weight:400;">· 품목 수량×단가 합, 부가세 별도</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
         ${vendors.map(([v,amt]) => `<span style="background:#f4f8f7;border:1px solid #e3e9e7;border-radius:8px;padding:5px 11px;font-size:13px;"><b style="color:var(--primary)">${esc(v)}</b> <span style="color:#16895f;font-weight:700;margin-left:4px;">${amt.toLocaleString('ko-KR')}원</span></span>`).join('')}
       </div></div>`;
@@ -666,7 +674,7 @@ async function tgIngest(token, fileId, fname, msg) {
 function exportCsv() {
   const data = getVisibleList();
   if (!data.length) { showToast('내보낼 데이터가 없습니다.'); return; }
-  const rows = [['거래일','업체','품명','수량','단가','금액','명세서합계','등록방식']];
+  const rows = [['거래일','업체','품명','수량','단가','금액','합계(공급가액)','등록방식']];
   data.forEach(b => {
     const its = lineItems(b);
     if (!its.length) rows.push([b.date||'', b.vendor||'', '', '', '', '', invoiceTotal(b)||'', isParsed(b)?'자동':'수동']);
