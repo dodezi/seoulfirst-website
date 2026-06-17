@@ -79,6 +79,13 @@ tbody tr:hover { background:#fffaf4; }
 #toast.show { opacity:1; }
 #uploadBar { display:none; position:fixed; top:54px; left:0; right:0; background:var(--accent); color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600; z-index:90; }
 </style>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#1a3a5c" />
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="서울퍼스트" />
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </head>
 <body>
 <div id="header">
