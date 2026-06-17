@@ -264,6 +264,16 @@
     .day-row .day-name { font-weight: 700; color: #1e2a38; white-space: nowrap; }
     .day-row .day-svc { font-size: 12px; color: #555; white-space: normal; line-height: 1.4; }
 
+    /* 날짜 팝업 — 인라인 편집 폼 */
+    .day-edit { border: 1.5px solid #0d7377; border-radius: 10px; padding: 14px; margin: 8px 0; background: #f6fbfb; }
+    .day-edit .de-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .day-edit label { display: block; font-size: 11px; font-weight: 600; color: #5a6b7a; margin-bottom: 4px; }
+    .day-edit .de-in { width: 100%; padding: 8px 10px; border: 1.5px solid #dde1e7; border-radius: 7px; font-size: 13px; font-family: inherit; background: #fff; }
+    .day-edit .de-in:focus { outline: none; border-color: #0d7377; }
+    .day-edit .de-full { margin-bottom: 12px; }
+    .day-edit .de-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .day-edit .de-btns button { padding: 9px 20px; }
+
     /* ── 컴팩트 월간 달력 (명단 위) ── */
     #miniSchedule { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 14px 16px 16px; margin-bottom: 18px; }
     .mini-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -354,12 +364,6 @@
         </div>
         <button class="mini-collapse" id="miniCollapseBtn" onclick="toggleMini()">접기 ▲</button>
       </div>
-      <div class="cal-legend">
-        <span><i class="cdot d-blue"></i>내시경(처방완료)</span>
-        <span><i class="cdot d-green"></i>내시경(처방 전)</span>
-        <span><i class="cdot d-red"></i>비내시경</span>
-        <span class="cl-tip">· 예약 앞 ● 클릭 → 색 변경</span>
-      </div>
       <div id="miniGridWrap">
         <div class="cal-grid mini">
           <div class="cal-dow">
@@ -421,12 +425,6 @@
         <div class="cal-title" id="calTitle"></div>
         <button class="cal-nav" onclick="calNext()">›</button>
         <button class="cal-today-btn" onclick="calToday()">오늘</button>
-      </div>
-      <div class="cal-legend" style="justify-content:center;">
-        <span><i class="cdot d-blue"></i>내시경(처방완료)</span>
-        <span><i class="cdot d-green"></i>내시경(처방 전)</span>
-        <span><i class="cdot d-red"></i>비내시경</span>
-        <span class="cl-tip">· 예약 앞 ● 클릭 → 색 변경</span>
       </div>
       <div class="cal-grid">
         <div class="cal-dow">
@@ -651,7 +649,7 @@ async function setColor(tag) {
     const it = allBookings.find(b => b.id === id); if (it) it.colorTag = tag;
     closeColorPicker();
     renderTable(); renderCalendars();
-    if (_dayModalDate && document.getElementById('dayModal').classList.contains('on')) openDayDetail(_dayModalDate);
+    if (_dayModalDate && document.getElementById('dayModal').classList.contains('on')) renderDayList();
     showToast('🎨 검사 구분 색이 변경되었습니다.');
   } catch(e) { alert('색 변경 오류: ' + e.message); }
 }
@@ -1178,31 +1176,79 @@ function renderCalendars() {
 
 // 특정 날짜의 확정 예약 전체를 팝업으로 표시
 let _dayModalDate = null;
+let _dayEditId    = null;   // 팝업에서 인라인 편집 중인 예약 id
 function openDayDetail(dateStr) {
   _dayModalDate = dateStr;
-  const list = allBookings
-    .filter(b => !b.deleted && b.confirmedDate === dateStr)
-    .sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+  _dayEditId = null;
   const [y,m,d] = dateStr.split('-').map(Number);
   const dow = ['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
   document.getElementById('dayModalTitle').textContent = `📅 ${m}월 ${d}일 (${dow})`;
-  document.getElementById('dayModalSub').textContent = `확정 검사 예약 ${list.length}건`;
-  document.getElementById('dayModalList').innerHTML = list.length
-    ? list.map(b => {
-        const st = b.status || '확정';
-        return `<div class="day-row" onclick="jumpToBooking('${b.id}'); closeDayDetail();">
-          <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
-          <div class="day-info">
-            <span class="day-name">${colorDotHtml(b)}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
-            <span class="day-svc">${esc(b.service||'')}</span>
-          </div>
-          <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
-        </div>`;
-      }).join('')
-    : `<div style="padding:20px;text-align:center;color:#aaa;">확정된 예약이 없습니다.</div>`;
+  renderDayList();
   document.getElementById('dayModal').classList.add('on');
 }
-function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; }
+function dayList() {
+  return allBookings
+    .filter(b => !b.deleted && b.confirmedDate === _dayModalDate)
+    .sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+}
+function renderDayList() {
+  const list = dayList();
+  document.getElementById('dayModalSub').textContent = `확정 검사 예약 ${list.length}건 · 행을 더블클릭하면 수정`;
+  document.getElementById('dayModalList').innerHTML = list.length
+    ? list.map(b => b.id === _dayEditId ? dayEditRow(b) : dayViewRow(b)).join('')
+    : `<div style="padding:20px;text-align:center;color:#aaa;">확정된 예약이 없습니다.</div>`;
+}
+function dayViewRow(b) {
+  const st = b.status || '확정';
+  return `<div class="day-row" ondblclick="enterDayEdit('${b.id}')" title="더블클릭하여 수정">
+    <span class="day-time">${esc(b.confirmedTime||'--:--')}</span>
+    <div class="day-info">
+      <span class="day-name">${colorDotHtml(b)}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name||'-')}${b.source==='직접입력' ? '<span class="td-source-tag">직접</span>' : ''}</span>
+      <span class="day-svc">${esc(b.service||'')}</span>
+    </div>
+    <span class="status-badge s-${st}" style="cursor:default;">${st}</span>
+  </div>`;
+}
+function colorSelectOptions(sel) {
+  const opts = [['','자동'],['blue','🔵 파랑(처방완료)'],['green','🟢 초록(처방 전)'],['red','🔴 빨강(비내시경)'],['purple','🟣 보라'],['orange','🟠 주황'],['yellow','🟡 노랑']];
+  return opts.map(([v,l]) => `<option value="${v}"${v === (sel||'') ? ' selected' : ''}>${l}</option>`).join('');
+}
+function dayEditRow(b) {
+  return `<div class="day-edit">
+    <div class="de-grid">
+      <div><label>시간</label><select id="de-time" class="de-in">${timeSlotOptions(b.confirmedTime || '09:00')}</select></div>
+      <div><label>환자등록번호</label><input id="de-chart" class="de-in" value="${esc(b.chartNo||'')}" placeholder="등록번호" maxlength="20"></div>
+      <div><label>이름</label><input id="de-name" class="de-in" value="${esc(b.name||'')}" maxlength="20"></div>
+      <div><label>색상</label><select id="de-color" class="de-in">${colorSelectOptions(b.colorTag)}</select></div>
+    </div>
+    <div class="de-full"><label>검사항목</label><input id="de-svc" class="de-in" value="${esc(b.service||'')}" placeholder="검사항목" maxlength="60"></div>
+    <div class="de-btns">
+      <button class="btn-form-cancel" onclick="cancelDayEdit()">취소</button>
+      <button class="btn-form-save" onclick="saveDayEdit('${b.id}')">💾 저장</button>
+    </div>
+  </div>`;
+}
+function enterDayEdit(id) { _dayEditId = id; renderDayList(); }
+function cancelDayEdit() { _dayEditId = null; renderDayList(); }
+async function saveDayEdit(id) {
+  const name = document.getElementById('de-name').value.trim();
+  if (!name) { showToast('이름을 입력해 주세요.'); document.getElementById('de-name').focus(); return; }
+  const upd = {
+    confirmedTime: document.getElementById('de-time').value || '',
+    chartNo: document.getElementById('de-chart').value.trim(),
+    name,
+    service: document.getElementById('de-svc').value.trim(),
+    colorTag: document.getElementById('de-color').value
+  };
+  try {
+    await db.collection('bookings').doc(id).update(upd);
+    const it = allBookings.find(b => b.id === id); if (it) Object.assign(it, upd);
+    _dayEditId = null;
+    renderDayList(); renderTable(); renderCalendars();
+    showToast('💾 수정되었습니다.');
+  } catch(e) { alert('수정 오류: ' + e.message); }
+}
+function closeDayDetail() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; _dayEditId = null; }
 document.getElementById('dayModal').addEventListener('click', function(e){
   if (e.target === this) closeDayDetail();
 });
