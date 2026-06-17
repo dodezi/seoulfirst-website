@@ -87,7 +87,18 @@
     tbody td { padding: 11px 12px; font-size: 13px; color: #333; vertical-align: middle; }
     .td-num  { color: #aaa; font-size: 12px; width: 36px; text-align: center; }
     .td-name { font-weight: 600; white-space: nowrap; }
-    .chart-no { color: #1b5e8a; font-weight: 700; font-size: 12px; background: #eef4fb; padding: 1px 6px; border-radius: 5px; margin-right: 5px; }
+    .chart-no { color: #1b5e8a; font-weight: 700; font-size: 12px; background: #eef4fb; padding: 1px 6px; border-radius: 5px; margin-right: 5px; cursor: pointer; }
+    .chart-no:hover { background: #dce9f7; }
+    .btn-chart-add { border: 1px dashed #b9c6d4; background: #f4f7fb; color: #5a7da0; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; cursor: pointer; font-family: inherit; margin-right: 5px; }
+    .btn-chart-add:hover { background: #e7eff7; }
+
+    /* 대기중(온라인·신규) 행 강조 — 연락 누락 방지 */
+    tbody tr.row-waiting { background: #fff8ec; }
+    tbody tr.row-waiting:hover { background: #fff2dd; }
+    tbody tr.row-waiting td:first-child { box-shadow: inset 4px 0 0 #e67e22; }
+    tbody tr.group-waiting td { background: #fdebd0; color: #b9651b; font-weight: 800; font-size: 13.5px; padding: 9px 14px; border-top: 2px solid #f5c69a; border-bottom: 1px solid #f3d3a8; }
+    tbody tr.group-waiting .gw-tip { font-weight: 400; font-size: 12px; color: #c98b4a; margin-left: 8px; }
+    .badge-new { display: inline-block; background: #e67e22; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-right: 6px; vertical-align: middle; }
     .btn-name-edit { margin-left: 6px; border: none; background: transparent; cursor: pointer; font-size: 12px; opacity: .35; padding: 2px; border-radius: 4px; transition: opacity .12s, background .12s; }
     .td-name:hover .btn-name-edit { opacity: 1; }
     .btn-name-edit:hover { background: #e8f4f4; }
@@ -593,6 +604,30 @@ function colorOf(b) {
 function colorDotHtml(b) {
   return `<span class="cdot d-${colorOf(b)} color-dot" title="검사 구분 색 변경" onclick="event.stopPropagation();openColorPicker('${b.id}',this)"></span>`;
 }
+// 환자등록번호 — 있으면 클릭해 수정, 없으면(삭제 행 제외) +번호 버튼
+function chartNoHtml(b, isDeleted) {
+  if (b.chartNo) {
+    return isDeleted
+      ? `<span class="chart-no" style="cursor:default">${esc(b.chartNo)}</span>`
+      : `<span class="chart-no" title="등록번호 수정" onclick="event.stopPropagation();editChartNo('${b.id}')">${esc(b.chartNo)}</span>`;
+  }
+  return isDeleted ? '' : `<button class="btn-chart-add" title="등록번호 입력" onclick="event.stopPropagation();editChartNo('${b.id}')">＋번호</button>`;
+}
+// 등록번호 입력/수정
+async function editChartNo(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (!item) return;
+  const nv = prompt('환자등록번호를 입력/수정하세요', item.chartNo || '');
+  if (nv === null) return;
+  const v = nv.trim();
+  if (v === (item.chartNo || '')) return;
+  try {
+    await db.collection('bookings').doc(id).update({ chartNo: v });
+    item.chartNo = v;
+    renderTable(); renderCalendars();
+    showToast(v ? `🔢 등록번호: ${v}` : '등록번호를 비웠습니다.');
+  } catch(e) { alert('등록번호 수정 오류: ' + e.message); }
+}
 
 // ── 색 선택 팝업 ──────────────────────────────────────────
 let cpTargetId = null;
@@ -759,10 +794,11 @@ function renderTable() {
       ? `<button class="btn-restore" onclick="restoreBooking('${b.id}')">♻️ 복원</button>`
       : `<button class="btn-del-row" onclick="openDel('${b.id}','${esc(b.name||'')}','${esc(b.date||'')}')">삭제</button>`;
 
+    const rowCls = isDeleted ? 'row-deleted' : (status === '대기중' ? 'row-waiting' : '');
     return `
-      <tr class="${isDeleted ? 'row-deleted' : ''}">
+      <tr class="${rowCls}">
         <td class="td-num">${i+1}</td>
-        <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${b.chartNo ? `<span class="chart-no">${esc(b.chartNo)}</span>` : ''}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
+        <td class="td-name">${isDeleted ? '' : colorDotHtml(b)}${chartNoHtml(b, isDeleted)}${esc(b.name||'-')}${srcTag}${isDeleted ? '' : `<button class="btn-name-edit" onclick="editName('${b.id}')" title="이름 수정">✏️</button>`}</td>
         <td class="td-phone">${esc(formatPhone(b.phone))}</td>
         <td class="td-date">${esc(b.date||'-')}</td>
         <td class="td-date">${esc(b.time||'-')}</td>
@@ -781,6 +817,24 @@ function renderTable() {
         <td>${actionCell}</td>
       </tr>`;
   };
+
+  // 전체 탭(검색 안 함): '연락 대기(대기중)'와 '오늘 확정'을 그룹으로 분리해 누락 방지
+  if (currentFilter === '전체' && !q) {
+    const waiting   = list.filter(b => (b.status || '대기중') === '대기중');
+    const todayConf = list.filter(b => b.status === '확정')
+                          .sort((a, b) => (a.confirmedTime || '').localeCompare(b.confirmedTime || ''));
+    let html = '';
+    if (waiting.length) {
+      html += `<tr class="group-waiting"><td colspan="13">📞 연락 대기 · 온라인/신규 예약 <span class="dg-count">${waiting.length}명</span><span class="gw-tip">검사일을 배정하고 환자에게 연락하세요</span></td></tr>`;
+      waiting.forEach((b, i) => html += rowHtml(b, i));
+    }
+    if (todayConf.length) {
+      html += `<tr class="date-group"><td colspan="13">📅 오늘 확정 검사 <span class="dg-count">${todayConf.length}명</span></td></tr>`;
+      todayConf.forEach((b, i) => html += rowHtml(b, i));
+    }
+    tbody.innerHTML = html || `<tr><td colspan="13" class="empty-msg">표시할 예약이 없습니다.</td></tr>`;
+    return;
+  }
 
   // 확정·검사완료 탭: 확정 검사일(confirmedDate)별로 그룹 헤더를 넣어 구분
   const useDateGroup = (currentFilter === '확정' || currentFilter === '검사완료');
