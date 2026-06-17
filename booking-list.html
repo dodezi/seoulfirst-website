@@ -210,6 +210,9 @@
     .cal-event.cat-blue  { background: #eaf2fd; color: #1b5fb0; border-left-color: #2563eb; }
     .cal-event.cat-green { background: #e8f8e8; color: #1e7a3a; border-left-color: #27ae60; }
     .cal-event.cat-red   { background: #fdecea; color: #c0392b; border-left-color: #e74c3c; }
+    .cal-event.cat-purple { background: #f3eafa; color: #7d3c98; border-left-color: #8e44ad; }
+    .cal-event.cat-orange { background: #fef0e3; color: #b9651b; border-left-color: #e67e22; }
+    .cal-event.cat-yellow { background: #fef9e0; color: #927608; border-left-color: #f1c40f; }
     .cal-event.ev-취소   { background: #f0f0f0; color: #999; border-left-color: #bbb; }
     .cal-event.ev-취소 .ev-main { text-decoration: line-through; }
     .cal-event.ev-done   { opacity: .55; }
@@ -218,6 +221,7 @@
     /* 색 동그라미 (표·달력 공용) */
     .cdot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; vertical-align: middle; }
     .d-blue { background: #2563eb; } .d-green { background: #27ae60; } .d-red { background: #e74c3c; } .d-auto { background: #cfd6df; }
+    .d-purple { background: #8e44ad; } .d-orange { background: #e67e22; } .d-yellow { background: #f1c40f; }
     .color-dot { cursor: pointer; margin-right: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.1); }
 
     /* 색 선택 팝업 */
@@ -515,6 +519,9 @@
   <button onclick="setColor('blue')"><span class="cdot d-blue"></span> 🔵 내시경 (장정결제 처방 완료)</button>
   <button onclick="setColor('green')"><span class="cdot d-green"></span> 🟢 내시경 (처방 전)</button>
   <button onclick="setColor('red')"><span class="cdot d-red"></span> 🔴 비내시경 (초음파 등)</button>
+  <button onclick="setColor('purple')"><span class="cdot d-purple"></span> 🟣 보라 (자유 지정)</button>
+  <button onclick="setColor('orange')"><span class="cdot d-orange"></span> 🟠 주황 (자유 지정)</button>
+  <button onclick="setColor('yellow')"><span class="cdot d-yellow"></span> 🟡 노랑 (자유 지정)</button>
   <button onclick="setColor('')"><span class="cdot d-auto"></span> ⚪ 자동 (검사항목 기준)</button>
 </div>
 
@@ -570,8 +577,9 @@ function isEndoscopy(svc) {
   return ['내시경','수면','대장','자비','위암','대장암','용종','폴립','위장','위'].some(k => s.includes(k));
 }
 // 예약의 실제 색: 수동 지정(colorTag) 우선, 없으면 자동 (내시경=초록/처방전, 비내시경=빨강)
+const COLOR_TAGS = ['blue','green','red','purple','orange','yellow'];
 function colorOf(b) {
-  if (b.colorTag === 'blue' || b.colorTag === 'green' || b.colorTag === 'red') return b.colorTag;
+  if (COLOR_TAGS.includes(b.colorTag)) return b.colorTag;
   return isEndoscopy(b.service) ? 'green' : 'red';
 }
 // 표·모달용 색 동그라미 (클릭 → 색 선택)
