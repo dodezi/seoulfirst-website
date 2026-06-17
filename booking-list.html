@@ -268,7 +268,10 @@
     .day-row .day-svc { font-size: 12px; color: #555; white-space: normal; line-height: 1.4; }
 
     /* 날짜 팝업 — 인라인 편집 폼 */
-    .day-edit { border: 1.5px solid #0d7377; border-radius: 10px; padding: 14px; margin: 8px 0; background: #f6fbfb; }
+    .day-edit { border: 2px solid #0d7377; border-radius: 10px; padding: 0 14px 14px; margin: 8px 0; background: #f6fbfb; box-shadow: 0 4px 14px rgba(13,115,119,.18); }
+    .day-edit .de-head { display: flex; align-items: center; gap: 8px; margin: 0 -14px 12px; padding: 10px 14px; background: #0d7377; color: #fff; border-radius: 8px 8px 0 0; font-size: 14px; font-weight: 700; }
+    .day-edit .de-head .de-head-time { background: rgba(255,255,255,.22); padding: 2px 8px; border-radius: 6px; font-size: 13px; }
+    .day-edit .de-head small { font-weight: 400; opacity: .85; font-size: 12px; margin-left: auto; }
     .day-edit .de-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .day-edit .de-wide { grid-column: 1 / -1; }
     .day-edit label { display: block; font-size: 11px; font-weight: 600; color: #5a6b7a; margin-bottom: 4px; }
@@ -1154,7 +1157,7 @@ function buildMonthGrid(maxEvents) {
       const svcLine  = b.service ? `<div class="ev-svc">${esc(shortSvc(b.service))}</div>` : '';
       const evClass = (st === '취소' ? 'ev-취소' : 'cat-' + colorOf(b)) + (st === '검사완료' ? ' ev-done' : '');
       const dot = `<span class="cdot d-${colorOf(b)} ev-dot" title="검사 구분 색 변경" onclick="event.stopPropagation();openColorPicker('${b.id}',this)"></span>`;
-      evHtml += `<div class="cal-event ${evClass}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st})" onclick="jumpToBooking('${b.id}')"><div class="ev-main">${dot}${t}${b.chartNo ? esc(b.chartNo)+' ' : ''}${esc(b.name||'-')}</div>${svcLine}</div>`;
+      evHtml += `<div class="cal-event ${evClass}" title="${esc(b.name||'')}${b.confirmedTime ? ' '+esc(b.confirmedTime) : ''}${svcFull} (${st}) · 클릭하면 이 날짜 전체 보기" onclick="openDayDetail('${dateStr}')"><div class="ev-main">${dot}${t}${b.chartNo ? esc(b.chartNo)+' ' : ''}${esc(b.name||'-')}</div>${svcLine}</div>`;
     });
     if (list.length > maxEvents) evHtml += `<div class="cal-more" onclick="openDayDetail('${dateStr}')">+${list.length - maxEvents}건 더 보기</div>`;
 
@@ -1236,6 +1239,7 @@ function colorSelectOptions(sel) {
 }
 function dayEditRow(b) {
   return `<div class="day-edit">
+    <div class="de-head"><span class="cdot d-${colorOf(b)}"></span><span class="de-head-time">${esc(b.confirmedTime||'--:--')}</span>${b.chartNo ? esc(b.chartNo)+' ' : ''}${esc(b.name||'-')} 님 수정<small>아래 내용을 고친 뒤 저장하세요</small></div>
     <div class="de-grid">
       <div><label>이름</label><input id="de-name" class="de-in" value="${esc(b.name||'')}" maxlength="20"></div>
       <div><label>연락처</label><input id="de-phone" class="de-in" value="${esc(b.phone||'')}" placeholder="010-0000-0000" maxlength="20"></div>
