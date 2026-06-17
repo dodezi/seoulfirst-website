@@ -48,9 +48,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // 직원 연차 기록: 관리자 전용
+    // 직원 연차 기록: 관리자는 읽기·생성·수정(삭제요청 포함) 가능,
+    // 실제 삭제는 원장 계정만 (직원 계정은 deleteRequested 플래그로 요청만)
     match /staff_leaves/{doc} {
-      allow read, write: if isAdmin();
+      allow read, create, update: if isAdmin();
+      allow delete: if request.auth != null
+                    && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
     // 그 외 모든 경로: 기본 차단

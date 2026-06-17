@@ -254,6 +254,9 @@
     .cal-event .ev-time { font-weight: 700; }
     .cal-event .ev-svc { font-size: 10px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-more { font-size: 10px; color: #0d7377; padding: 1px 6px; cursor: pointer; font-weight: 700; border-radius: 4px; }
+    .cal-leave { font-size: 10.5px; font-weight: 700; color: #fff; padding: 2px 7px; border-radius: 11px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-leave .cl-half { font-weight: 400; opacity: .85; }
+    .cal-grid.mini .cal-leave { font-size: 9.5px; padding: 1px 5px; }
     .cal-more:hover { background: #e8f4f4; text-decoration: underline; }
     .cal-daynum.clickable { cursor: pointer; display: inline-block; border-radius: 5px; padding: 0 4px; }
     .cal-daynum.clickable:hover { background: #e8f4f4; }
@@ -553,6 +556,8 @@
 
 <script>
 let allBookings   = [];
+let allStaffLeaves = [];   // 직원 연차(읽기 전용 표시용)
+let staffMap       = {};   // staffId → {name, color}
 let currentFilter = '전체';
 let deleteId      = null;
 let currentView   = 'list';            // 'list' | 'calendar'
@@ -586,6 +591,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('adminScreen').style.display = 'block';
     document.getElementById('adminEmail').textContent = user.email;
     loadBookings();
+    loadStaffLeaves();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('adminScreen').style.display = 'none';
@@ -695,6 +701,22 @@ async function loadBookings() {
   } catch(e) {
     document.getElementById('bookingTableBody').innerHTML =
       `<tr><td colspan="13" class="empty-msg" style="color:#c0392b;">불러오지 못했습니다.<br/><small>${e.message}</small></td></tr>`;
+  }
+}
+
+// 직원 연차 + 직원 색상 로드 (읽기 전용 · 달력에 함께 표시)
+async function loadStaffLeaves() {
+  try {
+    const [lvSnap, stSnap] = await Promise.all([
+      db.collection('staff_leaves').get(),
+      db.collection('staff').get()
+    ]);
+    allStaffLeaves = lvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    staffMap = {};
+    stSnap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377' }; });
+    renderCalendars();
+  } catch(e) {
+    // 보안규칙 미배포 등으로 읽기 실패 시 조용히 무시 (연차 미표시)
   }
 }
 
@@ -1133,6 +1155,15 @@ function buildMonthGrid(maxEvents) {
     (events[b.confirmedDate] = events[b.confirmedDate] || []).push(b);
   });
 
+  // 직원 연차(읽기 전용) — 연차관리 프로그램에서 등록된 내용을 함께 표시
+  const leaveMap = {};
+  allStaffLeaves.forEach(l => {
+    if (!l.date) return;
+    const [y, m] = l.date.split('-').map(Number);
+    if (y !== calYear || (m-1) !== calMonth) return;
+    (leaveMap[l.date] = leaveMap[l.date] || []).push(l);
+  });
+
   const firstDow   = new Date(calYear, calMonth, 1).getDay();   // 0=일
   const daysInMon  = new Date(calYear, calMonth+1, 0).getDate();
   const todayStr   = (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
@@ -1161,13 +1192,22 @@ function buildMonthGrid(maxEvents) {
     });
     if (list.length > maxEvents) evHtml += `<div class="cal-more" onclick="openDayDetail('${dateStr}')">+${list.length - maxEvents}건 더 보기</div>`;
 
+    // 직원 연차 칩 (읽기 전용)
+    const dayLeaves = (leaveMap[dateStr] || []).sort((a,b) => (a.staffName||'').localeCompare(b.staffName||''));
+    const lvHtml = dayLeaves.map(l => {
+      const c = (staffMap[l.staffId] || {}).color || '#0d7377';
+      const half = l.portion === 'am' ? ' 오전' : (l.portion === 'pm' ? ' 오후' : '');
+      const req  = l.deleteRequested ? '⏳' : '';
+      return `<div class="cal-leave" style="background:${c};" title="🌴 연차: ${esc(l.staffName)}${half}${l.deleteRequested ? ' · 삭제요청' : ''}">🌴${req}${esc(l.staffName)}<span class="cl-half">${half}</span></div>`;
+    }).join('');
+
     // 일정이 있는 날은 날짜 숫자 클릭으로 그날 전체 보기
     const dnClick = list.length ? ` onclick="openDayDetail('${dateStr}')" title="${list.length}건 전체 보기"` : '';
     const dnPtr   = list.length ? ' clickable' : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}">
       <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}</div>
-      ${evHtml}
+      ${lvHtml}${evHtml}
     </div>`;
   }
   // 마지막 주 빈칸 채우기

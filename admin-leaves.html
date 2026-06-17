@@ -62,6 +62,15 @@
     .ro-note { background: #fff8ec; border: 1px solid #f5dcb0; color: #95701f; font-size: 12.5px; padding: 9px 14px; border-radius: 9px; margin-bottom: 18px; line-height: 1.5; }
     .ro-note b { color: #b9651b; }
 
+    /* 원장 삭제요청 알림 */
+    #delReqBox { background: #fff4f3; border: 1.5px solid #f3c4bd; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
+    .delreq-head { font-size: 13.5px; font-weight: 800; color: #c0392b; margin-bottom: 8px; }
+    .delreq-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid #f6d8d3; font-size: 13px; }
+    .delreq-info { font-weight: 700; color: #0f2b3d; }
+    .delreq-by { color: #99a4af; font-size: 11.5px; margin-right: auto; }
+    .delreq-ok { background: #c0392b; color: #fff; border: none; font-weight: 700; font-size: 12.5px; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-family: inherit; }
+    .delreq-no { background: #fff; color: #51606e; border: 1px solid #dde2e8; font-weight: 600; font-size: 12.5px; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-family: inherit; }
+
     /* ── 직원 요약 카드 ── */
     .staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-bottom: 26px; }
     .staff-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 16px 16px 14px; border-left: 5px solid #ccc; position: relative; }
@@ -117,6 +126,8 @@
     .book-badge.b3 { background: #e67e22; color: #fff; }
     .leave-chip { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; color: #fff; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .leave-chip .lc-half { opacity: .85; font-weight: 400; font-size: 10px; }
+    .leave-chip .lc-cnt { background: rgba(255,255,255,.32); border-radius: 8px; padding: 0 5px; font-weight: 800; margin-left: 4px; font-size: 10px; }
+    .leave-chip .lc-req { margin-right: 2px; }
     .cal-event { font-size: 10.5px; padding: 1px 5px 1px 6px; border-radius: 4px; border-left: 3px solid #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.55; }
     .cal-event.cat-blue   { background:#eaf2fd; color:#1b5fb0; border-left-color:#2563eb; }
     .cal-event.cat-green  { background:#e8f8e8; color:#1e7a3a; border-left-color:#27ae60; }
@@ -188,6 +199,8 @@
     .detail-row .dr-portion { font-size: 11px; padding: 1px 8px; border-radius: 12px; background: #eef1f5; color: #51606e; }
     .detail-row .dr-memo { color: #8a96a2; flex: 1; }
     .detail-row .dr-del { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 13px; }
+    .detail-row .dr-req { background: #fff3e0; border: none; color: #c47c2c; cursor: pointer; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 12px; font-family: inherit; }
+    .detail-row.req { background: #fff8ec; }
     .detail-empty { color: #b3bcc5; font-size: 13px; padding: 12px 0; text-align: center; }
 
     /* 토스트 */
@@ -248,6 +261,9 @@
       📌 이 화면에서는 <b>검진 예약 일정을 함께 보여주기만</b> 합니다(읽기 전용). 예약 내용은 여기서 수정·삭제되지 않으며, 예약명단 프로그램에서도 연차 기록은 건드리지 않습니다. ·
       연차 부여 기준: <b>입사 1년 미만</b>은 매월 개근 시 1일씩(최대 11일), <b>1년 이상</b> 15일 — 입사일로 자동 계산됩니다.
     </div>
+
+    <!-- 원장 전용: 삭제 요청 알림 -->
+    <div id="delReqBox" style="display:none;"></div>
 
     <!-- 직원 요약 카드 -->
     <div class="staff-grid" id="staffGrid"></div>
@@ -317,7 +333,7 @@
       <input type="text" id="lvMemo" placeholder="예: 가족여행, 개인사정" maxlength="40" />
     </div>
     <div class="mb-btns">
-      <button class="btn-del" id="lvDelBtn" style="display:none;" onclick="deleteLeave()">삭제</button>
+      <button class="btn-del" id="lvDelBtn" style="display:none;">삭제</button>
       <button class="btn-cancel" onclick="closeLeaveModal()">취소</button>
       <button class="btn-save" onclick="saveLeave()">💾 저장</button>
     </div>
@@ -424,6 +440,9 @@ auth.onAuthStateChanged(user => {
 document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
 
 // ── 데이터 ────────────────────────────────────────────────
+const OWNER_EMAIL = 'dodezi82@gmail.com';   // 원장(삭제 권한) 계정
+function isOwner() { return ((auth.currentUser || {}).email || '') === OWNER_EMAIL; }
+
 let allStaff   = [];    // {id, name, hireDate, color, active, order}
 let allLeaves  = [];    // {id, staffId, staffName, date, portion, memo}
 let bookByDate = {};     // 'yyyy-mm-dd' → [예약,...] (읽기 전용)
@@ -535,6 +554,13 @@ function usedDays(staffId, start, end) {
   });
   return sum;
 }
+// 해당 연차 날짜가 속한 연차연도 기준 그 직원의 누적 사용일수
+function usedInLeavePeriod(staffId, dateStr) {
+  const s = allStaff.find(x => x.id === staffId);
+  if (!s) return 0;
+  const st = leaveStatus(s, pd(dateStr));
+  return usedDays(staffId, st.periodStart, st.periodEnd);
+}
 
 // ── 직원 카드 렌더 ─────────────────────────────────────────
 function renderStaff() {
@@ -575,6 +601,24 @@ function renderStaff() {
     </div>`;
   }).join('');
   refreshStaffSelect();
+  renderDelReqs();
+}
+
+// 원장 계정에 삭제 요청 목록 표시 (승인/거절)
+function renderDelReqs() {
+  const box = document.getElementById('delReqBox');
+  if (!box) return;
+  const reqs = allLeaves.filter(l => l.deleteRequested)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  if (!isOwner() || !reqs.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = 'block';
+  box.innerHTML = `<div class="delreq-head">🔔 직원 삭제 요청 ${reqs.length}건 — 승인하면 삭제됩니다</div>` +
+    reqs.map(l => `<div class="delreq-row">
+      <span class="delreq-info">${esc(l.staffName)} · ${esc(l.date)} ${portionLabel(l.portion)}${l.memo ? ' · '+esc(l.memo) : ''}</span>
+      <span class="delreq-by">요청: ${esc(l.deleteReqBy||'')}</span>
+      <button class="delreq-ok" onclick="ownerDelete('${l.id}')">🗑️ 삭제 승인</button>
+      <button class="delreq-no" onclick="clearDeleteReq('${l.id}')">거절</button>
+    </div>`).join('');
 }
 
 function staffColor(staffId) {
@@ -637,7 +681,9 @@ function renderCalendar() {
     if (lvs.length) hasAny = true;
     const chips = lvs.slice(0, 4).map(l => {
       const half = l.portion === 'am' ? '<span class="lc-half">오전</span>' : (l.portion === 'pm' ? '<span class="lc-half">오후</span>' : '');
-      return `<div class="leave-chip" style="background:${staffColor(l.staffId)};" title="${esc(l.staffName)} ${portionLabel(l.portion)}${l.memo ? ' · '+esc(l.memo) : ''} (클릭하여 수정)" onclick="event.stopPropagation();openLeaveModal('${l.id}')">${esc(l.staffName)} ${half}</div>`;
+      const used = usedInLeavePeriod(l.staffId, l.date);
+      const reqMark = l.deleteRequested ? '<span class="lc-req" title="삭제 요청됨">⏳</span>' : '';
+      return `<div class="leave-chip" style="background:${staffColor(l.staffId)};" title="${esc(l.staffName)} ${portionLabel(l.portion)} · 누적 ${fmtNum(used)}일${l.memo ? ' · '+esc(l.memo) : ''}${l.deleteRequested ? ' · 삭제 요청됨' : ''} (클릭하여 수정)" onclick="event.stopPropagation();openLeaveModal('${l.id}')">${reqMark}${esc(l.staffName)} ${half}<span class="lc-cnt">${fmtNum(used)}</span></div>`;
     }).join('');
     const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 연차</div>` : '';
 
@@ -693,7 +739,8 @@ function renderDayModal() {
     .sort((a,b) => (a.staffName||'').localeCompare(b.staffName||''));
   document.getElementById('dayLeaves').innerHTML = lvs.length ? lvs.map(l => {
     const half = l.portion === 'am' ? ' <span class="lc-half">오전</span>' : (l.portion === 'pm' ? ' <span class="lc-half">오후</span>' : '');
-    return `<span class="day-lv-chip" style="background:${staffColor(l.staffId)};" title="클릭하여 수정" onclick="editLeaveFromDay('${l.id}')">${esc(l.staffName)}${half}</span>`;
+    const reqMark = l.deleteRequested ? '⏳ ' : '';
+    return `<span class="day-lv-chip" style="background:${staffColor(l.staffId)};" title="${l.deleteRequested ? '삭제 요청됨 · ' : ''}클릭하여 수정" onclick="editLeaveFromDay('${l.id}')">${reqMark}${esc(l.staffName)}${half}</span>`;
   }).join('') : `<span class="day-empty" style="padding:4px 0;">등록된 연차가 없습니다.</span>`;
 }
 function closeDayModal() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; }
@@ -740,7 +787,7 @@ function openLeaveModal(id, preStaffId, preDate) {
     document.getElementById('lvMemo').value = l.memo || '';
     endWrap.style.display = 'none';      // 수정은 단일 날짜만
     wkWrap.style.display = 'none';
-    delBtn.style.display = 'inline-block';
+    configureLeaveDelBtn(l);
   } else {
     document.getElementById('leaveModalTitle').textContent = '연차 등록';
     document.getElementById('leaveModalSub').textContent = '직원과 날짜를 선택하세요. 휴가는 종료일을 지정해 연속 등록할 수 있습니다.';
@@ -826,27 +873,67 @@ async function saveLeave() {
   } catch(e) { alert('등록 오류: ' + e.message); }
 }
 
-async function deleteLeave() {
-  const id = document.getElementById('leaveEditId').value;
-  if (!id) return;
+// 연차 모달 삭제 버튼 — 계정 권한에 따라 동작/문구 결정
+function configureLeaveDelBtn(l) {
+  const btn = document.getElementById('lvDelBtn');
+  btn.style.display = 'inline-block';
+  if (isOwner()) {
+    btn.textContent = l.deleteRequested ? '🗑️ 삭제 승인' : '삭제';
+    btn.onclick = () => ownerDelete(l.id, closeLeaveModal);
+  } else if (l.deleteRequested) {
+    btn.textContent = '삭제요청 취소';
+    btn.onclick = () => clearDeleteReq(l.id, closeLeaveModal);
+  } else {
+    btn.textContent = '📨 삭제 요청';
+    btn.onclick = () => requestDelete(l.id, closeLeaveModal);
+  }
+}
+
+// 원장 — 실제 삭제
+async function ownerDelete(id, after) {
   const l = allLeaves.find(x => x.id === id);
   if (!confirm(`${l ? l.staffName+' · '+l.date : '이 연차'} 기록을 삭제할까요?`)) return;
   try {
     await db.collection('staff_leaves').doc(id).delete();
-    closeLeaveModal();
-    showToast('🗑️ 연차가 삭제되었습니다.');
+    showToast('🗑️ 삭제되었습니다.');
+    if (after) after();
+    if (_detailStaffId) openDetail(_detailStaffId);
   } catch(e) { alert('삭제 오류: ' + e.message); }
 }
-
-// 상세 모달에서 삭제
-async function deleteLeaveById(id) {
+// 직원 — 삭제 요청 (원장 승인 필요)
+async function requestDelete(id, after) {
   const l = allLeaves.find(x => x.id === id);
-  if (!confirm(`${l ? l.date : '이 연차'} 기록을 삭제할까요?`)) return;
+  if (!confirm(`${l ? l.staffName+' · '+l.date : '이 연차'} 삭제를 원장에게 요청할까요?\n원장 계정 승인 후 삭제됩니다.`)) return;
   try {
-    await db.collection('staff_leaves').doc(id).delete();
-    showToast('🗑️ 삭제되었습니다.');
-    if (_detailStaffId) openDetail(_detailStaffId);   // 다시 렌더
-  } catch(e) { alert('삭제 오류: ' + e.message); }
+    await db.collection('staff_leaves').doc(id).update({
+      deleteRequested: true,
+      deleteReqBy: (auth.currentUser || {}).email || '',
+      deleteReqAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('📨 삭제 요청을 보냈습니다. 원장 승인 후 삭제됩니다.');
+    if (after) after();
+    if (_detailStaffId) openDetail(_detailStaffId);
+  } catch(e) { alert('요청 오류: ' + e.message); }
+}
+// 삭제 요청 취소(직원 본인) / 거절(원장)
+async function clearDeleteReq(id, after) {
+  try {
+    await db.collection('staff_leaves').doc(id).update({ deleteRequested: false, deleteReqBy: null, deleteReqAt: null });
+    showToast('삭제 요청이 취소되었습니다.');
+    if (after) after();
+    if (_detailStaffId) openDetail(_detailStaffId);
+  } catch(e) { alert('오류: ' + e.message); }
+}
+// 상세/목록에서 쓸 삭제 컨트롤 HTML
+function delControlHtml(l) {
+  if (isOwner()) {
+    return l.deleteRequested
+      ? `<button class="dr-del" onclick="ownerDelete('${l.id}')">🗑️ 삭제 승인</button> <button class="dr-req" onclick="clearDeleteReq('${l.id}')">거절</button>`
+      : `<button class="dr-del" onclick="ownerDelete('${l.id}')">삭제</button>`;
+  }
+  return l.deleteRequested
+    ? `<button class="dr-req" onclick="clearDeleteReq('${l.id}')" title="요청 취소">⏳ 삭제요청됨</button>`
+    : `<button class="dr-del" onclick="requestDelete('${l.id}')">삭제 요청</button>`;
 }
 
 // ── 직원 추가/수정 모달 ─────────────────────────────────────
@@ -919,11 +1006,11 @@ function openDetail(id) {
   const curList = mine.filter(l => { const d = pd(l.date); return d >= st.periodStart && d < st.periodEnd; });
   const pastList = mine.filter(l => { const d = pd(l.date); return !(d >= st.periodStart && d < st.periodEnd); });
 
-  const rowHtml = l => `<div class="detail-row">
+  const rowHtml = l => `<div class="detail-row${l.deleteRequested ? ' req' : ''}">
       <span class="dr-date">${esc(l.date)}</span>
       <span class="dr-portion">${portionLabel(l.portion)}</span>
       <span class="dr-memo">${esc(l.memo||'')}</span>
-      <button class="dr-del" onclick="deleteLeaveById('${l.id}')">삭제</button>
+      ${delControlHtml(l)}
     </div>`;
 
   let body = `<div class="detail-period">📌 현재 연차연도 (${st.label}) · ${curList.length}건 / ${fmtNum(used)}일</div>`;
