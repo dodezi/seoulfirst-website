@@ -9,6 +9,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="holidays.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -214,11 +215,14 @@
     .cal-cell { min-height: 110px; border-right: 1px solid #f0f2f4; border-bottom: 1px solid #f0f2f4; padding: 6px; position: relative; }
     .cal-cell:nth-child(7n) { border-right: none; }
     .cal-cell.empty { background: #fafbfc; }
-    .cal-cell.today { background: #f0fbfb; }
-    .cal-daynum { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; }
+    .cal-cell.today { background: #e7f7f6; box-shadow: inset 0 0 0 2px #0d7377; }
+    .cal-daynum { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
     .cal-cell.today .cal-daynum { color: #0d7377; }
-    .cal-daynum.sun { color: #e74c3c; }
+    .cal-daynum.sun, .cal-daynum.holiday { color: #e74c3c; }
     .cal-daynum.sat { color: #2980b9; }
+    .cal-daynum .today-badge { background: #0d7377; color: #fff; font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 20px; }
+    .cal-daynum .hol-name { font-size: 10px; font-weight: 700; color: #e74c3c; background: #fdecea; padding: 1px 5px; border-radius: 5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-daynum .hol-name.custom { color: #8e44ad; background: #f3eafa; }
     .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
     /* 검사 종목 색 구분 (파랑=내시경·처방완료, 초록=내시경·처방전, 빨강=비내시경) */
     .cal-event.cat-blue  { background: #eaf2fd; color: #1b5fb0; border-left-color: #2563eb; }
@@ -716,8 +720,9 @@ async function loadBookings() {
   }
 }
 
-// 직원 연차 + 직원 색상 로드 (읽기 전용 · 달력에 함께 표시) — 실시간 구독으로 연차관리 변경 즉시 반영
-let _lvUnsub = null, _stUnsub = null;
+// 직원 연차 + 직원 색상 + 임시공휴일 로드 (읽기 전용 · 달력에 함께 표시) — 실시간 구독
+let _lvUnsub = null, _stUnsub = null, _chUnsub = null;
+let customHolidays = {};   // { 'YYYY-MM-DD': '이름' }
 function loadStaffLeaves() {
   const refresh = () => { renderCalendars(); if (document.getElementById('dayModal').classList.contains('on')) renderDayList(); };
   if (!_lvUnsub) {
@@ -730,6 +735,13 @@ function loadStaffLeaves() {
     _stUnsub = db.collection('staff').onSnapshot(snap => {
       staffMap = {};
       snap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
+      refresh();
+    }, () => {});
+  }
+  if (!_chUnsub) {
+    _chUnsub = db.collection('custom_holidays').onSnapshot(snap => {
+      customHolidays = {};
+      snap.docs.forEach(d => { const h = d.data(); if (h.date) customHolidays[h.date] = h.name || '휴무'; });
       refresh();
     }, () => {});
   }
@@ -1217,8 +1229,12 @@ function buildMonthGrid(maxEvents) {
   for (let d = 1; d <= daysInMon; d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow = (firstDow + d - 1) % 7;
-    const dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    const hol = window.SF_HOLIDAYS ? SF_HOLIDAYS.holidayInfo(dateStr, customHolidays) : null;
+    let dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    if (hol) dnClass += ' holiday';
     const isToday = dateStr === todayStr;
+    const todayBadge = isToday ? '<span class="today-badge">오늘</span>' : '';
+    const holName = hol ? `<span class="hol-name${hol.custom ? ' custom' : ''}" title="${esc(hol.name)}">${esc(hol.name)}</span>` : '';
     const list = (events[dateStr] || []).sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
     totalEvents += list.length;
 
@@ -1249,7 +1265,7 @@ function buildMonthGrid(maxEvents) {
     const dnPtr   = list.length ? ' clickable' : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}">
-      <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}</div>
+      <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}${todayBadge}${holName}</div>
       ${lvHtml}${evHtml}
     </div>`;
   }

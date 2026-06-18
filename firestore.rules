@@ -56,6 +56,11 @@ service cloud.firestore {
                     && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
+    // 임시공휴일(원장이 추가하는 휴무일): 관리자 전용
+    match /custom_holidays/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 그 외 모든 경로: 기본 차단
     match /{document=**} {
       allow read, write: if false;
