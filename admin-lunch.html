@@ -145,9 +145,11 @@ tbody tr:hover { background:#fffaf4; }
     <thead><tr>
       <th style="width:40px">#</th>
       <th style="width:110px">날짜</th>
-      <th>식당</th>
-      <th style="width:120px;text-align:right">금액(원)</th>
-      <th style="width:120px">제출자</th>
+      <th style="width:150px">식당</th>
+      <th>품목</th>
+      <th style="width:110px;text-align:right">금액(원)</th>
+      <th style="width:60px;text-align:center">인원</th>
+      <th style="width:110px">제출자</th>
       <th style="width:60px">사진</th>
       <th style="width:150px;text-align:center">작업</th>
     </tr></thead>
@@ -350,28 +352,24 @@ function render(){
      <span class="stat-chip chip-sum">${label} 합계 ${sum.toLocaleString('ko-KR')}원</span>
      <span class="stat-chip chip-total">전체 ${receipts.length}건</span>`;
 
-  // 제출자별 / 식당별 합계
-  const byFrom={}, byStore={};
-  list.forEach(b=>{ const f=b.tgFrom||'(미상)'; byFrom[f]=(byFrom[f]||0)+num(b.amount); const s=b.store||'(미입력)'; byStore[s]=(byStore[s]||0)+num(b.amount); });
-  const fromArr=Object.entries(byFrom).sort((a,b)=>b[1]-a[1]);
-  const storeArr=Object.entries(byStore).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  document.getElementById('summaryRow').innerHTML = list.length ? `
-    <div class="sum-card"><h4>제출자별 합계 (${label})</h4>${fromArr.map(([k,v])=>`<div class="sum-item"><b>${esc(k)}</b><span>${v.toLocaleString('ko-KR')}원</span></div>`).join('')||'<div class="sum-item">—</div>'}</div>
-    <div class="sum-card"><h4>식당별 합계 (${label}, 상위 10)</h4>${storeArr.map(([k,v])=>`<div class="sum-item"><b>${esc(k)}</b><span>${v.toLocaleString('ko-KR')}원</span></div>`).join('')||'<div class="sum-item">—</div>'}</div>` : '';
+  const sumEl=document.getElementById('summaryRow'); if(sumEl) sumEl.innerHTML='';
 
   const tbody=document.getElementById('tbody');
   if(!list.length){
     const msg=!receipts.length?'아직 등록된 영수증이 없습니다. 텔레그램 봇으로 보내거나 [📷 영수증 사진 추가]로 시작하세요.':q?'검색 결과가 없습니다.':viewMonth?'이 달에 등록된 영수증이 없습니다.':'영수증이 없습니다.';
-    tbody.innerHTML=`<tr><td colspan="7" class="empty-msg">${msg}</td></tr>`; return;
+    tbody.innerHTML=`<tr><td colspan="9" class="empty-msg">${msg}</td></tr>`; return;
   }
   tbody.innerHTML=list.map((b,i)=>{
     const badge=b.source==='parsed'?'<span class="parsed-badge">자동</span>':b.source==='telegram'?'<span class="tg-badge">📨 미인식</span>':'<span class="manual-badge">수동</span>';
     const thumb=b.imageUrl?`<img class="thumb" src="${esc(b.imageUrl)}" onclick="openImg('${esc(b.imageUrl)}')" alt="영수증">`:`<div class="no-thumb">🍚</div>`;
+    const ppl=(b.people!=null&&b.people!=='')?num(b.people):0;
     return `<tr>
       <td class="cell-num" data-label="#">${i+1}</td>
       <td data-label="날짜">${esc(b.date)||'—'}</td>
       <td class="td-store" data-label="식당">${esc(b.store)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
+      <td data-label="품목" style="color:#555;font-size:12.5px;max-width:320px">${esc(b.items)||'<span style="color:#ccc">—</span>'}</td>
       <td class="td-amount" data-label="금액(원)">${fmt(b.amount)||'—'}</td>
+      <td data-label="인원" style="text-align:center;white-space:nowrap">${ppl>0?ppl+'명':'<span style="color:#ccc">—</span>'}</td>
       <td class="td-from" data-label="제출자">${esc(b.tgFrom)||'<span style="color:#ccc">—</span>'}</td>
       <td data-label="사진">${thumb}</td>
       <td class="cell-actions" style="text-align:center;white-space:nowrap">
