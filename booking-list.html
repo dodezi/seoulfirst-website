@@ -716,20 +716,22 @@ async function loadBookings() {
   }
 }
 
-// 직원 연차 + 직원 색상 로드 (읽기 전용 · 달력에 함께 표시)
-async function loadStaffLeaves() {
-  try {
-    const [lvSnap, stSnap] = await Promise.all([
-      db.collection('staff_leaves').get(),
-      db.collection('staff').get()
-    ]);
-    allStaffLeaves = lvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    staffMap = {};
-    stSnap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
-    renderCalendars();
-    if (document.getElementById('dayModal').classList.contains('on')) renderDayList();
-  } catch(e) {
-    // 보안규칙 미배포 등으로 읽기 실패 시 조용히 무시 (연차 미표시)
+// 직원 연차 + 직원 색상 로드 (읽기 전용 · 달력에 함께 표시) — 실시간 구독으로 연차관리 변경 즉시 반영
+let _lvUnsub = null, _stUnsub = null;
+function loadStaffLeaves() {
+  const refresh = () => { renderCalendars(); if (document.getElementById('dayModal').classList.contains('on')) renderDayList(); };
+  if (!_lvUnsub) {
+    _lvUnsub = db.collection('staff_leaves').onSnapshot(snap => {
+      allStaffLeaves = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refresh();
+    }, () => {});
+  }
+  if (!_stUnsub) {
+    _stUnsub = db.collection('staff').onSnapshot(snap => {
+      staffMap = {};
+      snap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
+      refresh();
+    }, () => {});
   }
 }
 
@@ -746,10 +748,15 @@ function leaveUsedCount(staffId, dateStr) {
     start = new Date(hire.getFullYear()+Y, hire.getMonth(), hire.getDate());
     end   = new Date(hire.getFullYear()+Y+1, hire.getMonth(), hire.getDate());
   }
+  // 해당 날짜(포함)까지만 누적
+  const ref = _lvPd(dateStr);
+  const refNext = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + 1);
   let sum = 0;
   allStaffLeaves.forEach(l => {
     if (l.staffId !== staffId) return;
-    if (start) { const d = _lvPd(l.date); if (!(d >= start && d < end)) return; }
+    const d = _lvPd(l.date);
+    if (start && d < start) return;  // 연차연도 시작 전 제외
+    if (d >= refNext) return;         // 그 날짜 이후 제외 (그날까지 누적)
     sum += (l.portion === 'full' ? 1 : 0.5);
   });
   return _lvFmt(sum);

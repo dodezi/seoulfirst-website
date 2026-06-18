@@ -511,10 +511,11 @@ function startRealtime() {
   }, err => showToast('연차 기록을 불러오지 못했습니다: ' + err.message));
 }
 
-// 검진 예약: 읽기 전용으로 날짜별 예약 목록 집계
-async function loadBookings() {
-  try {
-    const snap = await db.collection('bookings').get();
+// 검진 예약: 읽기 전용으로 날짜별 예약 목록 집계 (실시간 구독 → 예약명단 변경 즉시 반영)
+let bookingsUnsub = null;
+function loadBookings() {
+  if (bookingsUnsub) return; // 중복 구독 방지
+  bookingsUnsub = db.collection('bookings').onSnapshot(snap => {
     bookByDate = {};
     snap.docs.forEach(d => {
       const b = { id: d.id, ...d.data() };
@@ -525,9 +526,7 @@ async function loadBookings() {
     Object.values(bookByDate).forEach(arr =>
       arr.sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||'')));
     renderCalendar();
-  } catch(e) {
-    showToast('검진 일정을 불러오지 못했습니다: ' + e.message);
-  }
+  }, e => showToast('검진 일정을 불러오지 못했습니다: ' + e.message));
 }
 
 // ── 입사일 기준 연차 계산 (근로기준법) ───────────────────────
