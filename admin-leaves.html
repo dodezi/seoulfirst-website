@@ -646,13 +646,18 @@ function usedDays(staffId, start, end) {
   });
   return sum;
 }
-// 해당 연차 날짜가 속한 연차연도에서, 그 날짜까지(포함)의 그 직원 누적 사용일수
+// 그 직원의 전체 연차 사용 합계 (연차연도 구분 없이 모든 기록 합산)
+function usedAll(staffId) {
+  let sum = 0;
+  allLeaves.forEach(l => { if (l.staffId === staffId) sum += (l.portion === 'full' ? 1 : 0.5); });
+  return sum;
+}
+// 그 날짜(포함)까지의 전체 누적 사용일수
 function usedInLeavePeriod(staffId, dateStr) {
-  const s = allStaff.find(x => x.id === staffId);
-  if (!s) return 0;
-  const st = leaveStatus(s, pd(dateStr));
-  const next = pd(dateStr); next.setDate(next.getDate() + 1); // 해당 날짜 포함까지 누적
-  return usedDays(staffId, st.periodStart, next);
+  const next = pd(dateStr); next.setDate(next.getDate() + 1);
+  let sum = 0;
+  allLeaves.forEach(l => { if (l.staffId === staffId && pd(l.date) < next) sum += (l.portion === 'full' ? 1 : 0.5); });
+  return sum;
 }
 
 // ── 직원 카드 렌더 ─────────────────────────────────────────
@@ -666,7 +671,7 @@ function renderStaff() {
   grid.innerHTML = allStaff.map((s, i) => {
     const color = s.color || STAFF_COLORS[i % STAFF_COLORS.length];
     const st = leaveStatus(s);
-    const used = usedDays(s.id, st.periodStart, st.periodEnd);
+    const used = usedAll(s.id);
     const total = st.allowance;
     const remain = Math.max(0, total - used);
     const pct = total > 0 ? Math.min(100, Math.round(used / total * 100)) : 0;
@@ -1093,15 +1098,12 @@ function openDetail(id) {
   if (!s) return;
   _detailStaffId = id;
   const st = leaveStatus(s);
-  const used = usedDays(id, st.periodStart, st.periodEnd);
+  const used = usedAll(id);
   document.getElementById('detailName').textContent = s.name;
   document.getElementById('detailSub').textContent =
-    `입사 ${s.hireDate} · ${st.label} · 현재 기간 ${fmtDate(st.periodStart)} ~ ${fmtDate(addDays(st.periodEnd,-1))} · 부여 ${st.allowance}일 · 사용 ${fmtNum(used)}일 · 잔여 ${fmtNum(Math.max(0,st.allowance-used))}일`;
+    `입사 ${s.hireDate} · ${st.label} · 부여 ${st.allowance}일 · 사용 ${fmtNum(used)}일 · 잔여 ${fmtNum(Math.max(0,st.allowance-used))}일`;
 
   const mine = allLeaves.filter(l => l.staffId === id).sort((a,b) => b.date.localeCompare(a.date));
-  // 현재 기간 / 이전 기록으로 그룹
-  const curList = mine.filter(l => { const d = pd(l.date); return d >= st.periodStart && d < st.periodEnd; });
-  const pastList = mine.filter(l => { const d = pd(l.date); return !(d >= st.periodStart && d < st.periodEnd); });
 
   const rowHtml = l => `<div class="detail-row${l.deleteRequested ? ' req' : ''}">
       <span class="dr-date">${esc(l.date)}</span>
@@ -1110,14 +1112,27 @@ function openDetail(id) {
       ${delControlHtml(l)}
     </div>`;
 
-  let body = `<div class="detail-period">📌 현재 연차연도 (${st.label}) · ${curList.length}건 / ${fmtNum(used)}일</div>`;
-  body += curList.length ? curList.map(rowHtml).join('') : `<div class="detail-empty">이 기간에 사용한 연차가 없습니다.</div>`;
-  if (pastList.length) {
-    body += `<div class="detail-period" style="background:#f1f4f7;color:#7a8794;">🗂️ 이전 기록 · ${pastList.length}건</div>`;
-    body += pastList.map(rowHtml).join('');
+  let body = `<div class="detail-period">🌴 전체 사용 내역 · ${mine.length}건 / ${fmtNum(used)}일 (부여 ${st.allowance}일)</div>`;
+  body += mine.length ? mine.map(rowHtml).join('') : `<div class="detail-empty">사용한 연차가 없습니다.</div>`;
+  // 원장 전용: 연차 전체 초기화(15일 모두 사용 후 새로 카운트)
+  if (firebase.auth().currentUser && firebase.auth().currentUser.email === 'dodezi82@gmail.com' && mine.length) {
+    body += `<div style="margin-top:16px;text-align:right;"><button onclick="resetStaffLeaves('${id}')" style="background:#c0392b;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-family:inherit;">🗑️ 연차 전체 초기화 (원장)</button></div>`;
   }
   document.getElementById('detailBody').innerHTML = body;
   document.getElementById('detailModal').classList.add('on');
+}
+async function resetStaffLeaves(id) {
+  const s = allStaff.find(x => x.id === id);
+  const mine = allLeaves.filter(l => l.staffId === id);
+  if (!mine.length) { showToast('삭제할 연차가 없습니다.'); return; }
+  if (!confirm(`"${s ? s.name : ''}" 직원의 연차 기록 ${mine.length}건을 모두 삭제하고 0부터 다시 카운트합니다.\n되돌릴 수 없습니다. 진행할까요?`)) return;
+  try {
+    const batch = db.batch();
+    mine.forEach(l => batch.delete(db.collection('staff_leaves').doc(l.id)));
+    await batch.commit();
+    showToast('✅ 연차가 초기화되었습니다.');
+    closeDetailModal();
+  } catch (e) { alert('초기화 오류 (원장 계정만 가능합니다): ' + e.message); }
 }
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('on'); _detailStaffId = null; }
 document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id === 'detailModal') closeDetailModal(); });

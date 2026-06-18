@@ -747,28 +747,16 @@ function loadStaffLeaves() {
   }
 }
 
-// 연차 누적 사용일수 (입사일 기준 연차연도, 연차관리와 동일 계산)
+// 연차 누적 사용일수 — 연차연도 구분 없이 그 날짜(포함)까지 전체 합산
 function _lvPd(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
-function _lvCompletedYears(h,r){ let y=r.getFullYear()-h.getFullYear(); const m=r.getMonth()-h.getMonth(); if(m<0||(m===0&&r.getDate()<h.getDate()))y--; return y; }
 function _lvFmt(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
 function leaveUsedCount(staffId, dateStr) {
-  const st = staffMap[staffId];
-  let start = null, end = null;
-  if (st && st.hireDate) {
-    const hire = _lvPd(st.hireDate);
-    const Y = Math.max(0, _lvCompletedYears(hire, _lvPd(dateStr)));
-    start = new Date(hire.getFullYear()+Y, hire.getMonth(), hire.getDate());
-    end   = new Date(hire.getFullYear()+Y+1, hire.getMonth(), hire.getDate());
-  }
-  // 해당 날짜(포함)까지만 누적
   const ref = _lvPd(dateStr);
   const refNext = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + 1);
   let sum = 0;
   allStaffLeaves.forEach(l => {
     if (l.staffId !== staffId) return;
-    const d = _lvPd(l.date);
-    if (start && d < start) return;  // 연차연도 시작 전 제외
-    if (d >= refNext) return;         // 그 날짜 이후 제외 (그날까지 누적)
+    if (_lvPd(l.date) >= refNext) return; // 그 날짜 이후 제외
     sum += (l.portion === 'full' ? 1 : 0.5);
   });
   return _lvFmt(sum);
