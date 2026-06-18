@@ -588,12 +588,13 @@ function usedDays(staffId, start, end) {
   });
   return sum;
 }
-// 해당 연차 날짜가 속한 연차연도 기준 그 직원의 누적 사용일수
+// 해당 연차 날짜가 속한 연차연도에서, 그 날짜까지(포함)의 그 직원 누적 사용일수
 function usedInLeavePeriod(staffId, dateStr) {
   const s = allStaff.find(x => x.id === staffId);
   if (!s) return 0;
   const st = leaveStatus(s, pd(dateStr));
-  return usedDays(staffId, st.periodStart, st.periodEnd);
+  const next = pd(dateStr); next.setDate(next.getDate() + 1); // 해당 날짜 포함까지 누적
+  return usedDays(staffId, st.periodStart, next);
 }
 
 // ── 직원 카드 렌더 ─────────────────────────────────────────
