@@ -226,8 +226,11 @@
 <div id="toast"></div>
 
 <script>
-// 최고관리자(원장) 계정 — 항상 전체 접근, 이 관리 화면 접근 권한
+// 최고관리자(원장 등) — 항상 전체 기능 접근(표시용 고정 행)
 const SUPER_ADMINS = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
+// 이 '직원·권한 관리' 화면을 쓸 수 있는 계정 = 원장 단독
+const OWNER = 'dodezi82@gmail.com';
+function isOwner(email){ return (email||'').toLowerCase() === OWNER; }
 
 // 페이지 단위 권한 정의 (런처 카드와 동일)
 const PAGES = [
@@ -265,12 +268,12 @@ auth.onAuthStateChanged(user => {
   const login=document.getElementById('loginScreen'), admin=document.getElementById('adminScreen'), deny=document.getElementById('denyScreen');
   if(!user){ login.style.display='flex'; admin.style.display='none'; deny.style.display='none'; return; }
   login.style.display='none';
-  if(isSuper(user.email)){
+  if(isOwner(user.email)){
     admin.style.display='block'; deny.style.display='none';
     document.getElementById('adminEmail').textContent=user.email;
     renderNewPerms(); loadUsers();
   } else {
-    // 일반 직원이 이 주소로 들어온 경우 차단
+    // 원장 외 계정(직원·공유계정 포함)은 이 관리 화면 접근 차단
     admin.style.display='none'; deny.style.display='flex';
     document.getElementById('denyEmail').textContent=user.email;
   }

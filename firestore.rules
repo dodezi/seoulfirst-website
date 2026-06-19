@@ -67,11 +67,12 @@ service cloud.firestore {
     }
 
     // 포털 사용자·권한 (페이지 단위 접근권한):
-    //  - 최고관리자(원장)는 전체 읽기·쓰기
-    //  - 일반 직원 계정은 '자기 문서'만 읽기 가능(로그인 후 자기 권한 확인용)
+    //  - 쓰기(계정·권한 부여/수정/삭제)는 원장(dodezi82)만
+    //  - 읽기는 원장 전체 / 일반 직원은 '자기 문서'만(로그인 후 자기 권한 확인용)
     match /users/{email} {
-      allow read:  if isAdmin() || (request.auth != null && request.auth.token.email == email);
-      allow write: if isAdmin();
+      allow read:  if (request.auth != null && request.auth.token.email == 'dodezi82@gmail.com')
+                   || (request.auth != null && request.auth.token.email == email);
+      allow write: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
     // 그 외 모든 경로: 기본 차단
