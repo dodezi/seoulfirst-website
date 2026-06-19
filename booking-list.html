@@ -416,10 +416,10 @@
       </div>
     </div>
     <div class="filter-row" id="monthNavRow" style="display:none;align-items:center;gap:8px;margin-top:8px;">
-      <button class="filter-btn" onclick="bkShiftMonth(-1)" style="padding:6px 12px;">◀</button>
+      <button class="mn-btn" onclick="bkShiftMonth(-1)" style="padding:6px 12px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;">◀</button>
       <span id="bkMonthLabel" style="font-weight:800;color:#0d7377;min-width:120px;text-align:center;font-size:14px;"></span>
-      <button class="filter-btn" onclick="bkShiftMonth(1)" style="padding:6px 12px;">▶</button>
-      <button class="filter-btn" id="bkAllBtn" onclick="bkAllMonths()">전체 기간</button>
+      <button class="mn-btn" onclick="bkShiftMonth(1)" style="padding:6px 12px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;">▶</button>
+      <button class="mn-btn" id="bkAllBtn" onclick="bkAllMonths()" style="padding:6px 14px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#666;">전체 기간</button>
     </div>
 
     <!-- 테이블 -->
@@ -822,7 +822,7 @@ function renderTable() {
     if (bkMonth) { const [yy,mm] = bkMonth.split('-'); lblEl.textContent = `${yy}년 ${parseInt(mm,10)}월`; }
     else lblEl.textContent = '전체 기간';
     const allBtn = document.getElementById('bkAllBtn');
-    if (allBtn) allBtn.classList.toggle('on', !bkMonth);
+    if (allBtn) { allBtn.style.background = bkMonth ? '#fff' : '#0d7377'; allBtn.style.color = bkMonth ? '#666' : '#fff'; allBtn.style.borderColor = bkMonth ? '#dde1e7' : '#0d7377'; }
   }
 
   // 통계
@@ -1065,7 +1065,7 @@ function editReason(id) {
 document.getElementById('searchInput').addEventListener('input', renderTable);
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filter-row:first-of-type .filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   const showNav = (f === '확정' || f === '검사완료');
   document.getElementById('monthNavRow').style.display = showNav ? 'flex' : 'none';
