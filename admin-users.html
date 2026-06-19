@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>직원·권한 관리 | 서울퍼스트내과의원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f9; color: #1e2a38; min-height: 100vh; }
+
+    #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #fff; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.12); }
+    .login-box .logo { text-align: center; margin-bottom: 24px; }
+    .login-box .logo img { height: 38px; }
+    .login-box h2 { font-size: 19px; font-weight: 700; text-align: center; color: #0f2b3d; margin-bottom: 24px; }
+    .lf { margin-bottom: 14px; }
+    .lf label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .lf input { width: 100%; padding: 11px 14px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 15px; font-family: inherit; }
+    .lf input:focus { outline: none; border-color: #0d7377; }
+    .btn-login { width: 100%; padding: 13px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; }
+    #loginError { color: #c0392b; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+    #adminScreen { display: none; }
+    #denyScreen { display: none; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 30px; }
+    #denyScreen .box { background:#fff; border-radius:16px; padding:40px; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,.12); }
+    #denyScreen h2 { color:#c0392b; font-size:20px; margin-bottom:10px; }
+    #denyScreen p { color:#5a6b7a; font-size:14px; line-height:1.7; }
+    #denyScreen a { display:inline-block; margin-top:18px; background:#0d7377; color:#fff; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:700; }
+
+    .top-bar { background: #0f2b3d; color: #fff; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .top-bar .tl { display: flex; align-items: center; gap: 14px; }
+    .top-bar .tl img { height: 28px; }
+    .top-bar .tl span { font-size: 15px; font-weight: 700; }
+    .top-bar .tr { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .btn-small { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+    .btn-logout { background: rgba(255,255,255,.15); color: #fff; }
+    .btn-back { background: rgba(255,255,255,.1); color: #fff; text-decoration: none; display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+    .page-body { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+    h1.page-title { font-size: 22px; font-weight: 700; color: #0f2b3d; margin-bottom: 6px; }
+    .intro { font-size: 13px; color: #6b7785; line-height: 1.6; margin-bottom: 20px; }
+    .intro b { color: #0d7377; }
+
+    .panel { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 20px 22px; margin-bottom: 22px; }
+    .panel h2 { font-size: 16px; font-weight: 700; color: #0f2b3d; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .ff label { display: block; font-size: 12px; font-weight: 600; color: #5a6b7a; margin-bottom: 5px; }
+    .ff input { width: 100%; padding: 10px 12px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .ff input:focus { outline: none; border-color: #0d7377; }
+
+    .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 9px; margin: 6px 0 14px; }
+    .perm-item { display: flex; align-items: center; gap: 8px; border: 1.5px solid #dde1e7; border-radius: 9px; padding: 9px 11px; cursor: pointer; font-size: 13px; transition: .12s; }
+    .perm-item.on { border-color: #0d7377; background: #f1faf9; }
+    .perm-item input { width: 16px; height: 16px; accent-color: #0d7377; }
+    .perm-item .pi-ic { font-size: 16px; }
+    .perm-tools { display: flex; gap: 8px; margin-bottom: 8px; }
+    .perm-tools button { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 7px; border: 1px solid #dde2e8; background: #fff; color: #51606e; cursor: pointer; font-family: inherit; }
+
+    .btn-primary { background: #0d7377; color: #fff; border: none; padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-ghost { background: #eef1f5; color: #51606e; border: none; padding: 11px 18px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #f8fafc; padding: 11px 12px; font-size: 12px; font-weight: 700; color: #555; border-bottom: 2px solid #e8ecf0; text-align: left; white-space: nowrap; }
+    tbody td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid #f0f2f4; vertical-align: middle; }
+    .u-name { font-weight: 700; color: #0f2b3d; }
+    .u-email { color: #8a96a2; font-size: 12px; }
+    .u-perms { display: flex; flex-wrap: wrap; gap: 4px; }
+    .u-chip { font-size: 11px; background: #eef4f4; color: #0d7377; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .u-chip.none { background: #fdecea; color: #c0392b; }
+    .badge-active { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #e8f8e8; color: #1e7a3a; }
+    .badge-inactive { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #f0f0f0; color: #999; }
+    .badge-super { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #fdebd0; color: #b9651b; }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .row-actions button { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #dde2e8; background: #fff; color: #51606e; cursor: pointer; font-family: inherit; }
+    .row-actions button.danger { color: #c0392b; border-color: #f0c9c4; }
+    .empty { text-align: center; color: #aab4bd; padding: 24px; font-size: 14px; }
+
+    .note { background: #fff8ec; border: 1px solid #f5dcb0; color: #95701f; font-size: 12.5px; padding: 10px 14px; border-radius: 9px; margin-bottom: 16px; line-height: 1.6; }
+    .note b { color: #b9651b; }
+
+    /* 모달 */
+    .modal { display:none; position:fixed; inset:0; background:rgba(15,43,61,.5); z-index:1000; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px; }
+    .modal.on { display:flex; }
+    .modal-box { background:#fff; border-radius:16px; width:560px; max-width:100%; box-shadow:0 16px 50px rgba(0,0,0,.3); padding:24px; }
+    .modal-box h3 { font-size:18px; font-weight:700; color:#0f2b3d; margin-bottom:4px; }
+    .modal-box .sub { font-size:12.5px; color:#8a96a2; margin-bottom:16px; }
+    .modal-btns { display:flex; gap:9px; justify-content:flex-end; margin-top:8px; }
+
+    #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: #0f2b3d; color: #fff; padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: all .25s; z-index: 2000; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
+      .top-bar { padding: 0 12px; }
+      #adminEmail { display: none; }
+      .page-body { padding: 16px 12px 50px; }
+      thead { display:none; }
+      table, tbody, tr, td { display:block; width:100%; }
+      tbody tr { border:1px solid #eef1f5; border-radius:12px; margin-bottom:12px; padding:4px 0; }
+      tbody td { border-bottom:1px solid #f4f6f8; }
+    }
+  </style>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#1a3a5c" />
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="서울퍼스트" />
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo"><img src="images/logo.png" alt="로고" /></div>
+    <h2>🔐 직원·권한 관리 로그인</h2>
+    <div class="lf"><label>이메일</label><input type="email" id="lEmail" placeholder="원장 관리자 이메일" autocomplete="username" /></div>
+    <div class="lf"><label>비밀번호</label><input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" /></div>
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- 권한 없음 -->
+<div id="denyScreen">
+  <div class="box">
+    <h2>🚫 접근 권한이 없습니다</h2>
+    <p>이 페이지(직원·권한 관리)는 <b>원장 관리자 계정</b>만 사용할 수 있습니다.<br>현재 계정: <span id="denyEmail"></span></p>
+    <a href="admin.html">🏠 관리홈으로</a>
+    <div style="margin-top:14px;"><button class="btn-small btn-logout" id="btnLogoutDeny" style="background:#eef1f5;color:#51606e;">로그아웃</button></div>
+  </div>
+</div>
+
+<!-- 관리 화면 -->
+<div id="adminScreen">
+  <div class="top-bar">
+    <div class="tl">
+      <a href="admin.html" style="display:inline-flex;align-items:center;"><img src="images/logo.png" alt="로고" style="cursor:pointer;" /></a>
+      <span>직원·권한 관리</span>
+    </div>
+    <div class="tr">
+      <span id="adminEmail" style="opacity:.7; font-size:12px;"></span>
+      <a href="admin.html" class="btn-back">🏠 관리홈</a>
+      <button class="btn-small btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <h1 class="page-title">👥 직원·권한 관리</h1>
+    <p class="intro">직원별 계정을 만들고 <b>페이지 단위로 접근 권한</b>을 부여합니다. 원장 관리자(최고권한) 계정은 항상 모든 기능에 접근합니다. 퇴사 시 해당 직원만 <b>재직 OFF</b> 하면 됩니다(전체 비밀번호 변경 불필요).</p>
+
+    <div class="note">
+      ⚙️ <b>현재 단계(1단계)</b>: 계정·권한을 등록·관리하는 화면입니다. 각 도구 페이지에 권한 검사를 연결하는 작업(2단계)은 다음에 진행하며, 그 전까지 <b>기존 시스템은 그대로 동작</b>합니다.
+    </div>
+
+    <!-- 직원 추가 -->
+    <div class="panel">
+      <h2>➕ 직원 계정 추가</h2>
+      <div class="form-row">
+        <div class="ff"><label>이름</label><input type="text" id="nName" placeholder="직원 이름" maxlength="20" /></div>
+        <div class="ff"><label>이메일(로그인 ID)</label><input type="email" id="nEmail" placeholder="staff@example.com" autocomplete="off" /></div>
+        <div class="ff"><label>임시 비밀번호 (6자 이상)</label><input type="text" id="nPw" placeholder="임시 비밀번호" /></div>
+      </div>
+      <label style="display:block;font-size:12px;font-weight:600;color:#5a6b7a;margin-bottom:6px;">접근 허용 페이지</label>
+      <div class="perm-tools">
+        <button type="button" onclick="setAllPerms('new',true)">전체 선택</button>
+        <button type="button" onclick="setAllPerms('new',false)">전체 해제</button>
+      </div>
+      <div class="perm-grid" id="newPerms"></div>
+      <div style="display:flex;gap:9px;">
+        <button class="btn-primary" onclick="createStaff()">계정 생성 + 권한 저장</button>
+      </div>
+      <p style="font-size:11.5px;color:#aab4bd;margin-top:9px;">※ 임시 비밀번호로 계정이 만들어집니다. 직원에게 전달 후, 직원이 로그인하여 비밀번호를 바꾸거나, 아래 목록에서 "비밀번호 재설정 메일"을 보낼 수 있습니다.</p>
+    </div>
+
+    <!-- 직원 목록 -->
+    <div class="panel">
+      <h2>📋 등록된 계정</h2>
+      <table>
+        <thead><tr><th>이름 / 이메일</th><th>접근 권한</th><th>상태</th><th>관리</th></tr></thead>
+        <tbody id="userTbody"><tr><td colspan="4" class="empty">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 권한 수정 모달 -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <h3>✏️ 권한 수정</h3>
+    <div class="sub" id="editSub"></div>
+    <div class="perm-tools">
+      <button type="button" onclick="setAllPerms('edit',true)">전체 선택</button>
+      <button type="button" onclick="setAllPerms('edit',false)">전체 해제</button>
+    </div>
+    <div class="perm-grid" id="editPerms"></div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeEdit()">취소</button>
+      <button class="btn-primary" onclick="saveEditPerms()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// 최고관리자(원장) 계정 — 항상 전체 접근, 이 관리 화면 접근 권한
+const SUPER_ADMINS = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
+
+// 페이지 단위 권한 정의 (런처 카드와 동일)
+const PAGES = [
+  { key:'booking',   ic:'📅', name:'온라인 예약 명단',     file:'booking-list.html' },
+  { key:'leaves',    ic:'🌴', name:'직원 연차 관리',        file:'admin-leaves.html' },
+  { key:'checkup',   ic:'🏥', name:'종합검진 결과보고서',   file:'admin-checkup.html' },
+  { key:'narcotics', ic:'💉', name:'마약·향정 기록지',      file:'admin-narcotics.html' },
+  { key:'invoice',   ic:'🧾', name:'거래명세서 관리',       file:'admin-invoices.html' },
+  { key:'lunch',     ic:'🍚', name:'점심 영수증 관리',      file:'admin-lunch.html' },
+  { key:'notice',    ic:'📢', name:'공지사항 관리',         file:'admin-notice.html' },
+  { key:'drug',      ic:'💊', name:'의약품 식별',           file:'viewer.html?app=drug' },
+  { key:'parking',   ic:'🅿️', name:'주차 등록·관리',        file:'viewer.html?app=parking' }
+];
+const PAGE_NAME = Object.fromEntries(PAGES.map(p => [p.key, p.name]));
+
+function isSuper(email){ return SUPER_ADMINS.includes((email||'').toLowerCase()); }
+
+// ── 인증 ──
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const email = document.getElementById('lEmail').value.trim();
+  const pw = document.getElementById('lPw').value;
+  const err = document.getElementById('loginError');
+  err.textContent='';
+  if(!email||!pw){ err.textContent='이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn=document.getElementById('btnLogin'); btn.textContent='로그인 중...'; btn.disabled=true;
+  try { await auth.signInWithEmailAndPassword(email, pw); }
+  catch(e){ err.textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; btn.textContent='로그인'; btn.disabled=false; }
+}
+document.getElementById('btnLogout').addEventListener('click', ()=>auth.signOut());
+document.getElementById('btnLogoutDeny').addEventListener('click', ()=>auth.signOut());
+
+auth.onAuthStateChanged(user => {
+  const login=document.getElementById('loginScreen'), admin=document.getElementById('adminScreen'), deny=document.getElementById('denyScreen');
+  if(!user){ login.style.display='flex'; admin.style.display='none'; deny.style.display='none'; return; }
+  login.style.display='none';
+  if(isSuper(user.email)){
+    admin.style.display='block'; deny.style.display='none';
+    document.getElementById('adminEmail').textContent=user.email;
+    renderNewPerms(); loadUsers();
+  } else {
+    // 일반 직원이 이 주소로 들어온 경우 차단
+    admin.style.display='none'; deny.style.display='flex';
+    document.getElementById('denyEmail').textContent=user.email;
+  }
+});
+
+// ── 권한 체크박스 렌더 ──
+function permGridHtml(prefix, perms){
+  return PAGES.map(p=>{
+    const on = !!(perms && perms[p.key]);
+    return `<label class="perm-item${on?' on':''}" id="${prefix}-item-${p.key}">
+      <input type="checkbox" data-page="${p.key}" ${on?'checked':''} onchange="togglePermItem('${prefix}','${p.key}',this.checked)">
+      <span class="pi-ic">${p.ic}</span><span>${p.name}</span>
+    </label>`;
+  }).join('');
+}
+function renderNewPerms(){ document.getElementById('newPerms').innerHTML = permGridHtml('new', {}); }
+function togglePermItem(prefix, key, on){
+  const el=document.getElementById(`${prefix}-item-${key}`); if(el) el.classList.toggle('on', on);
+}
+function setAllPerms(prefix, on){
+  document.querySelectorAll(`#${prefix==='new'?'newPerms':'editPerms'} input[type=checkbox]`).forEach(cb=>{
+    cb.checked=on; togglePermItem(prefix, cb.dataset.page, on);
+  });
+}
+function readPerms(prefix){
+  const perms={};
+  document.querySelectorAll(`#${prefix==='new'?'newPerms':'editPerms'} input[type=checkbox]`).forEach(cb=>{
+    if(cb.checked) perms[cb.dataset.page]=true;
+  });
+  return perms;
+}
+
+// ── 직원 계정 생성 (보조 인스턴스로 만들어 현재 로그인 유지) ──
+async function createStaff(){
+  const name=document.getElementById('nName').value.trim();
+  const email=document.getElementById('nEmail').value.trim().toLowerCase();
+  const pw=document.getElementById('nPw').value;
+  if(!name){ showToast('이름을 입력해 주세요.'); return; }
+  if(!email || !email.includes('@')){ showToast('올바른 이메일을 입력해 주세요.'); return; }
+  if(!pw || pw.length<6){ showToast('임시 비밀번호는 6자 이상이어야 합니다.'); return; }
+  if(isSuper(email)){ showToast('해당 이메일은 이미 최고관리자입니다.'); return; }
+  const perms=readPerms('new');
+
+  // 보조 Firebase 앱으로 계정 생성 → 원장 로그인 세션이 바뀌지 않음
+  let worker;
+  try {
+    worker = firebase.apps.find(a=>a.name==='worker') || firebase.initializeApp(firebaseConfig, 'worker');
+    try {
+      await worker.auth().createUserWithEmailAndPassword(email, pw);
+    } catch(e){
+      if(e.code==='auth/email-already-in-use'){
+        // 계정은 이미 있음 → 권한 문서만 저장(아래로 진행)
+        showToast('이미 존재하는 계정입니다. 권한만 저장합니다.');
+      } else { throw e; }
+    }
+    await worker.auth().signOut().catch(()=>{});
+
+    // 권한 문서 저장 (문서 ID = 이메일)
+    await db.collection('users').doc(email).set({
+      email, name, role:'staff', active:true, perms,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: (auth.currentUser||{}).email || ''
+    }, { merge:true });
+
+    document.getElementById('nName').value='';
+    document.getElementById('nEmail').value='';
+    document.getElementById('nPw').value='';
+    renderNewPerms();
+    showToast(`✅ ${name} 계정/권한이 저장되었습니다.`);
+    loadUsers();
+  } catch(e){
+    alert('계정 생성 오류: ' + e.message);
+  }
+}
+
+// ── 목록 로드 ──
+let allUsers=[];
+async function loadUsers(){
+  try {
+    const snap = await db.collection('users').get();
+    allUsers = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    allUsers.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    renderUsers();
+  } catch(e){
+    document.getElementById('userTbody').innerHTML = `<tr><td colspan="4" class="empty" style="color:#c0392b">불러오지 못했습니다.<br><small>${e.message}</small><br><small>보안 규칙(users)이 배포되었는지 확인하세요.</small></td></tr>`;
+  }
+}
+function renderUsers(){
+  const tb=document.getElementById('userTbody');
+  // 최고관리자 안내 행(고정)
+  let html = SUPER_ADMINS.map(em=>`<tr>
+    <td><span class="u-name">원장 관리자</span><br><span class="u-email">${em}</span></td>
+    <td><span class="u-chip" style="background:#fdebd0;color:#b9651b;">전체 기능</span></td>
+    <td><span class="badge-super">최고권한</span></td>
+    <td><span style="color:#aab4bd;font-size:12px;">고정</span></td>
+  </tr>`).join('');
+
+  if(allUsers.length){
+    html += allUsers.map(u=>{
+      const keys=Object.keys(u.perms||{}).filter(k=>u.perms[k]);
+      const chips = keys.length
+        ? keys.map(k=>`<span class="u-chip">${PAGE_NAME[k]||k}</span>`).join('')
+        : `<span class="u-chip none">접근 권한 없음</span>`;
+      const status = u.active===false ? `<span class="badge-inactive">비활성</span>` : `<span class="badge-active">재직</span>`;
+      return `<tr>
+        <td><span class="u-name">${esc(u.name||'-')}</span><br><span class="u-email">${esc(u.email||u.id)}</span></td>
+        <td><div class="u-perms">${chips}</div></td>
+        <td>${status}</td>
+        <td><div class="row-actions">
+          <button onclick="openEdit('${esc(u.id)}')">권한 수정</button>
+          <button onclick="toggleActive('${esc(u.id)}')">${u.active===false?'재직 ON':'재직 OFF'}</button>
+          <button onclick="resetPw('${esc(u.id)}')">비번 재설정 메일</button>
+          <button class="danger" onclick="removeUser('${esc(u.id)}')">권한 삭제</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } else {
+    html += `<tr><td colspan="4" class="empty">아직 추가된 직원 계정이 없습니다.</td></tr>`;
+  }
+  tb.innerHTML = html;
+}
+
+// ── 권한 수정 모달 ──
+let _editId=null;
+function openEdit(id){
+  const u=allUsers.find(x=>x.id===id); if(!u) return;
+  _editId=id;
+  document.getElementById('editSub').textContent = `${u.name||''} · ${u.email||id}`;
+  document.getElementById('editPerms').innerHTML = permGridHtml('edit', u.perms||{});
+  document.getElementById('editModal').classList.add('on');
+}
+function closeEdit(){ document.getElementById('editModal').classList.remove('on'); _editId=null; }
+document.getElementById('editModal').addEventListener('click', e=>{ if(e.target.id==='editModal') closeEdit(); });
+async function saveEditPerms(){
+  if(!_editId) return;
+  try {
+    await db.collection('users').doc(_editId).update({ perms: readPerms('edit') });
+    closeEdit(); showToast('💾 권한이 수정되었습니다.'); loadUsers();
+  } catch(e){ alert('저장 오류: '+e.message); }
+}
+
+async function toggleActive(id){
+  const u=allUsers.find(x=>x.id===id); if(!u) return;
+  const next = !(u.active===false) ? false : true;   // 현재 재직이면 OFF
+  try {
+    await db.collection('users').doc(id).update({ active: next });
+    showToast(next ? '✅ 재직으로 변경' : '⏸️ 비활성(접근 차단)으로 변경');
+    loadUsers();
+  } catch(e){ alert('오류: '+e.message); }
+}
+async function resetPw(id){
+  const u=allUsers.find(x=>x.id===id); if(!u) return;
+  if(!confirm(`${u.email||id} 로 비밀번호 재설정 메일을 보낼까요?`)) return;
+  try { await auth.sendPasswordResetEmail(u.email||id); showToast('📧 재설정 메일을 보냈습니다.'); }
+  catch(e){ alert('메일 발송 오류: '+e.message); }
+}
+async function removeUser(id){
+  const u=allUsers.find(x=>x.id===id); if(!u) return;
+  if(!confirm(`${u.name||''}(${u.email||id})의 권한 문서를 삭제할까요?\n\n※ 로그인 계정 자체는 남아 있습니다(접근은 권한이 없어 차단됨). 완전 차단은 '재직 OFF'를 권장합니다.`)) return;
+  try { await db.collection('users').doc(id).delete(); showToast('🗑️ 권한이 삭제되었습니다.'); loadUsers(); }
+  catch(e){ alert('삭제 오류: '+e.message); }
+}
+
+// ── 유틸 ──
+let tt;
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
