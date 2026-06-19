@@ -9,6 +9,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="holidays.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -116,10 +117,13 @@
     .cal-cell:hover { background: #f3faf9; box-shadow: 0 0 0 2px #bfe0e0 inset; }
     .cal-cell.empty { background: transparent; border: none; cursor: default; }
     .cal-cell.empty:hover { box-shadow: none; }
-    .cal-cell.today { border-color: #0d7377; box-shadow: 0 0 0 1px #0d7377; }
+    .cal-cell.today { border-color: #0d7377; box-shadow: 0 0 0 2px #0d7377; background: #f0fbfa; }
     .cal-daynum { font-size: 12.5px; font-weight: 700; color: #51606e; display: flex; align-items: center; gap: 5px; }
-    .cal-daynum.sun { color: #e74c3c; }
+    .cal-daynum.sun, .cal-daynum.holiday { color: #e74c3c; }
     .cal-daynum.sat { color: #2563eb; }
+    .cal-daynum .today-badge { background: #0d7377; color: #fff; font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 20px; }
+    .cal-daynum .hol-name { font-size: 10px; font-weight: 700; color: #e74c3c; background: #fdecea; padding: 1px 5px; border-radius: 5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-daynum .hol-name.custom { color: #8e44ad; background: #f3eafa; }
     .book-badge { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-left: auto; }
     .book-badge.b1 { background: #fdf2e9; color: #ca7a36; }
     .book-badge.b2 { background: #fadbc1; color: #b9651b; }
@@ -287,6 +291,7 @@
     <div class="toolbar">
       <h1>🌴 직원 연차 관리</h1>
       <button class="btn-add" onclick="openLeaveModal()">➕ 연차 등록</button>
+      <button class="btn-add" onclick="openHolidayModal()" style="background:#8e44ad;">🚩 임시공휴일</button>
       <button class="btn-add secondary" onclick="openStaffModal()">👤 직원 추가</button>
       <button class="btn-reload" onclick="loadBookings()">🔄 검진일정 새로고침</button>
     </div>
@@ -433,6 +438,19 @@
   </div>
 </div>
 
+<div id="holidayModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;padding:22px 24px;width:460px;max-width:94vw;max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="font-size:17px;font-weight:800;color:#1a3a5c;margin-bottom:6px;">🚩 임시공휴일 관리</div>
+    <div style="font-size:12.5px;color:#8a96a2;margin-bottom:14px;">임시 휴진일 등을 지정하면 예약명단·연차 캘린더에 빨갛게 표시됩니다. (법정공휴일은 자동 표시됩니다)</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <input type="date" id="chDate" style="flex:1;min-width:140px;padding:9px;border:1.5px solid #dde3ea;border-radius:8px;font-family:inherit;">
+      <input type="text" id="chName" placeholder="사유(예: 임시휴진)" style="flex:2;min-width:140px;padding:9px;border:1.5px solid #dde3ea;border-radius:8px;font-family:inherit;">
+      <button onclick="addCustomHoliday()" style="background:#8e44ad;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-family:inherit;">추가</button>
+    </div>
+    <div id="chList" style="max-height:280px;overflow:auto;"></div>
+    <div style="text-align:right;margin-top:14px;"><button onclick="closeHolidayModal()" style="background:#eef0f3;color:#555;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer;font-family:inherit;">닫기</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -456,7 +474,9 @@ async function doLogin() {
   }
 }
 
-let staffUnsub = null, leavesUnsub = null;
+let staffUnsub = null, leavesUnsub = null, holidayUnsub = null;
+let customHolidays = {};   // { 'YYYY-MM-DD': '이름' }
+let customHolidayDocs = {}; // { 'YYYY-MM-DD': docId }
 auth.onAuthStateChanged(user => {
   if (user) {
     document.getElementById('loginScreen').style.display = 'none';
@@ -509,12 +529,52 @@ function startRealtime() {
     renderStaff();
     renderCalendar();
   }, err => showToast('연차 기록을 불러오지 못했습니다: ' + err.message));
+
+  if (holidayUnsub) holidayUnsub();
+  holidayUnsub = db.collection('custom_holidays').onSnapshot(snap => {
+    customHolidays = {}; customHolidayDocs = {};
+    snap.docs.forEach(d => { const h = d.data(); if (h.date) { customHolidays[h.date] = h.name || '휴무'; customHolidayDocs[h.date] = d.id; } });
+    renderCalendar();
+    if (document.getElementById('holidayModal').style.display === 'flex') renderHolidayList();
+  }, () => {});
 }
 
-// 검진 예약: 읽기 전용으로 날짜별 예약 목록 집계
-async function loadBookings() {
+// ── 임시공휴일 관리 ───────────────────────────────────────
+function openHolidayModal() { document.getElementById('holidayModal').style.display = 'flex'; renderHolidayList(); }
+function closeHolidayModal() { document.getElementById('holidayModal').style.display = 'none'; }
+function renderHolidayList() {
+  const el = document.getElementById('chList');
+  const dates = Object.keys(customHolidays).sort();
+  el.innerHTML = dates.length
+    ? dates.map(d => `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid #eef1f5;font-size:13px;">
+        <span><b style="color:#8e44ad;">${d}</b> · ${esc(customHolidays[d])}</span>
+        <button onclick="removeCustomHoliday('${d}')" style="background:#fdecea;color:#c0392b;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit;">삭제</button>
+      </div>`).join('')
+    : '<div style="color:#aab4bd;padding:10px 0;font-size:13px;">등록된 임시공휴일이 없습니다.</div>';
+}
+async function addCustomHoliday() {
+  const date = document.getElementById('chDate').value;
+  const name = document.getElementById('chName').value.trim();
+  if (!date) { showToast('날짜를 선택해 주세요.'); return; }
   try {
-    const snap = await db.collection('bookings').get();
+    await db.collection('custom_holidays').add({ date, name: name || '휴무', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById('chName').value = '';
+    showToast('🚩 임시공휴일이 추가되었습니다.');
+  } catch (e) { alert('추가 오류: ' + e.message); }
+}
+async function removeCustomHoliday(date) {
+  const id = customHolidayDocs[date];
+  if (!id) return;
+  if (!confirm(`${date} 임시공휴일을 삭제할까요?`)) return;
+  try { await db.collection('custom_holidays').doc(id).delete(); showToast('삭제되었습니다.'); }
+  catch (e) { alert('삭제 오류: ' + e.message); }
+}
+
+// 검진 예약: 읽기 전용으로 날짜별 예약 목록 집계 (실시간 구독 → 예약명단 변경 즉시 반영)
+let bookingsUnsub = null;
+function loadBookings() {
+  if (bookingsUnsub) return; // 중복 구독 방지
+  bookingsUnsub = db.collection('bookings').onSnapshot(snap => {
     bookByDate = {};
     snap.docs.forEach(d => {
       const b = { id: d.id, ...d.data() };
@@ -525,9 +585,7 @@ async function loadBookings() {
     Object.values(bookByDate).forEach(arr =>
       arr.sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||'')));
     renderCalendar();
-  } catch(e) {
-    showToast('검진 일정을 불러오지 못했습니다: ' + e.message);
-  }
+  }, e => showToast('검진 일정을 불러오지 못했습니다: ' + e.message));
 }
 
 // ── 입사일 기준 연차 계산 (근로기준법) ───────────────────────
@@ -588,12 +646,18 @@ function usedDays(staffId, start, end) {
   });
   return sum;
 }
-// 해당 연차 날짜가 속한 연차연도 기준 그 직원의 누적 사용일수
+// 그 직원의 전체 연차 사용 합계 (연차연도 구분 없이 모든 기록 합산)
+function usedAll(staffId) {
+  let sum = 0;
+  allLeaves.forEach(l => { if (l.staffId === staffId) sum += (l.portion === 'full' ? 1 : 0.5); });
+  return sum;
+}
+// 그 날짜(포함)까지의 전체 누적 사용일수
 function usedInLeavePeriod(staffId, dateStr) {
-  const s = allStaff.find(x => x.id === staffId);
-  if (!s) return 0;
-  const st = leaveStatus(s, pd(dateStr));
-  return usedDays(staffId, st.periodStart, st.periodEnd);
+  const next = pd(dateStr); next.setDate(next.getDate() + 1);
+  let sum = 0;
+  allLeaves.forEach(l => { if (l.staffId === staffId && pd(l.date) < next) sum += (l.portion === 'full' ? 1 : 0.5); });
+  return sum;
 }
 
 // ── 직원 카드 렌더 ─────────────────────────────────────────
@@ -607,7 +671,7 @@ function renderStaff() {
   grid.innerHTML = allStaff.map((s, i) => {
     const color = s.color || STAFF_COLORS[i % STAFF_COLORS.length];
     const st = leaveStatus(s);
-    const used = usedDays(s.id, st.periodStart, st.periodEnd);
+    const used = usedAll(s.id);
     const total = st.allowance;
     const remain = Math.max(0, total - used);
     const pct = total > 0 ? Math.min(100, Math.round(used / total * 100)) : 0;
@@ -690,8 +754,12 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMon; d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow = (firstDow + d - 1) % 7;
-    const dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    const hol = window.SF_HOLIDAYS ? SF_HOLIDAYS.holidayInfo(dateStr, customHolidays) : null;
+    let dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    if (hol) dnClass += ' holiday';
     const isToday = dateStr === todayStr;
+    const todayBadge = isToday ? '<span class="today-badge">오늘</span>' : '';
+    const holName = hol ? `<span class="hol-name${hol.custom ? ' custom' : ''}" title="${esc(hol.name)}">${esc(hol.name)}</span>` : '';
 
     const books = bookByDate[dateStr] || [];
     const liveCnt = books.filter(b => (b.status||'확정') !== '취소').length;
@@ -722,7 +790,7 @@ function renderCalendar() {
     const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 연차</div>` : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}" onclick="openDayModal('${dateStr}')" title="클릭하면 ${dateStr} 검진 명단 보기 · 연차 등록">
-      <div class="cal-daynum ${dnClass}">${d}${bookBadge}</div>
+      <div class="cal-daynum ${dnClass}">${d}${todayBadge}${holName}${bookBadge}</div>
       ${chips}${moreLv}${bookEvents}${moreBk}
     </div>`;
   }
@@ -1030,15 +1098,12 @@ function openDetail(id) {
   if (!s) return;
   _detailStaffId = id;
   const st = leaveStatus(s);
-  const used = usedDays(id, st.periodStart, st.periodEnd);
+  const used = usedAll(id);
   document.getElementById('detailName').textContent = s.name;
   document.getElementById('detailSub').textContent =
-    `입사 ${s.hireDate} · ${st.label} · 현재 기간 ${fmtDate(st.periodStart)} ~ ${fmtDate(addDays(st.periodEnd,-1))} · 부여 ${st.allowance}일 · 사용 ${fmtNum(used)}일 · 잔여 ${fmtNum(Math.max(0,st.allowance-used))}일`;
+    `입사 ${s.hireDate} · ${st.label} · 부여 ${st.allowance}일 · 사용 ${fmtNum(used)}일 · 잔여 ${fmtNum(Math.max(0,st.allowance-used))}일`;
 
   const mine = allLeaves.filter(l => l.staffId === id).sort((a,b) => b.date.localeCompare(a.date));
-  // 현재 기간 / 이전 기록으로 그룹
-  const curList = mine.filter(l => { const d = pd(l.date); return d >= st.periodStart && d < st.periodEnd; });
-  const pastList = mine.filter(l => { const d = pd(l.date); return !(d >= st.periodStart && d < st.periodEnd); });
 
   const rowHtml = l => `<div class="detail-row${l.deleteRequested ? ' req' : ''}">
       <span class="dr-date">${esc(l.date)}</span>
@@ -1047,14 +1112,27 @@ function openDetail(id) {
       ${delControlHtml(l)}
     </div>`;
 
-  let body = `<div class="detail-period">📌 현재 연차연도 (${st.label}) · ${curList.length}건 / ${fmtNum(used)}일</div>`;
-  body += curList.length ? curList.map(rowHtml).join('') : `<div class="detail-empty">이 기간에 사용한 연차가 없습니다.</div>`;
-  if (pastList.length) {
-    body += `<div class="detail-period" style="background:#f1f4f7;color:#7a8794;">🗂️ 이전 기록 · ${pastList.length}건</div>`;
-    body += pastList.map(rowHtml).join('');
+  let body = `<div class="detail-period">🌴 전체 사용 내역 · ${mine.length}건 / ${fmtNum(used)}일 (부여 ${st.allowance}일)</div>`;
+  body += mine.length ? mine.map(rowHtml).join('') : `<div class="detail-empty">사용한 연차가 없습니다.</div>`;
+  // 원장 전용: 연차 전체 초기화(15일 모두 사용 후 새로 카운트)
+  if (firebase.auth().currentUser && firebase.auth().currentUser.email === 'dodezi82@gmail.com' && mine.length) {
+    body += `<div style="margin-top:16px;text-align:right;"><button onclick="resetStaffLeaves('${id}')" style="background:#c0392b;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-family:inherit;">🗑️ 연차 전체 초기화 (원장)</button></div>`;
   }
   document.getElementById('detailBody').innerHTML = body;
   document.getElementById('detailModal').classList.add('on');
+}
+async function resetStaffLeaves(id) {
+  const s = allStaff.find(x => x.id === id);
+  const mine = allLeaves.filter(l => l.staffId === id);
+  if (!mine.length) { showToast('삭제할 연차가 없습니다.'); return; }
+  if (!confirm(`"${s ? s.name : ''}" 직원의 연차 기록 ${mine.length}건을 모두 삭제하고 0부터 다시 카운트합니다.\n되돌릴 수 없습니다. 진행할까요?`)) return;
+  try {
+    const batch = db.batch();
+    mine.forEach(l => batch.delete(db.collection('staff_leaves').doc(l.id)));
+    await batch.commit();
+    showToast('✅ 연차가 초기화되었습니다.');
+    closeDetailModal();
+  } catch (e) { alert('초기화 오류 (원장 계정만 가능합니다): ' + e.message); }
 }
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('on'); _detailStaffId = null; }
 document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id === 'detailModal') closeDetailModal(); });

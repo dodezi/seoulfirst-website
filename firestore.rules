@@ -56,6 +56,16 @@ service cloud.firestore {
                     && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
+    // 임시공휴일(원장이 추가하는 휴무일): 관리자 전용
+    match /custom_holidays/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // 장비 수리·관리(AS 이력): 관리자 전용
+    match /equipment_repairs/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 포털 사용자·권한 (페이지 단위 접근권한):
     //  - 최고관리자(원장)는 전체 읽기·쓰기
     //  - 일반 직원 계정은 '자기 문서'만 읽기 가능(로그인 후 자기 권한 확인용)

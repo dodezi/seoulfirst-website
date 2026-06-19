@@ -9,6 +9,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="holidays.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -214,11 +215,14 @@
     .cal-cell { min-height: 110px; border-right: 1px solid #f0f2f4; border-bottom: 1px solid #f0f2f4; padding: 6px; position: relative; }
     .cal-cell:nth-child(7n) { border-right: none; }
     .cal-cell.empty { background: #fafbfc; }
-    .cal-cell.today { background: #f0fbfb; }
-    .cal-daynum { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; }
+    .cal-cell.today { background: #e7f7f6; box-shadow: inset 0 0 0 2px #0d7377; }
+    .cal-daynum { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
     .cal-cell.today .cal-daynum { color: #0d7377; }
-    .cal-daynum.sun { color: #e74c3c; }
+    .cal-daynum.sun, .cal-daynum.holiday { color: #e74c3c; }
     .cal-daynum.sat { color: #2980b9; }
+    .cal-daynum .today-badge { background: #0d7377; color: #fff; font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 20px; }
+    .cal-daynum .hol-name { font-size: 10px; font-weight: 700; color: #e74c3c; background: #fdecea; padding: 1px 5px; border-radius: 5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-daynum .hol-name.custom { color: #8e44ad; background: #f3eafa; }
     .cal-event { font-size: 11px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; cursor: pointer; background: #e8f4f4; color: #0d7377; border-left: 3px solid #0d7377; }
     /* 검사 종목 색 구분 (파랑=내시경·처방완료, 초록=내시경·처방전, 빨강=비내시경) */
     .cal-event.cat-blue  { background: #eaf2fd; color: #1b5fb0; border-left-color: #2563eb; }
@@ -411,6 +415,12 @@
         <span class="stat-chip chip-deleted" id="statDeleted">삭제됨 0</span>
       </div>
     </div>
+    <div class="filter-row" id="monthNavRow" style="display:none;align-items:center;gap:8px;margin-top:8px;">
+      <button class="mn-btn" onclick="bkShiftMonth(-1)" style="padding:6px 12px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;">◀</button>
+      <span id="bkMonthLabel" style="font-weight:800;color:#0d7377;min-width:120px;text-align:center;font-size:14px;"></span>
+      <button class="mn-btn" onclick="bkShiftMonth(1)" style="padding:6px 12px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;">▶</button>
+      <button class="mn-btn" id="bkAllBtn" onclick="bkAllMonths()" style="padding:6px 14px;border:1.5px solid #dde1e7;background:#fff;border-radius:20px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#666;">전체 기간</button>
+    </div>
 
     <!-- 테이블 -->
     <div class="table-wrap">
@@ -538,6 +548,11 @@
       </div>
     </div>
 
+    <div class="ff" style="max-width:200px">
+      <label>확인 직원</label>
+      <input type="text" id="aChecker" placeholder="작성 직원 (선택)" maxlength="10" />
+    </div>
+
     <div class="ff">
       <label>메모</label>
       <textarea id="aMemo" placeholder="특이사항 (선택)" maxlength="200"></textarea>
@@ -571,6 +586,15 @@ let allBookings   = [];
 let allStaffLeaves = [];   // 직원 연차(읽기 전용 표시용)
 let staffMap       = {};   // staffId → {name, color}
 let currentFilter = '전체';
+let bkMonth = null; // 확정/검사완료 탭의 연·월 필터 (YYYY-MM), null=전체 기간
+function bkYM(dt) { return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; }
+function bkShiftMonth(d) {
+  if (!bkMonth) bkMonth = bkYM(new Date());
+  const [y,m] = bkMonth.split('-').map(Number);
+  bkMonth = bkYM(new Date(y, m-1+d, 1));
+  renderTable();
+}
+function bkAllMonths() { bkMonth = bkMonth ? null : bkYM(new Date()); renderTable(); }
 let deleteId      = null;
 let currentView   = 'list';            // 'list' | 'calendar'
 const calRef      = new Date();         // 달력 기준 월
@@ -716,40 +740,43 @@ async function loadBookings() {
   }
 }
 
-// 직원 연차 + 직원 색상 로드 (읽기 전용 · 달력에 함께 표시)
-async function loadStaffLeaves() {
-  try {
-    const [lvSnap, stSnap] = await Promise.all([
-      db.collection('staff_leaves').get(),
-      db.collection('staff').get()
-    ]);
-    allStaffLeaves = lvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    staffMap = {};
-    stSnap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
-    renderCalendars();
-    if (document.getElementById('dayModal').classList.contains('on')) renderDayList();
-  } catch(e) {
-    // 보안규칙 미배포 등으로 읽기 실패 시 조용히 무시 (연차 미표시)
+// 직원 연차 + 직원 색상 + 임시공휴일 로드 (읽기 전용 · 달력에 함께 표시) — 실시간 구독
+let _lvUnsub = null, _stUnsub = null, _chUnsub = null;
+let customHolidays = {};   // { 'YYYY-MM-DD': '이름' }
+function loadStaffLeaves() {
+  const refresh = () => { renderCalendars(); if (document.getElementById('dayModal').classList.contains('on')) renderDayList(); };
+  if (!_lvUnsub) {
+    _lvUnsub = db.collection('staff_leaves').onSnapshot(snap => {
+      allStaffLeaves = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refresh();
+    }, () => {});
+  }
+  if (!_stUnsub) {
+    _stUnsub = db.collection('staff').onSnapshot(snap => {
+      staffMap = {};
+      snap.docs.forEach(d => { const s = d.data(); staffMap[d.id] = { name: s.name, color: s.color || '#0d7377', hireDate: s.hireDate }; });
+      refresh();
+    }, () => {});
+  }
+  if (!_chUnsub) {
+    _chUnsub = db.collection('custom_holidays').onSnapshot(snap => {
+      customHolidays = {};
+      snap.docs.forEach(d => { const h = d.data(); if (h.date) customHolidays[h.date] = h.name || '휴무'; });
+      refresh();
+    }, () => {});
   }
 }
 
-// 연차 누적 사용일수 (입사일 기준 연차연도, 연차관리와 동일 계산)
+// 연차 누적 사용일수 — 연차연도 구분 없이 그 날짜(포함)까지 전체 합산
 function _lvPd(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
-function _lvCompletedYears(h,r){ let y=r.getFullYear()-h.getFullYear(); const m=r.getMonth()-h.getMonth(); if(m<0||(m===0&&r.getDate()<h.getDate()))y--; return y; }
 function _lvFmt(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
 function leaveUsedCount(staffId, dateStr) {
-  const st = staffMap[staffId];
-  let start = null, end = null;
-  if (st && st.hireDate) {
-    const hire = _lvPd(st.hireDate);
-    const Y = Math.max(0, _lvCompletedYears(hire, _lvPd(dateStr)));
-    start = new Date(hire.getFullYear()+Y, hire.getMonth(), hire.getDate());
-    end   = new Date(hire.getFullYear()+Y+1, hire.getMonth(), hire.getDate());
-  }
+  const ref = _lvPd(dateStr);
+  const refNext = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + 1);
   let sum = 0;
   allStaffLeaves.forEach(l => {
     if (l.staffId !== staffId) return;
-    if (start) { const d = _lvPd(l.date); if (!(d >= start && d < end)) return; }
+    if (_lvPd(l.date) >= refNext) return; // 그 날짜 이후 제외
     sum += (l.portion === 'full' ? 1 : 0.5);
   });
   return _lvFmt(sum);
@@ -782,7 +809,20 @@ function renderTable() {
       });
     } else {
       list = list.filter(b => (b.status || '대기중') === currentFilter);
+      // 확정·검사완료 탭: 선택한 연·월(확정 검사일 기준)로 좁히기
+      if ((currentFilter === '확정' || currentFilter === '검사완료') && bkMonth) {
+        list = list.filter(b => (b.confirmedDate || '').startsWith(bkMonth));
+      }
     }
+  }
+
+  // 월 네비 라벨 갱신
+  const lblEl = document.getElementById('bkMonthLabel');
+  if (lblEl) {
+    if (bkMonth) { const [yy,mm] = bkMonth.split('-'); lblEl.textContent = `${yy}년 ${parseInt(mm,10)}월`; }
+    else lblEl.textContent = '전체 기간';
+    const allBtn = document.getElementById('bkAllBtn');
+    if (allBtn) { allBtn.style.background = bkMonth ? '#fff' : '#0d7377'; allBtn.style.color = bkMonth ? '#666' : '#fff'; allBtn.style.borderColor = bkMonth ? '#dde1e7' : '#0d7377'; }
   }
 
   // 통계
@@ -1027,6 +1067,9 @@ function setFilter(f, btn) {
   currentFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+  const showNav = (f === '확정' || f === '검사완료');
+  document.getElementById('monthNavRow').style.display = showNav ? 'flex' : 'none';
+  if (showNav && bkMonth === null) bkMonth = bkYM(new Date()); // 탭 진입 시 이번 달 기본
   renderTable();
 }
 
@@ -1109,7 +1152,7 @@ function editConf(id) {
 
 // ── 직접 추가 ─────────────────────────────────────────────
 function openAdd() {
-  ['aName','aChartNo','aPhone','aDate','aTime','aService','aConfDate','aMemo']
+  ['aName','aChartNo','aPhone','aDate','aTime','aService','aChecker','aConfDate','aMemo']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('aConfTime').innerHTML = timeSlotOptions('09:00'); // 기본 오전 9시
   document.getElementById('addError').textContent = '';
@@ -1131,6 +1174,7 @@ async function saveAdd() {
   const cDate   = document.getElementById('aConfDate').value;
   const cTime   = document.getElementById('aConfTime').value;
   const memo    = document.getElementById('aMemo').value.trim();
+  const checker = document.getElementById('aChecker').value.trim();
   const err     = document.getElementById('addError');
   err.textContent = '';
   if (!name)  { err.textContent = '이름을 입력해 주세요.';  document.getElementById('aName').focus();  return; }
@@ -1145,6 +1189,7 @@ async function saveAdd() {
       time: time || '',
       service: service || '',
       memo: memo || '',
+      checker: checker || '',
       status: cDate ? '확정' : '대기중',
       confirmedDate: cDate || '',
       confirmedTime: cDate ? (cTime || '') : '',
@@ -1210,8 +1255,12 @@ function buildMonthGrid(maxEvents) {
   for (let d = 1; d <= daysInMon; d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow = (firstDow + d - 1) % 7;
-    const dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    const hol = window.SF_HOLIDAYS ? SF_HOLIDAYS.holidayInfo(dateStr, customHolidays) : null;
+    let dnClass = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    if (hol) dnClass += ' holiday';
     const isToday = dateStr === todayStr;
+    const todayBadge = isToday ? '<span class="today-badge">오늘</span>' : '';
+    const holName = hol ? `<span class="hol-name${hol.custom ? ' custom' : ''}" title="${esc(hol.name)}">${esc(hol.name)}</span>` : '';
     const list = (events[dateStr] || []).sort((a,b) => (a.confirmedTime||'').localeCompare(b.confirmedTime||''));
     totalEvents += list.length;
 
@@ -1242,7 +1291,7 @@ function buildMonthGrid(maxEvents) {
     const dnPtr   = list.length ? ' clickable' : '';
 
     html += `<div class="cal-cell${isToday ? ' today' : ''}">
-      <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}</div>
+      <div class="cal-daynum ${dnClass}${dnPtr}"${dnClick}>${d}${todayBadge}${holName}</div>
       ${lvHtml}${evHtml}
     </div>`;
   }
