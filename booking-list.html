@@ -415,6 +415,12 @@
         <span class="stat-chip chip-deleted" id="statDeleted">삭제됨 0</span>
       </div>
     </div>
+    <div class="filter-row" id="monthNavRow" style="display:none;align-items:center;gap:8px;margin-top:8px;">
+      <button class="filter-btn" onclick="bkShiftMonth(-1)" style="padding:6px 12px;">◀</button>
+      <span id="bkMonthLabel" style="font-weight:800;color:#0d7377;min-width:120px;text-align:center;font-size:14px;"></span>
+      <button class="filter-btn" onclick="bkShiftMonth(1)" style="padding:6px 12px;">▶</button>
+      <button class="filter-btn" id="bkAllBtn" onclick="bkAllMonths()">전체 기간</button>
+    </div>
 
     <!-- 테이블 -->
     <div class="table-wrap">
@@ -580,6 +586,15 @@ let allBookings   = [];
 let allStaffLeaves = [];   // 직원 연차(읽기 전용 표시용)
 let staffMap       = {};   // staffId → {name, color}
 let currentFilter = '전체';
+let bkMonth = null; // 확정/검사완료 탭의 연·월 필터 (YYYY-MM), null=전체 기간
+function bkYM(dt) { return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; }
+function bkShiftMonth(d) {
+  if (!bkMonth) bkMonth = bkYM(new Date());
+  const [y,m] = bkMonth.split('-').map(Number);
+  bkMonth = bkYM(new Date(y, m-1+d, 1));
+  renderTable();
+}
+function bkAllMonths() { bkMonth = bkMonth ? null : bkYM(new Date()); renderTable(); }
 let deleteId      = null;
 let currentView   = 'list';            // 'list' | 'calendar'
 const calRef      = new Date();         // 달력 기준 월
@@ -794,7 +809,20 @@ function renderTable() {
       });
     } else {
       list = list.filter(b => (b.status || '대기중') === currentFilter);
+      // 확정·검사완료 탭: 선택한 연·월(확정 검사일 기준)로 좁히기
+      if ((currentFilter === '확정' || currentFilter === '검사완료') && bkMonth) {
+        list = list.filter(b => (b.confirmedDate || '').startsWith(bkMonth));
+      }
     }
+  }
+
+  // 월 네비 라벨 갱신
+  const lblEl = document.getElementById('bkMonthLabel');
+  if (lblEl) {
+    if (bkMonth) { const [yy,mm] = bkMonth.split('-'); lblEl.textContent = `${yy}년 ${parseInt(mm,10)}월`; }
+    else lblEl.textContent = '전체 기간';
+    const allBtn = document.getElementById('bkAllBtn');
+    if (allBtn) allBtn.classList.toggle('on', !bkMonth);
   }
 
   // 통계
@@ -1037,8 +1065,11 @@ function editReason(id) {
 document.getElementById('searchInput').addEventListener('input', renderTable);
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-row:first-of-type .filter-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+  const showNav = (f === '확정' || f === '검사완료');
+  document.getElementById('monthNavRow').style.display = showNav ? 'flex' : 'none';
+  if (showNav && bkMonth === null) bkMonth = bkYM(new Date()); // 탭 진입 시 이번 달 기본
   renderTable();
 }
 
