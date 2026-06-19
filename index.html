@@ -230,6 +230,60 @@
   <meta property="og:image"       content="https://www.seoulfirst.co.kr/images/328b947086595.jpg" />
   <meta property="og:url"         content="https://www.seoulfirst.co.kr/" />
   <meta name="twitter:card"       content="summary_large_image" />
+
+  <!-- ===== 구조화 데이터 (JSON-LD) — 화면에 안 보임. AI·검색엔진이 병원 정보를 정확히 인식하도록 ===== -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MedicalClinic",
+    "name": "서울퍼스트내과의원",
+    "alternateName": "Seoul First Internal Medicine",
+    "description": "남양주 다산동에 위치한 내과의원. 소화기내시경 전문의 2인이 위·대장내시경, 5대암 검진, 국가건강검진, 고혈압·당뇨·고지혈증·골다공증 등 만성질환을 진료합니다.",
+    "url": "https://www.seoulfirst.co.kr",
+    "telephone": "+82-31-515-1500",
+    "image": "https://www.seoulfirst.co.kr/images/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "다산중앙로82번안길 118 다산메인타워 3층",
+      "addressLocality": "남양주시",
+      "addressRegion": "경기도",
+      "addressCountry": "KR"
+    },
+    "areaServed": [
+      { "@type": "Place", "name": "남양주시 다산동" },
+      { "@type": "Place", "name": "남양주시" },
+      { "@type": "Place", "name": "구리시" }
+    ],
+    "medicalSpecialty": ["Gastroenterologic", "PrimaryCare"],
+    "openingHoursSpecification": [
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:30", "closes": "18:00" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "08:30", "closes": "13:30" }
+    ],
+    "availableService": [
+      { "@type": "MedicalProcedure", "name": "위내시경 (수면 가능)" },
+      { "@type": "MedicalProcedure", "name": "대장내시경 (수면 가능)" },
+      { "@type": "MedicalTest", "name": "5대암 검진 (위·대장·간·유방·자궁경부)" },
+      { "@type": "MedicalTest", "name": "국가건강검진·공단검진" },
+      { "@type": "MedicalTest", "name": "골밀도 검사" }
+    ],
+    "employee": [
+      {
+        "@type": "Physician",
+        "name": "이동원",
+        "jobTitle": "대표원장",
+        "medicalSpecialty": "Gastroenterologic",
+        "description": "소화기내과 분과 전문의, 내시경세부 전문의, 내과학 박사. 고려대학교 의과대학 수석 졸업, 서울대학교병원 내과 수료, 고려대학교 의료원 소화기내과 진료외래교수."
+      },
+      {
+        "@type": "Physician",
+        "name": "안진우",
+        "jobTitle": "부원장",
+        "medicalSpecialty": "Gastroenterologic",
+        "description": "소화기내과 분과 전문의, 내시경세부 전문의, 의학 석사. 서울대학교 의과대학 졸업, 서울대학교병원 내과 수료, 서울대학교병원 소화기내과 임상강사."
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
