@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>장비 수리·관리 — 서울퍼스트내과</title>
+<style>
+:root { --primary:#1a3a5c; --accent:#2c7be5; --border:#dde3ea; --text:#2c3e50; --muted:#8a9ab0; --danger:#e74c3c; --done:#27ae60; --pending:#e67e22; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Malgun Gothic','맑은 고딕',sans-serif; background:#f4f6f9; color:var(--text); font-size:14px; }
+#header { background:var(--primary); color:#fff; padding:0 24px; display:flex; align-items:center; gap:16px; height:54px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+.logo { font-size:17px; font-weight:900; cursor:pointer; }
+.logo span { color:#5dade2; }
+.header-title { font-size:14px; opacity:.7; }
+.header-sep { width:1px; height:20px; background:rgba(255,255,255,.2); }
+.header-spacer { flex:1; }
+.btn { padding:7px 14px; border:none; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; transition:.15s; font-family:inherit; }
+.btn-home { background:rgba(255,255,255,.15); color:#fff; text-decoration:none; display:inline-flex; align-items:center; }
+.btn-home:hover { background:rgba(255,255,255,.25); }
+#logoutBtn { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.2); }
+#toolbar { background:#fff; border-bottom:2px solid var(--border); padding:12px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.tb-title { font-size:16px; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:8px; }
+.toolbar-spacer { flex:1; }
+.search-box input { padding:8px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; width:220px; }
+.search-box input:focus { outline:none; border-color:var(--accent); }
+.btn-add { background:var(--accent); color:#fff; font-size:14px; padding:9px 18px; }
+.btn-csv { background:#eaf2fb; color:#2471a3; }
+#stats { padding:14px 24px 0; display:flex; gap:10px; flex-wrap:wrap; }
+.stat-chip { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; }
+.chip-total { background:#eaf2fb; color:#2471a3; }
+.chip-pending { background:#fef5e7; color:#d35400; }
+.chip-cost { background:#e8f6ee; color:#1e8449; }
+#deviceSummary { padding:12px 24px 0; }
+.sum-card { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.06); padding:12px 16px; }
+.sum-card h4 { font-size:12px; color:var(--muted); margin-bottom:8px; font-weight:700; }
+.dev-chip { display:inline-flex; align-items:center; gap:6px; background:#f4f8fd; border:1px solid #dbe7f5; border-radius:8px; padding:5px 11px; font-size:13px; margin:3px; }
+.dev-chip b { color:var(--primary); }
+.dev-chip .cnt { background:#2c7be5; color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:20px; }
+#wrap { padding:16px 24px 60px; }
+table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+thead th { background:#f8fafc; padding:12px; font-size:12px; font-weight:700; color:#555; border-bottom:2px solid #e8ecf0; text-align:left; white-space:nowrap; }
+tbody td { padding:11px 12px; font-size:13px; border-bottom:1px solid #f0f2f4; vertical-align:middle; }
+tbody tr:hover { background:#f7faff; }
+.td-device { font-weight:700; color:var(--primary); white-space:nowrap; }
+.td-content { color:#444; max-width:340px; }
+.td-cost { text-align:right; font-weight:800; color:#1e8449; white-space:nowrap; }
+.td-date { white-space:nowrap; color:#555; }
+.status-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.st-done { background:#e8f6ee; color:#1e8449; }
+.st-pending { background:#fef5e7; color:#d35400; }
+.act-btn { border:none; border-radius:6px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+.act-edit { background:#e0e4ea; color:#555; }
+.act-del { background:#fdecea; color:var(--danger); }
+.empty-msg { text-align:center; color:var(--muted); padding:40px; }
+#authGate { position:fixed; inset:0; background:linear-gradient(135deg,#1a3a5c,#2c7be5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+#authGate.hidden { display:none; }
+.login-box { background:#fff; border-radius:16px; padding:44px 38px; width:360px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.login-box h2 { color:var(--primary); font-size:20px; margin-bottom:6px; text-align:center; }
+.login-box p { color:var(--muted); font-size:13px; text-align:center; margin-bottom:24px; }
+.login-box input { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; margin-bottom:12px; font-family:inherit; }
+.btn-login { width:100%; padding:13px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+.login-error { color:var(--danger); font-size:12.5px; text-align:center; min-height:18px; margin-top:8px; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1100; align-items:center; justify-content:center; padding:20px; }
+.modal-bg.on { display:flex; }
+.modal { background:#fff; border-radius:14px; width:560px; max-width:96vw; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.modal h2 { font-size:18px; color:var(--primary); margin-bottom:16px; }
+.frow { margin-bottom:13px; }
+.frow label { display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+.fin { width:100%; padding:9px 11px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; }
+.fin:focus { outline:none; border-color:var(--accent); }
+textarea.fin { resize:vertical; min-height:64px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-foot { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+#toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:#2c3e50; color:#fff; padding:12px 22px; border-radius:24px; font-size:14px; font-weight:600; opacity:0; transition:opacity .25s; z-index:1400; pointer-events:none; }
+#toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div id="header">
+  <span class="logo" onclick="location.href='admin.html'">서울<span>퍼스트</span>내과</span>
+  <span class="header-sep"></span>
+  <span class="header-title">🛠️ 장비 수리·관리</span>
+  <span class="header-spacer"></span>
+  <a class="btn btn-home" href="admin.html">🏠 관리홈</a>
+  <button class="btn" id="logoutBtn" style="display:none">로그아웃</button>
+</div>
+<div id="toolbar">
+  <span class="tb-title">🛠️ 장비 AS 기록</span>
+  <div class="toolbar-spacer"></div>
+  <div class="search-box"><input type="text" id="searchInput" placeholder="장비·내용·업체 검색…"></div>
+  <button class="btn btn-csv" onclick="exportCsv()">⬇️ CSV 내보내기</button>
+  <button class="btn btn-add" onclick="openAdd()">➕ AS 기록 추가</button>
+</div>
+<div id="stats"></div>
+<div id="deviceSummary"></div>
+<div id="wrap">
+  <table>
+    <thead><tr>
+      <th style="width:40px">#</th>
+      <th style="width:110px">의뢰일</th>
+      <th style="width:160px">장비</th>
+      <th>AS 내용</th>
+      <th style="width:110px">완료일</th>
+      <th style="width:110px;text-align:right">비용(원)</th>
+      <th style="width:120px">업체/기사</th>
+      <th style="width:70px;text-align:center">상태</th>
+      <th style="width:130px;text-align:center">작업</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div id="authGate">
+  <div class="login-box">
+    <h2>장비 수리·관리</h2>
+    <p>관리자 로그인이 필요합니다</p>
+    <input type="email" id="lEmail" placeholder="이메일" autocomplete="username">
+    <input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password">
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="editModal"><div class="modal">
+  <h2 id="modalTitle">🛠️ AS 기록</h2>
+  <div class="frow"><label>장비종류 <span style="color:#e74c3c">*</span></label><input type="text" class="fin" id="mDevice" placeholder="예: 위내시경, 초음파, 냉장고, 자동문"></div>
+  <div class="frow"><label>AS 내용(증상·조치)</label><textarea class="fin" id="mContent" placeholder="고장 증상이나 수리 내용"></textarea></div>
+  <div class="grid2">
+    <div class="frow"><label>AS 의뢰일</label><input type="date" class="fin" id="mReq"></div>
+    <div class="frow"><label>완료일 (완료 시 입력)</label><input type="date" class="fin" id="mDone"></div>
+  </div>
+  <div class="grid2">
+    <div class="frow"><label>비용(원)</label><input type="text" class="fin" id="mCost" style="text-align:right" placeholder="0"></div>
+    <div class="frow"><label>업체/기사</label><input type="text" class="fin" id="mVendor" placeholder="수리 업체·담당자"></div>
+  </div>
+  <div class="frow"><label>메모</label><input type="text" class="fin" id="mMemo" placeholder="보증기간·연락처 등 (선택)"></div>
+  <div class="modal-foot">
+    <button class="btn" style="background:#fdecea;color:var(--danger)" id="mDelBtn" onclick="deleteCurrent()">🗑️ 삭제</button>
+    <button class="btn" style="background:#eef0f3;color:#555" onclick="closeEdit()">취소</button>
+    <button class="btn" style="background:var(--accent);color:#fff" onclick="saveEdit()">💾 저장</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey:"AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+    authDomain:"seoulfirst-ba9d4.firebaseapp.com",
+    projectId:"seoulfirst-ba9d4",
+    storageBucket:"seoulfirst-ba9d4.firebasestorage.app",
+    messagingSenderId:"702099053597",
+    appId:"1:702099053597:web:27efd596ee2156a8fefaf4"
+  });
+}
+const fsdb=firebase.firestore(), auth=firebase.auth();
+const COL='equipment_repairs';
+let rows=[], _started=false, currentId=null;
+
+function doLogin(){
+  const email=document.getElementById('lEmail').value.trim(), pw=document.getElementById('lPw').value, err=document.getElementById('loginError');
+  err.textContent='';
+  if(!email||!pw){ err.textContent='이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn=document.getElementById('btnLogin'); btn.textContent='로그인 중…'; btn.disabled=true;
+  auth.signInWithEmailAndPassword(email,pw).catch(()=>{ err.textContent='이메일 또는 비밀번호가 올바르지 않습니다.'; btn.textContent='로그인'; btn.disabled=false; });
+}
+auth.onAuthStateChanged(u=>{
+  const gate=document.getElementById('authGate'), lo=document.getElementById('logoutBtn');
+  if(u){ gate.classList.add('hidden'); lo.style.display=''; lo.title=u.email; if(!_started){_started=true; start();} }
+  else { gate.classList.remove('hidden'); lo.style.display='none'; }
+});
+document.getElementById('btnLogin').addEventListener('click',doLogin);
+document.getElementById('lPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
+document.getElementById('searchInput').addEventListener('input',render);
+
+function start(){
+  fsdb.collection(COL).orderBy('requestDate','desc').onSnapshot(snap=>{
+    rows=snap.docs.map(d=>({id:d.id,...d.data()})); render();
+  }, err=>{ console.error(err); showToast('⚠️ 데이터 로드 실패: '+err.message); });
+}
+
+function esc(v){ return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function num(v){ const x=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; }
+function fmt(n){ const x=num(n); return x?x.toLocaleString('ko-KR'):''; }
+function showToast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2800); }
+function isDone(b){ return !!(b.completeDate); }
+
+function render(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  let list=rows.slice();
+  if(q) list=list.filter(b=>(b.device||'').toLowerCase().includes(q)||(b.content||'').toLowerCase().includes(q)||(b.vendor||'').toLowerCase().includes(q));
+
+  const pending=rows.filter(b=>!isDone(b)).length;
+  const totalCost=rows.reduce((s,b)=>s+num(b.cost),0);
+  document.getElementById('stats').innerHTML=
+    `<span class="stat-chip chip-total">전체 ${rows.length}건</span>
+     <span class="stat-chip chip-pending">진행중 ${pending}건</span>
+     <span class="stat-chip chip-cost">누적 비용 ${totalCost.toLocaleString('ko-KR')}원</span>`;
+
+  // 장비별 AS 횟수 (많이 고장난 순)
+  const byDev={};
+  rows.forEach(b=>{ const d=b.device||'(미지정)'; if(!byDev[d]) byDev[d]={cnt:0,cost:0}; byDev[d].cnt++; byDev[d].cost+=num(b.cost); });
+  const devArr=Object.entries(byDev).sort((a,b)=>b[1].cnt-a[1].cnt);
+  document.getElementById('deviceSummary').innerHTML = rows.length ? `<div class="sum-card">
+    <h4>장비별 AS 횟수 (고장 잦은 순)</h4>
+    <div>${devArr.map(([d,o])=>`<span class="dev-chip"><b>${esc(d)}</b> <span class="cnt">${o.cnt}회</span>${o.cost?` <span style="color:#1e8449;font-weight:700;">${o.cost.toLocaleString('ko-KR')}원</span>`:''}</span>`).join('')}</div>
+  </div>` : '';
+
+  const tbody=document.getElementById('tbody');
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="9" class="empty-msg">${rows.length?'검색 결과가 없습니다.':'아직 기록이 없습니다. [➕ AS 기록 추가]로 시작하세요.'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=list.map((b,i)=>{
+    const done=isDone(b);
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="td-date">${esc(b.requestDate)||'—'}</td>
+      <td class="td-device">${esc(b.device)||'<span style="color:#ccc">미지정</span>'}</td>
+      <td class="td-content">${esc(b.content)||'<span style="color:#ccc">—</span>'}</td>
+      <td class="td-date">${esc(b.completeDate)||'<span style="color:#ccc">—</span>'}</td>
+      <td class="td-cost">${fmt(b.cost)||'—'}</td>
+      <td>${esc(b.vendor)||'<span style="color:#ccc">—</span>'}</td>
+      <td style="text-align:center"><span class="status-badge ${done?'st-done':'st-pending'}">${done?'완료':'진행중'}</span></td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="act-btn act-edit" onclick="openEdit('${b.id}')">✏️ 수정</button>
+        <button class="act-btn act-del" onclick="quickDelete('${b.id}')">삭제</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function openAdd(){
+  currentId=null;
+  document.getElementById('modalTitle').textContent='🛠️ AS 기록 추가';
+  document.getElementById('mDelBtn').style.display='none';
+  ['mDevice','mContent','mDone','mCost','mVendor','mMemo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mReq').value=todayStr();
+  document.getElementById('editModal').classList.add('on');
+}
+function openEdit(id){
+  currentId=id; const b=rows.find(x=>x.id===id); if(!b) return;
+  document.getElementById('modalTitle').textContent='🛠️ AS 기록 수정';
+  document.getElementById('mDelBtn').style.display='';
+  document.getElementById('mDevice').value=b.device||'';
+  document.getElementById('mContent').value=b.content||'';
+  document.getElementById('mReq').value=b.requestDate||'';
+  document.getElementById('mDone').value=b.completeDate||'';
+  document.getElementById('mCost').value=(b.cost!=null&&b.cost!=='')?num(b.cost):'';
+  document.getElementById('mVendor').value=b.vendor||'';
+  document.getElementById('mMemo').value=b.memo||'';
+  document.getElementById('editModal').classList.add('on');
+}
+function closeEdit(){ currentId=null; document.getElementById('editModal').classList.remove('on'); }
+async function saveEdit(){
+  const g=id=>document.getElementById(id).value;
+  const device=g('mDevice').trim();
+  if(!device){ showToast('장비종류를 입력해 주세요.'); document.getElementById('mDevice').focus(); return; }
+  const data={ device, content:g('mContent').trim(), requestDate:g('mReq'), completeDate:g('mDone'), cost:num(g('mCost')), vendor:g('mVendor').trim(), memo:g('mMemo').trim() };
+  try{
+    if(currentId){ await fsdb.collection(COL).doc(currentId).update(data); }
+    else { data.createdAt=firebase.firestore.FieldValue.serverTimestamp(); await fsdb.collection(COL).add(data); }
+    showToast('💾 저장되었습니다.'); closeEdit();
+  }catch(e){ alert('저장 오류: '+e.message); }
+}
+async function deleteCurrent(){ if(currentId){ const id=currentId; closeEdit(); await quickDelete(id); } }
+async function quickDelete(id){
+  const b=rows.find(x=>x.id===id); const label=b?`${b.device||''} / ${b.requestDate||''}`:'이 기록';
+  if(!confirm(`"${label}" AS 기록을 삭제하시겠습니까?`)) return;
+  try{ await fsdb.collection(COL).doc(id).delete(); showToast('🗑️ 삭제되었습니다.'); }
+  catch(e){ alert('삭제 오류: '+e.message); }
+}
+
+function exportCsv(){
+  if(!rows.length){ showToast('내보낼 데이터가 없습니다.'); return; }
+  const out=[['의뢰일','장비','AS내용','완료일','비용','업체/기사','상태','메모']];
+  rows.forEach(b=>out.push([b.requestDate||'',b.device||'',b.content||'',b.completeDate||'',b.cost||'',b.vendor||'',isDone(b)?'완료':'진행중',b.memo||'']));
+  const csv='﻿'+out.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`장비AS기록_${todayStr()}.csv`; a.click(); showToast('⬇️ CSV를 내려받았습니다.');
+}
+</script>
+</body>
+</html>

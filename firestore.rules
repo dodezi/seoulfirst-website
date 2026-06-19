@@ -61,6 +61,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 장비 수리·관리(AS 이력): 관리자 전용
+    match /equipment_repairs/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 그 외 모든 경로: 기본 차단
     match /{document=**} {
       allow read, write: if false;
