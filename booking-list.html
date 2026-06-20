@@ -1045,6 +1045,7 @@ async function setStatus(id, value, msg) {
     await db.collection('bookings').doc(id).update({ status: value });
     const item = allBookings.find(b => b.id === id);
     if (item) item.status = value;
+    if (window.logAudit) logAudit('booking', '상태변경 → ' + value, (item ? item.name : '') || '');
     renderTable();
     showToast(msg || `✅ 상태: ${value}`);
   } catch(e) { alert('상태 변경 오류: '+e.message); }
@@ -1137,6 +1138,7 @@ document.getElementById('delConfirm').addEventListener('click', async () => {
     });
     const item = allBookings.find(b => b.id === deleteId);
     if (item) item.deleted = true;
+    if (window.logAudit) logAudit('booking', '예약 삭제', (item ? item.name : '') || '');
     document.getElementById('delModal').classList.remove('on');
     renderTable();
     showToast('🗑️ 삭제됨 — "삭제된 명단" 탭에서 복원 가능');
@@ -1243,6 +1245,7 @@ async function saveAdd() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     await db.collection('bookings').add(doc);
+    if (window.logAudit) logAudit('booking', '예약 직접추가', name);
     closeAdd();
     showToast(`➕ ${name} 님 예약이 등록되었습니다.`);
     await loadBookings();
@@ -1544,5 +1547,6 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
+<script src="audit.js"></script>
 </body>
 </html>

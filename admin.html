@@ -92,6 +92,7 @@ body {
 .card.equip .badge { background: #eaf2fb; color: #2c7be5; }
 .card.leaves .badge { background: #e3ecfa; color: #2c5fb0; }
 .card.users .badge { background: #e7e0f5; color: #6c3fb5; }
+.card.audit .badge { background: #e7eaee; color: #51606e; }
 .footer {
   margin-top: 40px;
   color: rgba(255,255,255,.35);
@@ -121,7 +122,12 @@ body {
   .card p { display: none; }       /* 설명문은 모바일에서 숨겨 한 화면에 */
   .card .badge { display: none; }
   .footer { margin-top: 22px; }
+  .userbar { padding: 8px 12px !important; gap: 8px !important; font-size: 12px !important; }
 }
+.userbar { position: fixed; top: 0; left: 0; right: 0; display: none; align-items: center; gap: 12px; padding: 10px 18px; z-index: 50; }
+.userbar #ubEmail { opacity: .65; color: #fff; margin-right: auto; font-size: 12px; }
+.userbar a { color: rgba(255,255,255,.9); text-decoration: none; font-weight: 600; font-size: 13px; }
+.userbar button { background: rgba(255,255,255,.16); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -142,6 +148,12 @@ body {
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </head>
 <body>
+<div class="userbar" id="userbar">
+  <span id="ubEmail"></span>
+  <a href="account.html">🔑 비밀번호 변경</a>
+  <a href="admin-audit.html" id="ubAudit" style="display:none;">📜 변경이력</a>
+  <button id="ubLogout">로그아웃</button>
+</div>
 <div class="container">
   <div class="logo">
     <h1>서울<span>퍼스트</span>내과</h1>
@@ -218,6 +230,13 @@ body {
       <p>직원 계정 발급 및<br>페이지별 접근 권한 설정 (원장 전용)</p>
       <div class="badge">Users &amp; Roles</div>
     </a>
+
+    <a class="card audit" href="admin-audit.html">
+      <div class="icon">📜</div>
+      <h2>변경<br>이력</h2>
+      <p>로그인·권한·기록 변경 내역<br>조회 (원장 전용)</p>
+      <div class="badge">Audit Log</div>
+    </a>
   </div>
 
   <div class="footer">
@@ -230,16 +249,25 @@ body {
 // 로그인한 직원에게는 권한 있는 카드만 보이도록 (원장은 전체 / 비로그인은 전체)
 (function(){
   var SUPER = ['dodezi82@gmail.com','seoulfirst2023@gmail.com'];
+  var OWNER = 'dodezi82@gmail.com';
   var PERM_BY_HREF = {
     'admin-checkup.html':'checkup', 'admin-narcotics.html':'narcotics', 'booking-list.html':'booking',
     'viewer.html?app=drug':'drug', 'viewer.html?app=parking':'parking', 'admin-invoices.html':'invoice',
     'admin-lunch.html':'lunch', 'admin-equipment.html':'equip', 'admin-leaves.html':'leaves',
-    'admin-users.html':'__owner'
+    'admin-users.html':'__owner', 'admin-audit.html':'__owner'
   };
   function showAll(){ document.querySelectorAll('.cards .card').forEach(function(c){ c.style.display=''; }); }
+  document.getElementById('ubLogout').addEventListener('click', function(){ firebase.auth().signOut(); });
+
   firebase.auth().onAuthStateChanged(function(user){
-    if(!user){ showAll(); return; }
+    // 미로그인 → 통합 로그인 페이지로
+    if(!user){ location.replace('portal.html'); return; }
     var email = (user.email||'').toLowerCase();
+    // 상단바
+    document.getElementById('userbar').style.display = 'flex';
+    document.getElementById('ubEmail').textContent = user.email;
+    if(email === OWNER){ document.getElementById('ubAudit').style.display = 'inline'; }
+    // 카드 표시
     if(SUPER.indexOf(email) >= 0){ showAll(); return; }
     firebase.firestore().collection('users').doc(email).get().then(function(d){
       var u = d.exists ? d.data() : null;

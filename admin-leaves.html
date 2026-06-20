@@ -970,6 +970,7 @@ async function saveLeave() {
       batch.set(ref, { staffId, staffName, date: d, portion: usePortion, memo, createdAt: ts, createdBy: (auth.currentUser||{}).email || '' });
     });
     await batch.commit();
+    if (window.logAudit) logAudit('leaves', '연차 등록 ' + toAdd.length + '건', staffName + ' · ' + toAdd.join(', '));
     closeLeaveModal();
     showToast(`✅ ${staffName} 연차 ${toAdd.length}건 등록${dupCount ? ` (중복 ${dupCount}건 제외)` : ''}`);
   } catch(e) { alert('등록 오류: ' + e.message); }
@@ -997,6 +998,7 @@ async function ownerDelete(id, after) {
   if (!confirm(`${l ? l.staffName+' · '+l.date : '이 연차'} 기록을 삭제할까요?`)) return;
   try {
     await db.collection('staff_leaves').doc(id).delete();
+    if (window.logAudit) logAudit('leaves', '연차 삭제', l ? l.staffName+' · '+l.date : id);
     showToast('🗑️ 삭제되었습니다.');
     if (after) after();
     if (_detailStaffId) openDetail(_detailStaffId);
@@ -1012,6 +1014,7 @@ async function requestDelete(id, after) {
       deleteReqBy: (auth.currentUser || {}).email || '',
       deleteReqAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if (window.logAudit) logAudit('leaves', '연차 삭제요청', l ? l.staffName+' · '+l.date : id);
     showToast('📨 삭제 요청을 보냈습니다. 원장 승인 후 삭제됩니다.');
     if (after) after();
     if (_detailStaffId) openDetail(_detailStaffId);
@@ -1151,6 +1154,7 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
+<script src="audit.js"></script>
 <script>window.PORTAL_PAGE_KEY='leaves';</script>
 <script src="portal-guard.js"></script>
 </body>

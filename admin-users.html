@@ -358,6 +358,7 @@ async function createStaff(){
     document.getElementById('nEmail').value='';
     document.getElementById('nPw').value='';
     renderNewPerms();
+    if(window.logAudit) logAudit('account','직원 직접추가/권한저장', name+' · '+email);
     showToast(`✅ ${name} 계정/권한이 저장되었습니다.`);
     loadUsers();
   } catch(e){
@@ -436,7 +437,7 @@ function renderPending(pending){
 async function rejectUser(id){
   const u=allUsers.find(x=>x.id===id); if(!u) return;
   if(!confirm(`${u.name||''}(${u.email||id})의 가입 신청을 거절(삭제)할까요?\n\n※ 로그인 계정 자체는 남아 있지만, 권한이 없어 어떤 기능도 사용할 수 없습니다.`)) return;
-  try { await db.collection('users').doc(id).delete(); showToast('가입 신청을 거절했습니다.'); loadUsers(); }
+  try { await db.collection('users').doc(id).delete(); if(window.logAudit) logAudit('account','가입 거절', (u.name||'')+' · '+id); showToast('가입 신청을 거절했습니다.'); loadUsers(); }
   catch(e){ alert('오류: '+e.message); }
 }
 
@@ -463,6 +464,7 @@ async function saveEditPerms(){
   }
   try {
     await db.collection('users').doc(_editId).update(upd);
+    if(window.logAudit){ var _u=allUsers.find(x=>x.id===_editId); logAudit('account', _approveMode?'가입 승인+권한부여':'권한 수정', (_u?_u.name:'')+' · '+_editId); }
     closeEdit(); showToast(_approveMode ? '✅ 승인하고 권한을 부여했습니다.' : '💾 권한이 수정되었습니다.'); loadUsers();
   } catch(e){ alert('저장 오류: '+e.message); }
 }
@@ -472,6 +474,7 @@ async function toggleActive(id){
   const next = !(u.active===false) ? false : true;   // 현재 재직이면 OFF
   try {
     await db.collection('users').doc(id).update({ active: next });
+    if(window.logAudit) logAudit('account', next?'재직 ON':'재직 OFF(접근 차단)', (u.name||'')+' · '+id);
     showToast(next ? '✅ 재직으로 변경' : '⏸️ 비활성(접근 차단)으로 변경');
     loadUsers();
   } catch(e){ alert('오류: '+e.message); }
@@ -485,7 +488,7 @@ async function resetPw(id){
 async function removeUser(id){
   const u=allUsers.find(x=>x.id===id); if(!u) return;
   if(!confirm(`${u.name||''}(${u.email||id})의 권한 문서를 삭제할까요?\n\n※ 로그인 계정 자체는 남아 있습니다(접근은 권한이 없어 차단됨). 완전 차단은 '재직 OFF'를 권장합니다.`)) return;
-  try { await db.collection('users').doc(id).delete(); showToast('🗑️ 권한이 삭제되었습니다.'); loadUsers(); }
+  try { await db.collection('users').doc(id).delete(); if(window.logAudit) logAudit('account','권한 삭제', (u.name||'')+' · '+id); showToast('🗑️ 권한이 삭제되었습니다.'); loadUsers(); }
   catch(e){ alert('삭제 오류: '+e.message); }
 }
 
@@ -494,5 +497,6 @@ let tt;
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
+<script src="audit.js"></script>
 </body>
 </html>

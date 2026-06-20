@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>변경 이력 | 서울퍼스트내과의원</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey:"AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo", authDomain:"seoulfirst-ba9d4.firebaseapp.com",
+      projectId:"seoulfirst-ba9d4", storageBucket:"seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId:"702099053597", appId:"1:702099053597:web:27efd596ee2156a8fefaf4"
+    });
+    const db = firebase.firestore(); const auth = firebase.auth();
+  </script>
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:#f4f6f9; color:#1e2a38; min-height:100vh; }
+    #gate { display:flex; align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:30px; }
+    #gate .box { background:#fff; border-radius:16px; padding:40px; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,.12); }
+    #gate h2 { color:#c0392b; font-size:20px; margin-bottom:10px; }
+    #gate p { color:#5a6b7a; font-size:14px; line-height:1.7; }
+    #gate a { display:inline-block; margin-top:18px; background:#0d7377; color:#fff; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:700; }
+    #main { display:none; }
+    .top-bar { background:#0f2b3d; color:#fff; height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; position:sticky; top:0; z-index:100; }
+    .top-bar .tl { display:flex; align-items:center; gap:14px; }
+    .top-bar img { height:28px; }
+    .top-bar span { font-size:15px; font-weight:700; }
+    .top-bar a, .top-bar button { background:rgba(255,255,255,.12); color:#fff; border:none; text-decoration:none; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .body { max-width:1100px; margin:0 auto; padding:24px 20px 60px; }
+    h1 { font-size:22px; font-weight:700; color:#0f2b3d; margin-bottom:14px; }
+    .filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+    .filters select, .filters input { padding:9px 12px; border:1.5px solid #dde1e7; border-radius:8px; font-size:14px; font-family:inherit; }
+    .filters .btn { padding:9px 16px; background:#e8f4f4; color:#0d7377; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .panel { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { background:#f8fafc; padding:11px 12px; font-size:12px; font-weight:700; color:#555; border-bottom:2px solid #e8ecf0; text-align:left; white-space:nowrap; }
+    tbody td { padding:10px 12px; font-size:13px; border-bottom:1px solid #f0f2f4; vertical-align:top; }
+    .t-time { color:#8a96a2; white-space:nowrap; font-size:12px; }
+    .t-actor { font-weight:700; color:#0f2b3d; white-space:nowrap; }
+    .cat { font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+    .cat-auth { background:#e3ecfa; color:#2c5fb0; }
+    .cat-account { background:#e7e0f5; color:#6c3fb5; }
+    .cat-booking { background:#d5f5e3; color:#1e7a3a; }
+    .cat-leaves { background:#e3ecfa; color:#2c5fb0; }
+    .cat-etc { background:#eef1f5; color:#51606e; }
+    .empty { text-align:center; color:#aab4bd; padding:30px; }
+  </style>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#1a3a5c" />
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+</head>
+<body>
+  <div id="gate">
+    <div class="box">
+      <h2 id="gateTitle">불러오는 중…</h2>
+      <p id="gateMsg"></p>
+      <a id="gateLink" href="portal.html" style="display:none;">로그인하러 가기</a>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="top-bar">
+      <div class="tl"><a href="admin.html" style="background:none;padding:0;"><img src="images/logo.png" alt="로고"></a><span>변경 이력</span></div>
+      <div><a href="admin.html">🏠 관리홈</a> <button id="btnLogout">로그아웃</button></div>
+    </div>
+    <div class="body">
+      <h1>📜 변경·접속 이력</h1>
+      <div class="filters">
+        <select id="fCat">
+          <option value="">전체 분류</option>
+          <option value="auth">로그인·계정</option>
+          <option value="account">권한·계정관리</option>
+          <option value="booking">예약</option>
+          <option value="leaves">연차</option>
+        </select>
+        <input type="text" id="fActor" placeholder="이메일 검색…" />
+        <select id="fLimit">
+          <option value="100">최근 100건</option>
+          <option value="300">최근 300건</option>
+          <option value="1000">최근 1000건</option>
+        </select>
+        <button class="btn" onclick="loadLogs()">🔄 새로고침</button>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>시각</th><th>사용자</th><th>분류</th><th>행동</th><th>내용</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="5" class="empty">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const OWNER = 'dodezi82@gmail.com';
+document.getElementById('btnLogout').addEventListener('click', ()=>auth.signOut());
+
+auth.onAuthStateChanged(user => {
+  const gate=document.getElementById('gate'), main=document.getElementById('main');
+  if(!user){
+    gate.style.display='flex'; main.style.display='none';
+    document.getElementById('gateTitle').textContent='로그인이 필요합니다';
+    document.getElementById('gateMsg').textContent='변경 이력은 원장 계정만 볼 수 있습니다.';
+    document.getElementById('gateLink').style.display='inline-block';
+    return;
+  }
+  if((user.email||'').toLowerCase() !== OWNER){
+    gate.style.display='flex'; main.style.display='none';
+    document.getElementById('gateTitle').textContent='🚫 접근 권한이 없습니다';
+    document.getElementById('gateMsg').innerHTML='변경 이력은 <b>원장 계정</b>만 볼 수 있습니다.<br>현재: '+user.email;
+    document.getElementById('gateLink').style.display='none';
+    return;
+  }
+  gate.style.display='none'; main.style.display='block';
+  loadLogs();
+});
+
+async function loadLogs(){
+  const cat = document.getElementById('fCat').value;
+  const actor = document.getElementById('fActor').value.trim().toLowerCase();
+  const lim = parseInt(document.getElementById('fLimit').value, 10) || 100;
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '<tr><td colspan="5" class="empty">불러오는 중...</td></tr>';
+  try {
+    let q = db.collection('audit_logs').orderBy('at','desc').limit(lim);
+    const snap = await q.get();
+    let rows = snap.docs.map(d=>d.data());
+    if(cat) rows = rows.filter(r=>r.category===cat);
+    if(actor) rows = rows.filter(r=>(r.actor||'').toLowerCase().includes(actor));
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="5" class="empty">기록이 없습니다.</td></tr>'; return; }
+    tb.innerHTML = rows.map(r=>{
+      const t = r.at && r.at.toDate ? r.at.toDate() : null;
+      const ts = t ? `${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}` : '-';
+      const catCls = ['auth','account','booking','leaves'].includes(r.category) ? 'cat-'+r.category : 'cat-etc';
+      return `<tr>
+        <td class="t-time">${ts}</td>
+        <td class="t-actor">${esc(r.actor||'-')}</td>
+        <td><span class="cat ${catCls}">${esc(r.category||'기타')}</span></td>
+        <td>${esc(r.action||'')}</td>
+        <td>${esc(r.detail||'')}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){
+    tb.innerHTML = `<tr><td colspan="5" class="empty" style="color:#c0392b">불러오지 못했습니다.<br><small>${esc(e.message)}</small></td></tr>`;
+  }
+}
+function p(n){ return String(n).padStart(2,'0'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

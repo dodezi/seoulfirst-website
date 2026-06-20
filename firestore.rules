@@ -99,6 +99,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
+    // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
+    //  - 생성: 관리자·재직 직원(본인 행동 기록)
+    //  - 읽기: 원장 전용
+    match /audit_logs/{doc} {
+      allow create: if isAdmin() || isActiveUser();
+      allow read:   if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
+      allow update, delete: if false;
+    }
+
     // 그 외 모든 경로: 기본 차단
     match /{document=**} {
       allow read, write: if false;
