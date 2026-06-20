@@ -123,6 +123,16 @@ body {
   .footer { margin-top: 22px; }
 }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:"AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo", authDomain:"seoulfirst-ba9d4.firebaseapp.com",
+    projectId:"seoulfirst-ba9d4", storageBucket:"seoulfirst-ba9d4.firebasestorage.app",
+    messagingSenderId:"702099053597", appId:"1:702099053597:web:27efd596ee2156a8fefaf4"
+  });
+</script>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#1a3a5c" />
 <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
@@ -215,5 +225,34 @@ body {
     <div style="margin-top:8px;"><a href="signup.html" style="color:rgba(255,255,255,.55);font-size:12px;">직원 가입 신청 →</a></div>
   </div>
 </div>
+
+<script>
+// 로그인한 직원에게는 권한 있는 카드만 보이도록 (원장은 전체 / 비로그인은 전체)
+(function(){
+  var SUPER = ['dodezi82@gmail.com','seoulfirst2023@gmail.com'];
+  var PERM_BY_HREF = {
+    'admin-checkup.html':'checkup', 'admin-narcotics.html':'narcotics', 'booking-list.html':'booking',
+    'viewer.html?app=drug':'drug', 'viewer.html?app=parking':'parking', 'admin-invoices.html':'invoice',
+    'admin-lunch.html':'lunch', 'admin-equipment.html':'equip', 'admin-leaves.html':'leaves',
+    'admin-users.html':'__owner'
+  };
+  function showAll(){ document.querySelectorAll('.cards .card').forEach(function(c){ c.style.display=''; }); }
+  firebase.auth().onAuthStateChanged(function(user){
+    if(!user){ showAll(); return; }
+    var email = (user.email||'').toLowerCase();
+    if(SUPER.indexOf(email) >= 0){ showAll(); return; }
+    firebase.firestore().collection('users').doc(email).get().then(function(d){
+      var u = d.exists ? d.data() : null;
+      var active = u && u.active !== false;
+      var perms = (u && u.perms) || {};
+      document.querySelectorAll('.cards .card').forEach(function(c){
+        var key = PERM_BY_HREF[c.getAttribute('href')];
+        var show = (key !== '__owner') && active && perms[key] === true;
+        c.style.display = show ? '' : 'none';
+      });
+    }).catch(function(){ /* 실패 시 그대로 둠 */ });
+  });
+})();
+</script>
 </body>
 </html>
