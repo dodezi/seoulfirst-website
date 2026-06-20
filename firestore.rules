@@ -11,16 +11,24 @@ service cloud.firestore {
            ];
     }
 
+    // 페이지 단위 권한: 승인·재직 중인 직원이 해당 페이지(page) 권한을 가졌는지
+    function hasPagePerm(page) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.get('active', false) == true
+        && get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.get('perms', {}).get(page, false) == true;
+    }
+
     // 공지사항: 누구나 읽기 / 관리자만 작성·수정·삭제
     match /notices/{doc} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 온라인 예약: 누구나 신청(생성) / 관리자만 조회·수정·삭제
+    // 온라인 예약: 누구나 신청(생성) / 관리자·'예약' 권한 직원은 조회·수정·삭제
     match /bookings/{doc} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAdmin() || hasPagePerm('booking');
     }
 
     // 검진 환자 정보 (민감): 관리자 전용

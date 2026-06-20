@@ -347,6 +347,18 @@
   </div>
 </div>
 
+<!-- ── 권한 없음 화면 ── -->
+<div id="noPermScreen" style="display:none; align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:30px;">
+  <div style="background:#fff; border-radius:16px; padding:40px; max-width:430px; box-shadow:0 8px 40px rgba(0,0,0,.12);">
+    <div style="font-size:48px; margin-bottom:8px;">🚫</div>
+    <h2 style="color:#c0392b; font-size:20px; margin-bottom:10px;">접근 권한이 없습니다</h2>
+    <p id="npMsg" style="color:#5a6b7a; font-size:14px; line-height:1.7;"></p>
+    <p style="color:#aab4bd; font-size:12px; margin-top:8px;">현재 계정: <span id="npEmail"></span></p>
+    <a href="admin.html" style="display:inline-block; margin-top:18px; background:#0d7377; color:#fff; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:700;">🏠 관리홈으로</a>
+    <div style="margin-top:12px;"><button id="btnLogoutNp" style="background:#eef1f5; color:#51606e; border:none; padding:8px 16px; border-radius:7px; font-weight:600; cursor:pointer; font-family:inherit;">로그아웃</button></div>
+  </div>
+</div>
+
 <!-- ── 관리자 화면 ── -->
 <div id="adminScreen">
 
@@ -621,19 +633,52 @@ async function doLogin() {
   }
 }
 
-auth.onAuthStateChanged(user => {
-  if (user) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminScreen').style.display = 'block';
-    document.getElementById('adminEmail').textContent = user.email;
-    loadBookings();
-    loadStaffLeaves();
-  } else {
+// ── 페이지 접근 권한 ──
+const SUPER_ADMINS = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
+const PAGE_KEY = 'booking';   // 이 페이지의 권한 키 (직원·권한 관리와 동일)
+function isSuperAdmin(email){ return SUPER_ADMINS.includes((email||'').toLowerCase()); }
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('noPermScreen').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  // 원장(최고관리자)은 무조건 통과
+  if (isSuperAdmin(user.email)) { grantAccess(user); return; }
+  // 직원: users 문서에서 활성 + 이 페이지 권한 확인
+  try {
+    const doc = await db.collection('users').doc((user.email||'').toLowerCase()).get();
+    const u = doc.exists ? doc.data() : null;
+    if (u && u.active !== false && u.perms && u.perms[PAGE_KEY] === true) {
+      grantAccess(user);
+    } else {
+      showNoPerm(user, u);
+    }
+  } catch(e) {
+    showNoPerm(user, null);
   }
 });
+function grantAccess(user){
+  document.getElementById('noPermScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('adminEmail').textContent = user.email;
+  loadBookings();
+  loadStaffLeaves();
+}
+function showNoPerm(user, u){
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('noPermScreen').style.display = 'flex';
+  document.getElementById('npEmail').textContent = user.email;
+  let m = '이 페이지(예약명단)에 대한 접근 권한이 없습니다. 원장에게 권한을 요청하세요.';
+  if (u && u.status === 'pending') m = '가입 신청이 아직 승인되지 않았습니다. 원장 승인 후 이용할 수 있습니다.';
+  else if (u && u.active === false) m = '계정이 비활성 상태입니다. 원장에게 문의하세요.';
+  document.getElementById('npMsg').textContent = m;
+}
 document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
+document.getElementById('btnLogoutNp').addEventListener('click', () => auth.signOut());
 
 // ── 검사 구분 색 ──────────────────────────────────────────
 // 검사항목 글자로 내시경 여부 자동 판정
