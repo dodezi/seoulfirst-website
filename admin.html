@@ -268,7 +268,15 @@ body {
     document.getElementById('ubEmail').textContent = user.email;
     if(email === OWNER){ document.getElementById('ubAudit').style.display = 'inline'; }
     // 카드 표시
-    if(SUPER.indexOf(email) >= 0){ showAll(); return; }
+    if(email === OWNER){ showAll(); return; }   // 원장: 전체(직원·권한/변경이력 포함)
+    if(SUPER.indexOf(email) >= 0){
+      // 원장 외 최고관리자(공유계정 등): 원장 전용 카드(직원·권한/변경이력)만 숨김
+      document.querySelectorAll('.cards .card').forEach(function(c){
+        var key = PERM_BY_HREF[c.getAttribute('href')];
+        c.style.display = (key === '__owner') ? 'none' : '';
+      });
+      return;
+    }
     firebase.firestore().collection('users').doc(email).get().then(function(d){
       var u = d.exists ? d.data() : null;
       var active = u && u.active !== false;

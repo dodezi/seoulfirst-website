@@ -408,7 +408,7 @@ function renderUsers(){
           <button onclick="openEdit('${esc(u.id)}')">권한 수정</button>
           <button onclick="toggleActive('${esc(u.id)}')">${u.active===false?'재직 ON':'재직 OFF'}</button>
           <button onclick="resetPw('${esc(u.id)}')">비번 재설정 메일</button>
-          <button class="danger" onclick="removeUser('${esc(u.id)}')">권한 삭제</button>
+          <button class="danger" onclick="removeUser('${esc(u.id)}')">계정 삭제</button>
         </div></td>
       </tr>`;
     }).join('');
@@ -487,8 +487,8 @@ async function resetPw(id){
 }
 async function removeUser(id){
   const u=allUsers.find(x=>x.id===id); if(!u) return;
-  if(!confirm(`${u.name||''}(${u.email||id})의 권한 문서를 삭제할까요?\n\n※ 로그인 계정 자체는 남아 있습니다(접근은 권한이 없어 차단됨). 완전 차단은 '재직 OFF'를 권장합니다.`)) return;
-  try { await db.collection('users').doc(id).delete(); if(window.logAudit) logAudit('account','권한 삭제', (u.name||'')+' · '+id); showToast('🗑️ 권한이 삭제되었습니다.'); loadUsers(); }
+  if(!confirm(`${u.name||''}(${u.email||id}) 계정을 목록에서 삭제할까요?\n\n· 이 직원은 시스템에서 사라지고 모든 접근이 차단됩니다.\n· 로그인 자격증명(아이디/비밀번호) 자체는 남으므로, 완전 제거가 필요하면 Firebase 콘솔 → Authentication에서 해당 이메일을 삭제하세요.\n· 잠깐 막아두려면 삭제 대신 '재직 OFF'를 권장합니다.`)) return;
+  try { await db.collection('users').doc(id).delete(); if(window.logAudit) logAudit('account','계정 삭제', (u.name||'')+' · '+id); showToast('🗑️ 계정이 삭제되었습니다.'); loadUsers(); }
   catch(e){ alert('삭제 오류: '+e.message); }
 }
 
