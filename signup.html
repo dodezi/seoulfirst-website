@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>직원 가입 신청 | 서울퍼스트내과의원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:linear-gradient(135deg,#1a3a5c,#2980b9); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 14px; }
+    .card { background:#fff; border-radius:18px; width:420px; max-width:100%; box-shadow:0 20px 60px rgba(0,0,0,.3); padding:36px 32px 30px; }
+    .card .logo { text-align:center; margin-bottom:14px; }
+    .card .logo img { height:34px; }
+    h1 { font-size:20px; font-weight:700; color:#0f2b3d; text-align:center; margin-bottom:6px; }
+    .sub { font-size:13px; color:#7a8794; text-align:center; line-height:1.6; margin-bottom:22px; }
+    .ff { margin-bottom:14px; }
+    .ff label { display:block; font-size:12.5px; font-weight:600; color:#5a6b7a; margin-bottom:5px; }
+    .ff input { width:100%; padding:12px 14px; border:1.5px solid #dde1e7; border-radius:9px; font-size:15px; font-family:inherit; }
+    .ff input:focus { outline:none; border-color:#0d7377; }
+    .hint { font-size:11.5px; color:#aab4bd; margin-top:4px; }
+    .btn { width:100%; padding:14px; background:#0d7377; color:#fff; border:none; border-radius:9px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:6px; }
+    .btn:disabled { opacity:.6; cursor:default; }
+    .msg { font-size:13px; text-align:center; min-height:18px; margin-top:12px; }
+    .msg.err { color:#c0392b; }
+    .links { text-align:center; margin-top:16px; font-size:13px; }
+    .links a { color:#0d7377; text-decoration:none; font-weight:600; }
+    /* 완료 화면 */
+    #doneBox { display:none; text-align:center; }
+    #doneBox .ic { font-size:54px; margin-bottom:10px; }
+    #doneBox h2 { color:#0d7377; font-size:20px; margin-bottom:10px; }
+    #doneBox p { color:#5a6b7a; font-size:14px; line-height:1.7; }
+    #doneBox a { display:inline-block; margin-top:20px; background:#0d7377; color:#fff; text-decoration:none; padding:11px 22px; border-radius:9px; font-weight:700; }
+  </style>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#1a3a5c" />
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="서울퍼스트" />
+</head>
+<body>
+  <div class="card">
+    <div id="formBox">
+      <div class="logo"><img src="images/logo.png" alt="로고" /></div>
+      <h1>직원 가입 신청</h1>
+      <p class="sub">아래 정보로 가입을 신청하면, <b>원장 승인</b> 후 권한이 부여됩니다.<br>승인 전에는 로그인해도 기능을 사용할 수 없습니다.</p>
+
+      <div class="ff"><label>이름 *</label><input type="text" id="sName" placeholder="본인 이름" maxlength="20" /></div>
+      <div class="ff"><label>이메일(로그인 ID) *</label><input type="email" id="sEmail" placeholder="example@email.com" autocomplete="username" />
+        <div class="hint">로그인에 쓸 이메일입니다. 비밀번호 분실 시 재설정 메일을 받으려면 실제 사용하는 메일을 권장합니다.</div>
+      </div>
+      <div class="ff"><label>연락처 (선택)</label><input type="tel" id="sPhone" placeholder="010-0000-0000" maxlength="20" /></div>
+      <div class="ff"><label>비밀번호 * (6자 이상)</label><input type="password" id="sPw" placeholder="비밀번호" autocomplete="new-password" /></div>
+      <div class="ff"><label>비밀번호 확인 *</label><input type="password" id="sPw2" placeholder="비밀번호 다시 입력" autocomplete="new-password" /></div>
+
+      <button class="btn" id="btnSignup">가입 신청하기</button>
+      <div class="msg" id="msg"></div>
+      <div class="links"><a href="admin.html">← 로그인/관리홈으로</a></div>
+    </div>
+
+    <div id="doneBox">
+      <div class="ic">📨</div>
+      <h2>가입 신청 완료</h2>
+      <p><b id="doneName"></b> 님, 가입 신청이 접수되었습니다.<br>원장님이 <b>승인하고 접근 권한을 부여</b>하면 이용할 수 있습니다.<br>승인 후 등록하신 이메일·비밀번호로 로그인하세요.</p>
+      <a href="admin.html">관리홈으로</a>
+    </div>
+  </div>
+
+<script>
+const btn = document.getElementById('btnSignup');
+const msg = document.getElementById('msg');
+document.getElementById('sPw2').addEventListener('keydown', e => { if(e.key==='Enter') signup(); });
+btn.addEventListener('click', signup);
+
+async function signup(){
+  const name  = document.getElementById('sName').value.trim();
+  const email = document.getElementById('sEmail').value.trim().toLowerCase();
+  const phone = document.getElementById('sPhone').value.trim();
+  const pw    = document.getElementById('sPw').value;
+  const pw2   = document.getElementById('sPw2').value;
+  msg.className = 'msg err';
+
+  if(!name){ msg.textContent='이름을 입력해 주세요.'; return; }
+  if(!email || !email.includes('@')){ msg.textContent='올바른 이메일을 입력해 주세요.'; return; }
+  if(pw.length < 6){ msg.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
+  if(pw !== pw2){ msg.textContent='비밀번호가 일치하지 않습니다.'; return; }
+
+  btn.disabled = true; btn.textContent = '신청 중...'; msg.textContent='';
+  try {
+    // 1) 본인 계정 생성 (로그인 상태가 됨)
+    await auth.createUserWithEmailAndPassword(email, pw);
+    // 2) 가입 신청서 저장 (대기·권한없음 상태로만 — 규칙상 본인만 가능)
+    await db.collection('users').doc(email).set({
+      email, name, phone,
+      status: 'pending',
+      active: false,
+      perms: {},
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // 3) 승인 전이므로 로그아웃
+    await auth.signOut();
+    document.getElementById('doneName').textContent = name;
+    document.getElementById('formBox').style.display = 'none';
+    document.getElementById('doneBox').style.display = 'block';
+  } catch(e){
+    btn.disabled = false; btn.textContent = '가입 신청하기';
+    if(e.code === 'auth/email-already-in-use'){
+      msg.textContent = '이미 등록된 이메일입니다. 원장님께 문의하거나 관리홈에서 로그인하세요.';
+    } else if(e.code === 'auth/weak-password'){
+      msg.textContent = '비밀번호가 너무 약합니다(6자 이상).';
+    } else if(e.code === 'auth/invalid-email'){
+      msg.textContent = '이메일 형식이 올바르지 않습니다.';
+    } else {
+      msg.textContent = '신청 오류: ' + e.message;
+    }
+  }
+}
+</script>
+</body>
+</html>

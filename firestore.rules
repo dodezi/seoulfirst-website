@@ -67,12 +67,19 @@ service cloud.firestore {
     }
 
     // 포털 사용자·권한 (페이지 단위 접근권한):
-    //  - 쓰기(계정·권한 부여/수정/삭제)는 원장(dodezi82)만
-    //  - 읽기는 원장 전체 / 일반 직원은 '자기 문서'만(로그인 후 자기 권한 확인용)
+    //  - 읽기: 원장 전체 / 일반 직원은 '자기 문서'만
+    //  - 생성: 원장(직접 추가) 또는 본인이 '대기·권한없음' 상태의 자기 가입신청서
+    //  - 수정·삭제(승인·권한부여): 원장만
     match /users/{email} {
-      allow read:  if (request.auth != null && request.auth.token.email == 'dodezi82@gmail.com')
-                   || (request.auth != null && request.auth.token.email == email);
-      allow write: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
+      allow read:   if (request.auth != null && request.auth.token.email == 'dodezi82@gmail.com')
+                    || (request.auth != null && request.auth.token.email == email);
+      allow create: if (request.auth != null && request.auth.token.email == 'dodezi82@gmail.com')
+                    || (request.auth != null
+                        && request.auth.token.email == email
+                        && request.resource.data.status == 'pending'
+                        && request.resource.data.active == false
+                        && request.resource.data.perms.size() == 0);
+      allow update, delete: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
     // 그 외 모든 경로: 기본 차단
