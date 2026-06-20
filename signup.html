@@ -65,7 +65,7 @@
       <div class="ff"><label>이메일(로그인 ID) *</label><input type="email" id="sEmail" placeholder="example@email.com" autocomplete="username" />
         <div class="hint">로그인에 쓸 이메일입니다. 비밀번호 분실 시 재설정 메일을 받으려면 실제 사용하는 메일을 권장합니다.</div>
       </div>
-      <div class="ff"><label>연락처 (선택)</label><input type="tel" id="sPhone" placeholder="010-0000-0000" maxlength="20" /></div>
+      <div class="ff"><label>연락처 *</label><input type="tel" id="sPhone" placeholder="010-0000-0000" maxlength="13" inputmode="numeric" /></div>
       <div class="ff"><label>비밀번호 * (6자 이상)</label><input type="password" id="sPw" placeholder="비밀번호" autocomplete="new-password" /></div>
       <div class="ff"><label>비밀번호 확인 *</label><input type="password" id="sPw2" placeholder="비밀번호 다시 입력" autocomplete="new-password" /></div>
 
@@ -88,6 +88,17 @@ const msg = document.getElementById('msg');
 document.getElementById('sPw2').addEventListener('keydown', e => { if(e.key==='Enter') signup(); });
 btn.addEventListener('click', signup);
 
+// 연락처 자동 하이픈 (000-0000-0000)
+const phoneEl = document.getElementById('sPhone');
+phoneEl.addEventListener('input', ()=>{
+  let d = phoneEl.value.replace(/\D/g,'').slice(0,11);
+  let out = d;
+  if(d.length > 3 && d.length <= 7) out = d.slice(0,3)+'-'+d.slice(3);
+  else if(d.length > 7 && d.length <= 10) out = d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+  else if(d.length > 10) out = d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+  phoneEl.value = out;
+});
+
 async function signup(){
   const name  = document.getElementById('sName').value.trim();
   const email = document.getElementById('sEmail').value.trim().toLowerCase();
@@ -98,6 +109,7 @@ async function signup(){
 
   if(!name){ msg.textContent='이름을 입력해 주세요.'; return; }
   if(!email || !email.includes('@')){ msg.textContent='올바른 이메일을 입력해 주세요.'; return; }
+  if(phone.replace(/\D/g,'').length < 10){ msg.textContent='연락처를 정확히 입력해 주세요.'; return; }
   if(pw.length < 6){ msg.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
   if(pw !== pw2){ msg.textContent='비밀번호가 일치하지 않습니다.'; return; }
 
