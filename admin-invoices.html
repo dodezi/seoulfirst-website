@@ -125,8 +125,11 @@ tbody tr.main-row:hover { background: #f9fcfb; }
   td.cell-actions::before { display: none; }
   td.cell-actions .act-btn { flex: 1 1 0; padding: 12px 0; font-size: 14px; }
   .thumb, .no-thumb { width: 54px; height: 54px; }
-  /* 상세·입력 모달: 모바일 폭 */
+  /* 상세·입력 모달: 모바일 폭 + 거래일/업체 세로 배치 */
   .detail-modal .modal, .modal { max-width: 96vw; }
+  .meta-grid { grid-template-columns: 1fr; gap: 10px; }
+  input[type=date].fin, .fin[type=date] { -webkit-appearance: none; appearance: none; width: 100%; box-sizing: border-box; }
+  .logo { font-size: 15px; }
 }
 </style>
 <link rel="manifest" href="manifest.webmanifest" />

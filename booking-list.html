@@ -319,8 +319,9 @@
 
       /* ── 모바일 달력: 색점 위주로 간결하게 (탭하면 그날 상세 팝업) ── */
       .cal-dow span { padding: 7px 0; font-size: 11px; }
-      .cal-cell { min-height: 54px; padding: 3px 2px; }
+      .cal-cell { min-height: 54px; padding: 3px 2px; min-width: 0; overflow: hidden; }
       .cal-grid.mini .cal-cell { min-height: 48px; padding: 2px; }
+      .cal-leave { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
       .cal-daynum { font-size: 11px; margin-bottom: 2px; }
 
       /* 검진 예약: 글자 숨기고 색점만 */
@@ -353,7 +354,8 @@
       /* 직접추가 모달: 날짜/시간 칸 세로로 쌓기(겹침 방지) */
       .ff-grid { flex-direction: column; gap: 0; }
       .ff-grid > .ff { min-width: 0; }
-      .ff input[type=date] { min-width: 0; }
+      /* iOS 날짜칸이 내용만큼만 좁아지는 문제 → 다른 칸과 동일하게 꽉 채움 */
+      .ff input[type=date] { -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; box-sizing: border-box; }
     }
   </style>
 <link rel="manifest" href="manifest.webmanifest" />
