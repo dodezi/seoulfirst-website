@@ -104,6 +104,30 @@ tbody tr.main-row:hover { background: #f9fcfb; }
 #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 12px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .25s; z-index: 1400; pointer-events: none; max-width: 90vw; text-align:center; }
 #toast.show { opacity: 1; }
 #uploadBar { display: none; position: fixed; top: 54px; left: 0; right: 0; background: #16a085; color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; z-index: 90; }
+
+/* ── 모바일: 헤더 정리 + 표를 카드로 (점심영수증과 동일 방식) ── */
+@media screen and (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  #header { padding: 0 12px; gap: 8px; }
+  .header-sep, .header-title { display: none; }
+  #toolbar, #monthbar, #summaryRow { padding-left: 12px; padding-right: 12px; }
+  #wrap { padding: 16px 12px 60px; }
+  table { min-width: 0; width: 100%; }
+  thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  tbody tr.main-row { border: 1px solid var(--border); border-radius: 12px; margin: 0 0 12px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+  tbody td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; border: none; border-bottom: 1px solid #f0f2f5; text-align: right; }
+  tbody td:last-child { border-bottom: none; }
+  tbody td::before { content: attr(data-label); font-size: 12.5px; font-weight: 700; color: var(--muted); flex: 0 0 auto; text-align: left; }
+  tbody td.cell-num { display: none; }
+  td.td-amount { font-weight: 800; color: #d35400; }
+  td.cell-actions { justify-content: stretch; gap: 10px; padding: 12px 14px; }
+  td.cell-actions::before { display: none; }
+  td.cell-actions .act-btn { flex: 1 1 0; padding: 12px 0; font-size: 14px; }
+  .thumb, .no-thumb { width: 54px; height: 54px; }
+  /* 상세·입력 모달: 모바일 폭 */
+  .detail-modal .modal, .modal { max-width: 96vw; }
+}
 </style>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#1a3a5c" />
@@ -508,13 +532,13 @@ function render() {
       ? `<span class="items-link" onclick="openDetail('${b.id}')">${esc(its[0].name || '품목')}${its.length>1 ? ` 외 ${its.length-1}건` : ''}</span>`
       : `<span class="items-link" onclick="openDetail('${b.id}')" style="color:#bbb">품목 입력</span>`;
     return `<tr class="main-row">
-      <td>${i+1}</td>
-      <td class="td-date">${esc(b.date)||'—'}</td>
-      <td class="td-vendor">${esc(b.vendor)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
-      <td class="td-items">${itemSummary}</td>
-      <td class="td-amount">${fmt(invoiceTotal(b))||'—'}</td>
-      <td>${thumb}</td>
-      <td style="text-align:center;white-space:nowrap">
+      <td class="cell-num" data-label="#">${i+1}</td>
+      <td class="td-date" data-label="거래일">${esc(b.date)||'—'}</td>
+      <td class="td-vendor" data-label="업체">${esc(b.vendor)||'<span style="color:#ccc">미입력</span>'}${badge}</td>
+      <td class="td-items" data-label="품목">${itemSummary}</td>
+      <td class="td-amount" data-label="합계(원)">${fmt(invoiceTotal(b))||'—'}</td>
+      <td data-label="사진">${thumb}</td>
+      <td class="cell-actions" style="text-align:center;white-space:nowrap">
         <button class="act-btn act-open" onclick="openDetail('${b.id}')">📂 상세·수정</button>
         <button class="act-btn act-del" onclick="quickDelete('${b.id}')">삭제</button>
       </td>

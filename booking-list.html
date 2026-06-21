@@ -339,6 +339,21 @@
 
       /* 그날 상세 팝업: 모바일에서 거의 전체화면, 읽기 좋게 */
       #dayModal .day-modal-box, #dayModal > div { max-width: 96vw !important; width: 96vw !important; }
+
+      /* 상단 헤더 정리: 로고 + 버튼만, 긴 텍스트·이메일 숨김 */
+      .top-bar { padding: 0 12px; height: 52px; }
+      .top-bar .tl span { display: none; }
+      .top-bar #adminEmail { display: none; }
+      .top-bar .tr { gap: 6px; }
+      .top-bar .btn-back, .top-bar .btn-small { padding: 6px 9px; font-size: 12px; }
+
+      /* 가로 오버플로 방지(축소 시 달력 삐져나옴) */
+      html, body { overflow-x: hidden; max-width: 100%; }
+
+      /* 직접추가 모달: 날짜/시간 칸 세로로 쌓기(겹침 방지) */
+      .ff-grid { flex-direction: column; gap: 0; }
+      .ff-grid > .ff { min-width: 0; }
+      .ff input[type=date] { min-width: 0; }
     }
   </style>
 <link rel="manifest" href="manifest.webmanifest" />

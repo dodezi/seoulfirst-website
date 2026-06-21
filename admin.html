@@ -102,7 +102,7 @@ body {
 /* ── 모바일: 8개 카드를 2×4로 한 화면에 ── */
 @media screen and (max-width: 640px) {
   body { align-items: flex-start; }
-  .container { padding: 18px 12px 24px; width: 100%; }
+  .container { padding: 60px 12px 24px; width: 100%; }   /* 상단바 높이만큼 비움 */
   .logo { margin-bottom: 18px; }
   .logo h1 { font-size: 23px; }
   .logo p { font-size: 10px; margin-top: 3px; }
@@ -122,7 +122,10 @@ body {
   .card p { display: none; }       /* 설명문은 모바일에서 숨겨 한 화면에 */
   .card .badge { display: none; }
   .footer { margin-top: 22px; }
-  .userbar { padding: 8px 12px !important; gap: 8px !important; font-size: 12px !important; }
+  .userbar { padding: 8px 12px !important; gap: 10px !important; background: rgba(15,43,61,.72); backdrop-filter: blur(6px); justify-content: flex-end; }
+  .userbar #ubEmail { display: none; }       /* 좁은 화면에선 이메일 숨김(겹침 방지) */
+  .userbar a { font-size: 12px; }
+  .userbar button { font-size: 12px; padding: 5px 10px; }
 }
 .userbar { position: fixed; top: 0; left: 0; right: 0; display: none; align-items: center; gap: 12px; padding: 10px 18px; z-index: 50; }
 .userbar #ubEmail { opacity: .65; color: #fff; margin-right: auto; font-size: 12px; }
