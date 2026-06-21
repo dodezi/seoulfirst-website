@@ -73,6 +73,27 @@ textarea.fin { resize:vertical; min-height:64px; }
 .modal-foot { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
 #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:#2c3e50; color:#fff; padding:12px 22px; border-radius:24px; font-size:14px; font-weight:600; opacity:0; transition:opacity .25s; z-index:1400; pointer-events:none; }
 #toast.show { opacity:1; }
+
+/* ── 모바일: 헤더 정리 + 표를 카드로 ── */
+@media screen and (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  #header { padding: 0 12px; gap: 8px; }
+  .header-sep, .header-title { display: none; }
+  #toolbar, #monthbar, #summaryRow { padding-left: 12px; padding-right: 12px; }
+  #wrap { padding: 16px 12px 60px; }
+  table { min-width: 0; width: 100%; }
+  thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  tbody tr { border: 1px solid var(--border); border-radius: 12px; margin: 0 0 12px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+  tbody td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; border: none; border-bottom: 1px solid #f0f2f5; text-align: right; }
+  tbody td:last-child { border-bottom: none; }
+  tbody td::before { content: attr(data-label); font-size: 12.5px; font-weight: 700; color: var(--muted); flex: 0 0 auto; text-align: left; }
+  tbody td.cell-num { display: none; }
+  td.td-cost { font-weight: 800; color: var(--primary); }
+  td.cell-actions { justify-content: stretch; gap: 10px; padding: 12px 14px; }
+  td.cell-actions::before { display: none; }
+  td.cell-actions .act-btn { flex: 1 1 0; padding: 12px 0; font-size: 14px; }
+}
 </style>
 </head>
 <body>
@@ -219,15 +240,15 @@ function render(){
   tbody.innerHTML=list.map((b,i)=>{
     const done=isDone(b);
     return `<tr>
-      <td>${i+1}</td>
-      <td class="td-date">${esc(b.requestDate)||'—'}</td>
-      <td class="td-device">${esc(b.device)||'<span style="color:#ccc">미지정</span>'}</td>
-      <td class="td-content">${esc(b.content)||'<span style="color:#ccc">—</span>'}</td>
-      <td class="td-date">${esc(b.completeDate)||'<span style="color:#ccc">—</span>'}</td>
-      <td class="td-cost">${fmt(b.cost)||'—'}</td>
-      <td>${esc(b.vendor)||'<span style="color:#ccc">—</span>'}</td>
-      <td style="text-align:center"><span class="status-badge ${done?'st-done':'st-pending'}">${done?'완료':'진행중'}</span></td>
-      <td style="text-align:center;white-space:nowrap">
+      <td class="cell-num" data-label="#">${i+1}</td>
+      <td class="td-date" data-label="의뢰일">${esc(b.requestDate)||'—'}</td>
+      <td class="td-device" data-label="장비">${esc(b.device)||'<span style="color:#ccc">미지정</span>'}</td>
+      <td class="td-content" data-label="AS 내용">${esc(b.content)||'<span style="color:#ccc">—</span>'}</td>
+      <td class="td-date" data-label="완료일">${esc(b.completeDate)||'<span style="color:#ccc">—</span>'}</td>
+      <td class="td-cost" data-label="비용(원)">${fmt(b.cost)||'—'}</td>
+      <td data-label="업체/기사">${esc(b.vendor)||'<span style="color:#ccc">—</span>'}</td>
+      <td data-label="상태" style="text-align:center"><span class="status-badge ${done?'st-done':'st-pending'}">${done?'완료':'진행중'}</span></td>
+      <td class="cell-actions" style="text-align:center;white-space:nowrap">
         <button class="act-btn act-edit" onclick="openEdit('${b.id}')">✏️ 수정</button>
         <button class="act-btn act-del" onclick="quickDelete('${b.id}')">삭제</button>
       </td></tr>`;

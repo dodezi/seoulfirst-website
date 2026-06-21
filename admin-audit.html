@@ -48,6 +48,21 @@
     .cat-leaves { background:#e3ecfa; color:#2c5fb0; }
     .cat-etc { background:#eef1f5; color:#51606e; }
     .empty { text-align:center; color:#aab4bd; padding:30px; }
+    @media (max-width: 640px) {
+      html, body { overflow-x: hidden; max-width: 100%; }
+      .top-bar { padding: 0 12px; }
+      .top-bar .tl span { display: none; }   /* 가운데 제목 숨김(로고만) */
+      .top-bar a, .top-bar button { padding: 6px 9px; font-size: 12px; }
+      .body { padding: 16px 12px 50px; }
+      h1 { font-size: 19px; }
+      .filters { gap: 8px; }
+      .filters select, .filters input { font-size: 13px; padding: 8px 10px; }
+      thead { display: none; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      tbody tr { border: 1px solid #eef1f5; border-radius: 12px; margin-bottom: 10px; padding: 6px 4px; }
+      tbody td { border: none; padding: 4px 12px; display: flex; gap: 10px; }
+      tbody td::before { content: attr(data-label); color: #8a96a2; font-size: 11.5px; font-weight: 700; min-width: 42px; }
+    }
   </style>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#1a3a5c" />
@@ -136,11 +151,11 @@ async function loadLogs(){
       const ts = t ? `${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}` : '-';
       const catCls = ['auth','account','booking','leaves'].includes(r.category) ? 'cat-'+r.category : 'cat-etc';
       return `<tr>
-        <td class="t-time">${ts}</td>
-        <td class="t-actor">${esc(r.actor||'-')}</td>
-        <td><span class="cat ${catCls}">${esc(r.category||'기타')}</span></td>
-        <td>${esc(r.action||'')}</td>
-        <td>${esc(r.detail||'')}</td>
+        <td class="t-time" data-label="시각">${ts}</td>
+        <td class="t-actor" data-label="사용자">${esc(r.actor||'-')}</td>
+        <td data-label="분류"><span class="cat ${catCls}">${esc(r.category||'기타')}</span></td>
+        <td data-label="행동">${esc(r.action||'')}</td>
+        <td data-label="내용">${esc(r.detail||'')}</td>
       </tr>`;
     }).join('');
   } catch(e){
