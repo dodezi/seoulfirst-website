@@ -303,6 +303,23 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background:#f0f4
 .exam-body { padding:14px; }
 .input-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 @media(max-width:700px){.input-row{grid-template-columns:1fr;}}
+
+/* 목록으로 돌아가기 버튼 (모바일 전용) */
+#mobileBack { display:none; background:#eef1f5; border:none; border-radius:7px; padding:7px 12px; font-size:14px; font-weight:700; color:#0d7377; cursor:pointer; font-family:inherit; margin-right:6px; }
+
+/* ── 모바일: 좌우 2분할 → 한 화면씩 (목록 ↔ 상세 전환) ── */
+@media (max-width:768px) {
+  html, body { overflow-x:hidden; max-width:100%; }
+  #app { height:100vh; }
+  #sidebar { width:100%; }
+  #main { display:none; width:100%; height:100vh; overflow-y:auto; }
+  #app.show-detail #sidebar { display:none; }
+  #app.show-detail #main { display:block; }
+  #mobileBack { display:inline-flex; align-items:center; }
+  #topbar { position:sticky; top:0; z-index:20; background:#fff; display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--border); }
+  #topbar-title { font-size:15px; }
+  #topbar-btns { flex-wrap:wrap; }
+}
 .input-group label {
   display:block;
   font-size:11px;
@@ -611,13 +628,10 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
     <span>올해 <b id="stat-year">0</b>명</span>
   </div>
 
-  <!-- Drive 동기화 상태 표시 -->
+  <!-- 실시간 동기화 상태 (Firestore) -->
   <div id="drive-status" style="padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:6px;border-top:1px solid rgba(255,255,255,.1);">
     <span id="drive-dot" style="width:8px;height:8px;border-radius:50%;background:#e74c3c;flex-shrink:0;"></span>
-    <span id="drive-label" style="color:rgba(255,255,255,.5);">데이터 파일 미연결</span>
-  </div>
-  <div style="padding:0 12px 8px;">
-    <button class="btn-sm-outline" style="width:100%;font-size:11px;padding:6px;" onclick="connectDataFile()">📁 Drive 데이터 파일 연결</button>
+    <span id="drive-label" style="color:rgba(255,255,255,.5);">실시간 동기화 준비 중…</span>
   </div>
 
   <div class="sidebar-footer">
@@ -634,6 +648,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 
   <!-- 상단바 -->
   <div id="topbar">
+    <button id="mobileBack" onclick="backToList()" title="목록으로">‹ 목록</button>
     <h2 id="topbar-title">서울퍼스트내과 종합검진 관리시스템</h2>
     <div id="topbar-btns" style="display:none; gap:8px;">
       <select id="lang-select" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:13px;font-family:inherit;">
@@ -1035,7 +1050,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 <div class="modal-overlay" id="api-modal">
   <div class="modal">
     <h2>🔑 Anthropic API 키 설정</h2>
-    <p>AI 변환 기능에 사용됩니다. 이 기기의 브라우저에만 저장되며 외부로 전송되지 않습니다.<br>
+    <p>AI 변환 기능에 사용됩니다. <b>한 번만 저장하면 모든 기기·계정에서 자동 적용</b>됩니다(관리자 전용 저장소에 보관, 외부 미전송).<br>
     키 발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
     <input type="password" id="api-key-input" placeholder="sk-ant-api03-...">
     <div class="modal-btns">
@@ -1088,6 +1103,17 @@ function startSecureData() {
   if (_secureStarted) return;
   _secureStarted = true;
   loadFromFirestore().then(() => startRealtimeSync());
+  loadApiKey();
+}
+// API 키를 Firestore(공용)에서 불러옴 → 한 번 저장하면 모든 기기에서 자동 적용
+async function loadApiKey() {
+  try {
+    const doc = await fsdb.collection('app_config').doc('checkup').get();
+    if (doc.exists && doc.data().anthropicKey) {
+      apiKey = doc.data().anthropicKey;
+      localStorage.setItem(API_KEY_STORE, apiKey);
+    }
+  } catch (e) { /* 권한·네트워크 실패 시 localStorage 값 사용 */ }
   if (!apiKey) setTimeout(showApiModal, 600);
 }
 function doLogin() {
@@ -1487,10 +1513,16 @@ function newPatient() {
 }
 
 // ──── 환자 열기 ────
+function backToList() {
+  document.getElementById('app').classList.remove('show-detail');
+}
 function openPatient(id) {
   currentId = id;
   const p = db[id];
   if (!p) return;
+
+  // 모바일: 상세 화면으로 전환(목록 숨김)
+  document.getElementById('app').classList.add('show-detail');
 
   // 화면 전환
   document.getElementById('empty-state').style.display = 'none';
@@ -1841,11 +1873,16 @@ function showApiModal() {
 function closeApiModal() {
   document.getElementById('api-modal').classList.remove('show');
 }
-function saveApiKey() {
+async function saveApiKey() {
   apiKey = document.getElementById('api-key-input').value.trim();
   localStorage.setItem(API_KEY_STORE, apiKey);
+  try {
+    await fsdb.collection('app_config').doc('checkup').set({ anthropicKey: apiKey }, { merge: true });
+    showToast('🔑 저장 완료 — 이제 다른 기기·계정에서도 자동 적용됩니다.');
+  } catch (e) {
+    showToast('🔑 이 기기에 저장됨 (공용 저장 실패: ' + e.message + ')');
+  }
   closeApiModal();
-  showToast('🔑 API 키가 저장되었습니다.');
 }
 
 async function callClaude(prompt, maxTokens = 400) {
@@ -2237,8 +2274,7 @@ setTimeout(() => {
   const st = document.getElementById('summary-text');
   if (st) st.addEventListener('input', () => autoResizeTextarea(st));
 }, 300);
-// Drive 파일 자동 연결 시도
-initDataFile();
+// (레거시 Drive 로컬파일 백업 기능은 비활성화 — 현재는 Firestore 실시간 동기화 사용)
 // Firestore 로드·실시간 동기화는 로그인 성공 후 startSecureData()에서 시작됨
 </script>
 <script>window.PORTAL_PAGE_KEY='checkup';</script>
