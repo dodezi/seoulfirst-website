@@ -170,6 +170,7 @@
     .day-leaves { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
     .day-lv-chip { font-size: 12.5px; font-weight: 600; color: #fff; padding: 5px 11px; border-radius: 16px; cursor: pointer; }
     .day-lv-chip .lc-half { opacity: .85; font-weight: 400; font-size: 11px; }
+    .day-lv-chip .dlv-cnt { background: rgba(255,255,255,.32); border-radius: 9px; padding: 1px 7px; font-weight: 800; font-size: 11.5px; margin-left: 2px; }
     .cal-empty-note { text-align: center; color: #b3bcc5; font-size: 13px; padding: 16px; }
 
     /* ── 모달 공통 ── */
@@ -231,8 +232,8 @@
       .cal-month-label { font-size: 14px; min-width: 92px; }
       .cal-legend { font-size: 10px; gap: 8px; margin-bottom: 8px; }
       /* 일요일 열 좁게 (검진·예약 없는 날) */
-      .cal-grid .cal-dow { grid-template-columns: 0.55fr repeat(6, 1fr); }
-      .cal-body { gap: 3px; grid-template-columns: 0.55fr repeat(6, 1fr); }
+      .cal-grid .cal-dow { grid-template-columns: 0.55fr repeat(6, 1fr) !important; }
+      .cal-body, #calBody { gap: 3px; grid-template-columns: 0.55fr repeat(6, 1fr) !important; }
       .cal-cell { min-height: 56px; padding: 3px; gap: 2px; border-radius: 6px; min-width: 0; overflow: hidden; }
       .cal-daynum { font-size: 11px; }
       .leave-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -853,7 +854,8 @@ function renderDayModal() {
   document.getElementById('dayLeaves').innerHTML = lvs.length ? lvs.map(l => {
     const half = l.portion === 'am' ? ' <span class="lc-half">오전</span>' : (l.portion === 'pm' ? ' <span class="lc-half">오후</span>' : '');
     const reqMark = l.deleteRequested ? '⏳ ' : '';
-    return `<span class="day-lv-chip" style="background:${staffColor(l.staffId)};" title="${l.deleteRequested ? '삭제 요청됨 · ' : ''}클릭하여 수정" onclick="editLeaveFromDay('${l.id}')">${reqMark}${esc(l.staffName)}${half}</span>`;
+    const used = usedInLeavePeriod(l.staffId, l.date);
+    return `<span class="day-lv-chip" style="background:${staffColor(l.staffId)};" title="${l.deleteRequested ? '삭제 요청됨 · ' : ''}누적 ${fmtNum(used)}일 · 클릭하여 수정" onclick="editLeaveFromDay('${l.id}')">${reqMark}${esc(l.staffName)}${half} <span class="dlv-cnt">${fmtNum(used)}</span></span>`;
   }).join('') : `<span class="day-empty" style="padding:4px 0;">등록된 연차가 없습니다.</span>`;
 }
 function closeDayModal() { document.getElementById('dayModal').classList.remove('on'); _dayModalDate = null; }
