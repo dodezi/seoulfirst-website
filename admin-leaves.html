@@ -222,22 +222,26 @@
       .staff-grid { grid-template-columns: 1fr; gap: 10px; }
       .ro-note { font-size: 11.5px; padding: 8px 11px; }
 
-      /* 달력 컴팩트 */
+      /* ── 달력 컴팩트: 검진은 색점만, 연차는 이름 칩 (탭하면 그날 상세) ── */
       .cal-wrap { padding: 12px 8px 16px; }
       .cal-head .ch-title { font-size: 15px; }
       .cal-month-label { font-size: 14px; min-width: 92px; }
       .cal-legend { font-size: 10px; gap: 8px; margin-bottom: 8px; }
       .cal-body { gap: 3px; }
-      .cal-cell { min-height: 58px; padding: 3px 3px; gap: 2px; border-radius: 6px; }
+      .cal-cell { min-height: 56px; padding: 3px; gap: 2px; border-radius: 6px; }
       .cal-daynum { font-size: 11px; }
       .book-badge { font-size: 9px; padding: 0 4px; }
-      .cal-event { font-size: 8.5px; padding: 0 3px; border-left-width: 2px; }
-      .cal-event .ev-time { margin-right: 2px; }
-      .cdot { width: 6px; height: 6px; margin-right: 2px; }
-      .leave-chip { font-size: 8.5px; padding: 1px 4px; }
-      .leave-chip .lc-cnt { padding: 0 3px; font-size: 8px; }
-      .cal-cell .more-mini { font-size: 8.5px; }
       .cal-grid .cal-dow span { font-size: 10px; }
+
+      /* 검진 예약: 글자 숨기고 색점만 */
+      .cal-event { font-size: 0 !important; display: inline-flex; vertical-align: top;
+                   padding: 0 !important; margin: 1px 2px 0 0; background: transparent !important; border: none !important; }
+      .cal-event .cdot { width: 8px; height: 8px; margin: 0 !important; }
+      /* 직원 연차: 이름 칩(작게), 누적 숫자는 생략 */
+      .leave-chip { font-size: 9px; padding: 1px 5px; }
+      .leave-chip .lc-cnt { display: none; }
+      .cal-cell .more-mini { font-size: 8.5px; }
+
       /* 검진 명단 팝업 */
       .day-books { max-height: 200px; }
       .dbk-time { min-width: 40px; font-size: 12px; }

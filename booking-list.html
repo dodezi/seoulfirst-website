@@ -312,11 +312,33 @@
     .cal-grid.mini .cal-more { font-size: 9px; }
 
     @media (max-width: 600px) {
-      .page-body { padding: 16px 10px; }
+      .page-body { padding: 16px 8px; }
       .toolbar h1 { font-size: 18px; }
       .search-box input { width: 140px; }
       .form-box { width: 100%; }
-      .cal-cell { min-height: 80px; }
+
+      /* ── 모바일 달력: 색점 위주로 간결하게 (탭하면 그날 상세 팝업) ── */
+      .cal-dow span { padding: 7px 0; font-size: 11px; }
+      .cal-cell { min-height: 54px; padding: 3px 2px; }
+      .cal-grid.mini .cal-cell { min-height: 48px; padding: 2px; }
+      .cal-daynum { font-size: 11px; margin-bottom: 2px; }
+
+      /* 검진 예약: 글자 숨기고 색점만 */
+      .cal-event { display: inline-flex; vertical-align: top; width: auto; min-width: 0; max-width: 100%;
+                   padding: 0; margin: 1px 2px 0 0; background: transparent !important; border-left: none !important; border-radius: 0; }
+      .cal-event .ev-main { font-size: 0; line-height: 0; gap: 0; }
+      .cal-event .ev-main .ev-dot { margin: 0; }
+      .cal-event .ev-svc { display: none; }
+      .cal-event.ev-취소 .ev-main .cdot { opacity: .4; }
+
+      /* 직원 연차: 작은 색점 + 이름만 */
+      .cal-leave { font-size: 9px; padding: 1px 5px; margin: 1px 0; border-radius: 8px; line-height: 1.5; }
+      .cal-leave .cl-half, .cal-leave .cl-cnt { display: none; }
+
+      .cal-more { font-size: 9px; padding: 0 2px; color: #8a96a2; }
+
+      /* 그날 상세 팝업: 모바일에서 거의 전체화면, 읽기 좋게 */
+      #dayModal .day-modal-box, #dayModal > div { max-width: 96vw !important; width: 96vw !important; }
     }
   </style>
 <link rel="manifest" href="manifest.webmanifest" />
