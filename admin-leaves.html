@@ -241,9 +241,10 @@
       .cal-event { font-size: 0 !important; display: inline-flex; vertical-align: top;
                    padding: 0 !important; margin: 1px 2px 0 0; background: transparent !important; border: none !important; }
       .cal-event .cdot { width: 8px; height: 8px; margin: 0 !important; }
-      /* 직원 연차: 이름 칩(작게), 누적 숫자는 생략 */
-      .leave-chip { font-size: 9px; padding: 1px 5px; }
-      .leave-chip .lc-cnt { display: none; }
+      /* 직원 연차: 이름은 줄임표, 누적 숫자는 항상 표시 */
+      .leave-chip { font-size: 9px; padding: 1px 4px; display: flex; align-items: center; gap: 1px; }
+      .leave-chip .lc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .leave-chip .lc-cnt { display: inline-block; flex: 0 0 auto; padding: 0 4px; font-size: 9px; }
       .cal-cell .more-mini { font-size: 8.5px; }
 
       /* 검진 명단 팝업 */
@@ -793,7 +794,7 @@ function renderCalendar() {
       const half = l.portion === 'am' ? '<span class="lc-half">오전</span>' : (l.portion === 'pm' ? '<span class="lc-half">오후</span>' : '');
       const used = usedInLeavePeriod(l.staffId, l.date);
       const reqMark = l.deleteRequested ? '<span class="lc-req" title="삭제 요청됨">⏳</span>' : '';
-      return `<div class="leave-chip" style="background:${staffColor(l.staffId)};" title="${esc(l.staffName)} ${portionLabel(l.portion)} · 누적 ${fmtNum(used)}일${l.memo ? ' · '+esc(l.memo) : ''}${l.deleteRequested ? ' · 삭제 요청됨' : ''} (클릭하여 수정)" onclick="event.stopPropagation();openLeaveModal('${l.id}')">${reqMark}${esc(l.staffName)} ${half}<span class="lc-cnt">${fmtNum(used)}</span></div>`;
+      return `<div class="leave-chip" style="background:${staffColor(l.staffId)};" title="${esc(l.staffName)} ${portionLabel(l.portion)} · 누적 ${fmtNum(used)}일${l.memo ? ' · '+esc(l.memo) : ''}${l.deleteRequested ? ' · 삭제 요청됨' : ''} (클릭하여 수정)" onclick="event.stopPropagation();openLeaveModal('${l.id}')"><span class="lc-name">${reqMark}${esc(l.staffName)} ${half}</span><span class="lc-cnt">${fmtNum(used)}</span></div>`;
     }).join('');
     const moreLv = lvs.length > 4 ? `<div class="more-mini">+${lvs.length-4}명 연차</div>` : '';
 
