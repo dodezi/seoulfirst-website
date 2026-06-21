@@ -194,6 +194,10 @@
     .ff textarea { resize: vertical; min-height: 52px; }
     .ff-grid { display: flex; gap: 10px; }
     .ff-grid > .ff { flex: 1; }
+    .date-wrap { display: flex; gap: 6px; align-items: stretch; }
+    .date-wrap input[type=date] { flex: 1; min-width: 0; }
+    .date-clear { flex: 0 0 auto; background: #eef1f5; border: none; border-radius: 8px; padding: 0 12px; font-size: 12px; font-weight: 600; color: #51606e; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .date-clear:hover { background: #e2e6ec; }
     .conf-section { background: #f4f8fb; border: 1px solid #e3edf4; border-radius: 10px; padding: 14px 14px 4px; margin: 6px 0 16px; }
     .conf-section .cs-title { font-size: 12px; font-weight: 700; color: #1b5e8a; margin-bottom: 10px; }
     .form-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
@@ -343,6 +347,7 @@
 
       /* 상단 헤더 정리: 로고 + 버튼만, 긴 텍스트·이메일 숨김 */
       .top-bar { padding: 0 12px; height: 52px; }
+      .top-bar img { height: 20px; }
       .top-bar .tl span { display: none; }
       .top-bar #adminEmail { display: none; }
       .top-bar .tr { gap: 6px; }
@@ -573,7 +578,7 @@
     <div class="ff-grid">
       <div class="ff">
         <label>희망일자</label>
-        <input type="date" id="aDate" />
+        <div class="date-wrap"><input type="date" id="aDate" /><button type="button" class="date-clear" onclick="document.getElementById('aDate').value=''">지우기</button></div>
       </div>
       <div class="ff">
         <label>희망 시간대</label>
@@ -590,7 +595,7 @@
       <div class="ff-grid">
         <div class="ff">
           <label>확정 검사일</label>
-          <input type="date" id="aConfDate" />
+          <div class="date-wrap"><input type="date" id="aConfDate" /><button type="button" class="date-clear" onclick="document.getElementById('aConfDate').value=''">지우기</button></div>
         </div>
         <div class="ff">
           <label>확정 시간 <small style="color:#999;font-weight:400;">(15분 단위)</small></label>
