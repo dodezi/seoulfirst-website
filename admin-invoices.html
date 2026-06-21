@@ -314,7 +314,21 @@ let currentId = null; // 상세 모달에서 보고 있는 id
 // ── API 키 모달 ──
 function openApiModal() { document.getElementById('apiKeyInput').value = localStorage.getItem(API_KEY_STORE) || ''; document.getElementById('apiModal').classList.add('on'); }
 function closeApiModal() { document.getElementById('apiModal').classList.remove('on'); }
-function saveApiKey() { localStorage.setItem(API_KEY_STORE, document.getElementById('apiKeyInput').value.trim()); closeApiModal(); showToast('🔑 API 키가 저장되었습니다.'); }
+async function saveApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(API_KEY_STORE, v);
+  try { await fsdb.collection('app_config').doc('anthropic').set({ key: v }, { merge: true });
+    showToast('🔑 저장 완료 — 모든 기기·AI 도구에서 자동 적용됩니다.');
+  } catch(e) { showToast('🔑 이 기기에 저장됨 (공용 저장 실패)'); }
+  closeApiModal();
+}
+// 공용 API 키(Firestore)를 불러와 이 기기에 캐시 — 한 번 입력하면 어디서나 적용
+async function loadSharedApiKey() {
+  try {
+    const doc = await fsdb.collection('app_config').doc('anthropic').get();
+    if (doc.exists && doc.data().key) localStorage.setItem(API_KEY_STORE, doc.data().key);
+  } catch(e) { /* 무시 */ }
+}
 
 // ── 로그인 ──
 function doLogin() {
@@ -333,7 +347,7 @@ function doLogin() {
 auth.onAuthStateChanged(user => {
   const gate = document.getElementById('authGate');
   const lo = document.getElementById('logoutBtn');
-  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); localStorage.setItem(TG_ON, '0'); } }
+  if (user) { gate.classList.add('hidden'); lo.style.display = ''; lo.title = user.email; if (!_started) { _started = true; startRealtime(); loadSharedApiKey(); localStorage.setItem(TG_ON, '0'); } }
   else { gate.classList.remove('hidden'); lo.style.display = 'none'; }
 });
 document.getElementById('btnLogin').addEventListener('click', doLogin);

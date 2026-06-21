@@ -239,7 +239,16 @@ let viewMonth=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
 
 function openApiModal(){ document.getElementById('apiKeyInput').value=localStorage.getItem(API_KEY_STORE)||''; document.getElementById('apiModal').classList.add('on'); }
 function closeApiModal(){ document.getElementById('apiModal').classList.remove('on'); }
-function saveApiKey(){ localStorage.setItem(API_KEY_STORE,document.getElementById('apiKeyInput').value.trim()); closeApiModal(); showToast('🔑 저장되었습니다.'); }
+async function saveApiKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(API_KEY_STORE,v);
+  try{ await fsdb.collection('app_config').doc('anthropic').set({key:v},{merge:true}); showToast('🔑 저장 완료 — 모든 기기·AI 도구에서 자동 적용됩니다.'); }
+  catch(e){ showToast('🔑 이 기기에 저장됨 (공용 저장 실패)'); }
+  closeApiModal();
+}
+async function loadSharedApiKey(){
+  try{ const doc=await fsdb.collection('app_config').doc('anthropic').get(); if(doc.exists&&doc.data().key) localStorage.setItem(API_KEY_STORE,doc.data().key); }catch(e){}
+}
 
 function doLogin(){
   const email=document.getElementById('lEmail').value.trim(), pw=document.getElementById('lPw').value, err=document.getElementById('loginError');
@@ -250,7 +259,7 @@ function doLogin(){
 }
 auth.onAuthStateChanged(u=>{
   const gate=document.getElementById('authGate'), lo=document.getElementById('logoutBtn');
-  if(u){ gate.classList.add('hidden'); lo.style.display=''; lo.title=u.email; if(!_started){_started=true; startRealtime();} }
+  if(u){ gate.classList.add('hidden'); lo.style.display=''; lo.title=u.email; if(!_started){_started=true; startRealtime(); loadSharedApiKey();} }
   else { gate.classList.remove('hidden'); lo.style.display='none'; }
 });
 document.getElementById('btnLogin').addEventListener('click',doLogin);

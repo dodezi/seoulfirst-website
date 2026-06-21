@@ -1108,9 +1108,9 @@ function startSecureData() {
 // API 키를 Firestore(공용)에서 불러옴 → 한 번 저장하면 모든 기기에서 자동 적용
 async function loadApiKey() {
   try {
-    const doc = await fsdb.collection('app_config').doc('checkup').get();
-    if (doc.exists && doc.data().anthropicKey) {
-      apiKey = doc.data().anthropicKey;
+    const doc = await fsdb.collection('app_config').doc('anthropic').get();
+    if (doc.exists && doc.data().key) {
+      apiKey = doc.data().key;
       localStorage.setItem(API_KEY_STORE, apiKey);
     }
   } catch (e) { /* 권한·네트워크 실패 시 localStorage 값 사용 */ }
@@ -1877,8 +1877,8 @@ async function saveApiKey() {
   apiKey = document.getElementById('api-key-input').value.trim();
   localStorage.setItem(API_KEY_STORE, apiKey);
   try {
-    await fsdb.collection('app_config').doc('checkup').set({ anthropicKey: apiKey }, { merge: true });
-    showToast('🔑 저장 완료 — 이제 다른 기기·계정에서도 자동 적용됩니다.');
+    await fsdb.collection('app_config').doc('anthropic').set({ key: apiKey }, { merge: true });
+    showToast('🔑 저장 완료 — 검진·거래명세서·점심영수증 모두, 모든 기기에서 자동 적용됩니다.');
   } catch (e) {
     showToast('🔑 이 기기에 저장됨 (공용 저장 실패: ' + e.message + ')');
   }

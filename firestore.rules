@@ -99,9 +99,10 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
-    // 앱 공용 설정(예: 검진 AI API 키): 관리자·'검진' 권한 직원 읽기·쓰기
+    // 앱 공용 설정(예: AI API 키 — 검진·거래명세서·점심영수증 공용):
+    // 관리자 또는 해당 AI 도구 권한 직원 읽기·쓰기
     match /app_config/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('checkup');
+      allow read, write: if isAdmin() || hasPagePerm('checkup') || hasPagePerm('invoice') || hasPagePerm('lunch');
     }
 
     // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
