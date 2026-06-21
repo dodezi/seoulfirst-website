@@ -230,7 +230,9 @@
       .cal-head .ch-title { font-size: 15px; }
       .cal-month-label { font-size: 14px; min-width: 92px; }
       .cal-legend { font-size: 10px; gap: 8px; margin-bottom: 8px; }
-      .cal-body { gap: 3px; }
+      /* 일요일 열 좁게 (검진·예약 없는 날) */
+      .cal-grid .cal-dow { grid-template-columns: 0.55fr repeat(6, 1fr); }
+      .cal-body { gap: 3px; grid-template-columns: 0.55fr repeat(6, 1fr); }
       .cal-cell { min-height: 56px; padding: 3px; gap: 2px; border-radius: 6px; min-width: 0; overflow: hidden; }
       .cal-daynum { font-size: 11px; }
       .leave-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
