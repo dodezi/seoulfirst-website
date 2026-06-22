@@ -8,7 +8,7 @@
  *  4) Firestore invoices 컬렉션에 저장
  * → 관리 페이지(admin-invoices.html)에 실시간으로 나타남. PC를 켜둘 필요 없음.
  */
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
@@ -169,6 +169,59 @@ exports.telegramWebhook = onRequest(
       console.error("webhook error", err);
       res.status(200).send("ok"); // 200으로 응답해 텔레그램 재시도 폭주 방지
     }
+  }
+);
+
+// ───────────────────────────────────────────────────────────
+// Claude 프록시 (브라우저에 API 키 노출 방지)
+//  - 검진·거래명세서·점심영수증 페이지가 직접 api.anthropic.com을 호출하지 않고
+//    이 함수를 통해 요청 → API 키는 서버(Secret Manager)에만 존재.
+//  - 로그인 + (관리자 또는 checkup/invoice/lunch 권한) 확인 후에만 호출 허용.
+// ───────────────────────────────────────────────────────────
+const SUPER_ADMINS = ["dodezi82@gmail.com", "seoulfirst2023@gmail.com"];
+const ALLOWED_MODELS = ["claude-opus-4-8", "claude-haiku-4-5", "claude-sonnet-4-6"];
+
+exports.claudeProxy = onCall(
+  { secrets: [ANTHROPIC_KEY], region: "asia-northeast3", memory: "512MiB", timeoutSeconds: 120 },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    const email = (auth.token && auth.token.email || "").toLowerCase();
+
+    let allowed = SUPER_ADMINS.includes(email);
+    if (!allowed && email) {
+      const snap = await admin.firestore().collection("users").doc(email).get();
+      const u = snap.exists ? snap.data() : null;
+      const perms = (u && u.perms) || {};
+      allowed = !!(u && u.active !== false && (perms.checkup || perms.invoice || perms.lunch));
+    }
+    if (!allowed) throw new HttpsError("permission-denied", "AI 사용 권한이 없습니다.");
+
+    const data = request.data || {};
+    const model = ALLOWED_MODELS.includes(data.model) ? data.model : "claude-haiku-4-5";
+    const maxTokens = Math.min(Math.max(parseInt(data.max_tokens, 10) || 1024, 1), 4096);
+    if (!Array.isArray(data.messages) || !data.messages.length) {
+      throw new HttpsError("invalid-argument", "messages가 필요합니다.");
+    }
+
+    const body = { model, max_tokens: maxTokens, messages: data.messages };
+    if (data.system) body.system = String(data.system);
+
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_KEY.value(),
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const m = (j.error && j.error.message) || `anthropic ${r.status}`;
+      throw new HttpsError("internal", m);
+    }
+    return j; // { content: [{ text }], ... } — 클라이언트는 기존과 동일하게 content[0].text 사용
   }
 );
 

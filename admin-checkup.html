@@ -1085,6 +1085,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 
 <!-- 숨겨진 파일 입력 (import용) -->
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
@@ -1115,14 +1116,7 @@ function startSecureData() {
 }
 // API 키를 Firestore(공용)에서 불러옴 → 한 번 저장하면 모든 기기에서 자동 적용
 async function loadApiKey() {
-  try {
-    const doc = await fsdb.collection('app_config').doc('anthropic').get();
-    if (doc.exists && doc.data().key) {
-      apiKey = doc.data().key;
-      localStorage.setItem(API_KEY_STORE, apiKey);
-    }
-  } catch (e) { /* 권한·네트워크 실패 시 localStorage 값 사용 */ }
-  if (!apiKey) setTimeout(showApiModal, 600);
+  // AI 키는 이제 서버(Secret Manager)에서만 관리 — 브라우저에서 키를 불러오지 않음
 }
 function doLogin() {
   const email = document.getElementById('lEmail').value.trim();
@@ -1882,38 +1876,16 @@ function closeApiModal() {
   document.getElementById('api-modal').classList.remove('show');
 }
 async function saveApiKey() {
-  apiKey = document.getElementById('api-key-input').value.trim();
-  localStorage.setItem(API_KEY_STORE, apiKey);
-  try {
-    await fsdb.collection('app_config').doc('anthropic').set({ key: apiKey }, { merge: true });
-    showToast('🔑 저장 완료 — 검진·거래명세서·점심영수증 모두, 모든 기기에서 자동 적용됩니다.');
-  } catch (e) {
-    showToast('🔑 이 기기에 저장됨 (공용 저장 실패: ' + e.message + ')');
-  }
+  // AI 키는 서버에서 관리되므로 더 이상 브라우저에 저장하지 않습니다.
   closeApiModal();
+  showToast('🔑 AI 키는 서버에서 안전하게 관리됩니다. 별도 입력이 필요 없습니다.');
 }
 
 async function callClaude(prompt, maxTokens = 400) {
-  if (!apiKey) { showApiModal(); throw new Error('API 키가 설정되지 않았습니다.'); }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err.error?.message || `API 오류 (${res.status})`);
-  }
-  const data = await res.json();
+  // 서버 프록시(claudeProxy)로 호출 — API 키는 브라우저에 내려오지 않음
+  const fn = firebase.app().functions('asia-northeast3').httpsCallable('claudeProxy');
+  const r = await fn({ model: 'claude-haiku-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] });
+  const data = r.data;
   return data.content[0].text.trim();
 }
 

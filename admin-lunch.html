@@ -224,6 +224,7 @@ tbody tr:hover { background:#fffaf4; }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script>
 if (!firebase.apps.length) {
   firebase.initializeApp({
@@ -243,15 +244,11 @@ let viewMonth=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
 function openApiModal(){ document.getElementById('apiKeyInput').value=localStorage.getItem(API_KEY_STORE)||''; document.getElementById('apiModal').classList.add('on'); }
 function closeApiModal(){ document.getElementById('apiModal').classList.remove('on'); }
 async function saveApiKey(){
-  const v=document.getElementById('apiKeyInput').value.trim();
-  localStorage.setItem(API_KEY_STORE,v);
-  try{ await fsdb.collection('app_config').doc('anthropic').set({key:v},{merge:true}); showToast('🔑 저장 완료 — 모든 기기·AI 도구에서 자동 적용됩니다.'); }
-  catch(e){ showToast('🔑 이 기기에 저장됨 (공용 저장 실패)'); }
+  // AI 키는 서버에서 관리되므로 더 이상 브라우저/DB에 저장하지 않습니다.
   closeApiModal();
+  showToast('🔑 AI 키는 서버에서 안전하게 관리됩니다. 별도 입력이 필요 없습니다.');
 }
-async function loadSharedApiKey(){
-  try{ const doc=await fsdb.collection('app_config').doc('anthropic').get(); if(doc.exists&&doc.data().key) localStorage.setItem(API_KEY_STORE,doc.data().key); }catch(e){}
-}
+async function loadSharedApiKey(){ /* 서버 관리로 전환 — 브라우저에서 키를 불러오지 않음 */ }
 
 function doLogin(){
   const email=document.getElementById('lEmail').value.trim(), pw=document.getElementById('lPw').value, err=document.getElementById('loginError');
@@ -301,9 +298,10 @@ async function callClaude(apiKey,b64,mt){
   const prompt=`이 이미지는 음식점 결제 영수증(신용카드 매출전표/간이영수증)입니다. 보이는 항목을 최대한 정확히 추출해 JSON으로만 답하세요. 순수 JSON만.
 {"date":"결제일 YYYY-MM-DD, 없으면 빈문자열","store":"가맹점 상호명","bizNo":"사업자등록번호(000-00-00000), 없으면 빈문자열","address":"가맹점 주소, 없으면 빈문자열","items":"구매 품목/메뉴 쉼표로(수량 포함), 없으면 빈문자열","supplyAmount":공급가액 숫자(없으면0),"vat":부가세 숫자(없으면0),"amount":합계금액 숫자,"payMethod":"결제수단(예 신용카드/삼성카드 일시불/현금)","approvalNo":"카드 승인번호, 없으면 빈문자열","people":인원수 숫자(없으면0),"memo":"승인번호·인원·단가 등 부가정보 한 문장"}
 숫자는 콤마·원 제외 숫자만. 안보이면 0/빈문자열.`;
-  const res=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]}) });
-  if(!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0,140)}`);
-  const data=await res.json(); const txt=(data.content?.[0]?.text||'').trim(); const m=txt.match(/\{[\s\S]*\}/);
+  // 서버 프록시(claudeProxy)로 호출 — API 키는 브라우저에 내려오지 않음
+  const fn=firebase.app().functions('asia-northeast3').httpsCallable('claudeProxy');
+  const resp=await fn({model:MODEL,max_tokens:1500,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]});
+  const data=resp.data; const txt=(data.content?.[0]?.text||'').trim(); const m=txt.match(/\{[\s\S]*\}/);
   if(!m) throw new Error('해석 불가');
   const p=JSON.parse(m[0]);
   return { date:p.date||'', store:String(p.store||'').trim(), bizNo:String(p.bizNo||'').trim(), address:String(p.address||'').trim(), items:String(p.items||'').trim(), supplyAmount:num(p.supplyAmount), vat:num(p.vat), amount:num(p.amount), payMethod:String(p.payMethod||'').trim(), approvalNo:String(p.approvalNo||'').trim(), people:num(p.people), memo:String(p.memo||'').trim() };
@@ -327,8 +325,7 @@ async function handlePhoto(e){
 }
 
 async function parseOne(id,file){
-  const apiKey=localStorage.getItem(API_KEY_STORE)||'';
-  if(!apiKey){ showToast('🔑 AI 키가 없습니다. 우측 상단 🔑 AI 키에서 설정하세요.'); return false; }
+  const apiKey=null;
   try{
     let b64,type;
     if(file){ type=file.type; if(!SUPPORTED.includes(type)){ showToast('⚠️ JPEG/PNG만 인식 가능'); return false; } b64=await fileToBase64(file); }
@@ -342,7 +339,6 @@ async function parseOne(id,file){
 async function batchParse(){
   const targets=receipts.filter(b=>!isParsed(b)&&b.imageUrl);
   if(!targets.length){ showToast('인식할 미인식 영수증이 없습니다.'); return; }
-  if(!localStorage.getItem(API_KEY_STORE)){ openApiModal(); return; }
   if(!confirm(`미인식 영수증 ${targets.length}건을 AI로 인식합니다. 진행할까요?`)) return;
   let ok=0;
   for(let i=0;i<targets.length;i++){ showToast(`🤖 인식 중… (${i+1}/${targets.length})`); if(await parseOne(targets[i].id,null)) ok++; }
@@ -408,7 +404,7 @@ async function saveEdit(){
   try{ await fsdb.collection(COL).doc(currentId).update({ date:g('mDate'), store:g('mStore').trim(), bizNo:g('mBizNo').trim(), address:g('mAddr').trim(), items:g('mItems').trim(), payMethod:g('mPay').trim(), supplyAmount:num(g('mSupply')), vat:num(g('mVat')), amount:num(g('mAmount')), approvalNo:g('mApproval').trim(), people:num(g('mPeople')), tgFrom:g('mFrom').trim(), memo:g('mMemo').trim() }); showToast('💾 저장되었습니다.'); closeEdit(); }
   catch(err){ alert('저장 오류: '+err.message); }
 }
-async function reparseCurrent(){ if(!currentId) return; if(!localStorage.getItem(API_KEY_STORE)){ openApiModal(); return; } showToast('🔄 인식 중…'); if(await parseOne(currentId,null)){ const b=receipts.find(x=>x.id===currentId); if(b) openEdit(currentId); showToast('🤖 다시 인식 완료'); } }
+async function reparseCurrent(){ if(!currentId) return; showToast('🔄 인식 중…'); if(await parseOne(currentId,null)){ const b=receipts.find(x=>x.id===currentId); if(b) openEdit(currentId); showToast('🤖 다시 인식 완료'); } }
 async function deleteCurrent(){ if(currentId){ const id=currentId; closeEdit(); await quickDelete(id); } }
 async function quickDelete(id){
   const b=receipts.find(x=>x.id===id); const label=b?`${b.store||'(미입력)'} / ${b.date||''}`:'이 영수증';

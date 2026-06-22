@@ -116,10 +116,10 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
-    // 앱 공용 설정(예: AI API 키 — 검진·거래명세서·점심영수증 공용):
-    // 관리자 또는 해당 AI 도구 권한 직원 읽기·쓰기
+    // 앱 공용 설정: AI 키는 서버(Functions/Secret Manager)로 이전됨.
+    // 더 이상 클라이언트에 키를 노출하지 않도록 관리자만 접근 허용.
     match /app_config/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('checkup') || hasPagePerm('invoice') || hasPagePerm('lunch');
+      allow read, write: if isAdmin();
     }
 
     // 검진 CRM 공식 문구(템플릿): 관리자·'CRM'·'예약' 권한 직원 읽기·쓰기

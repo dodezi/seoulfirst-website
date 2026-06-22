@@ -280,6 +280,7 @@ tbody tr.main-row:hover { background: #f9fcfb; }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 
 <script>
 if (!firebase.apps.length) {
@@ -318,20 +319,11 @@ let currentId = null; // 상세 모달에서 보고 있는 id
 function openApiModal() { document.getElementById('apiKeyInput').value = localStorage.getItem(API_KEY_STORE) || ''; document.getElementById('apiModal').classList.add('on'); }
 function closeApiModal() { document.getElementById('apiModal').classList.remove('on'); }
 async function saveApiKey() {
-  const v = document.getElementById('apiKeyInput').value.trim();
-  localStorage.setItem(API_KEY_STORE, v);
-  try { await fsdb.collection('app_config').doc('anthropic').set({ key: v }, { merge: true });
-    showToast('🔑 저장 완료 — 모든 기기·AI 도구에서 자동 적용됩니다.');
-  } catch(e) { showToast('🔑 이 기기에 저장됨 (공용 저장 실패)'); }
+  // AI 키는 서버에서 관리되므로 더 이상 브라우저/DB에 저장하지 않습니다.
   closeApiModal();
+  showToast('🔑 AI 키는 서버에서 안전하게 관리됩니다. 별도 입력이 필요 없습니다.');
 }
-// 공용 API 키(Firestore)를 불러와 이 기기에 캐시 — 한 번 입력하면 어디서나 적용
-async function loadSharedApiKey() {
-  try {
-    const doc = await fsdb.collection('app_config').doc('anthropic').get();
-    if (doc.exists && doc.data().key) localStorage.setItem(API_KEY_STORE, doc.data().key);
-  } catch(e) { /* 무시 */ }
-}
+async function loadSharedApiKey() { /* 서버 관리로 전환 — 브라우저에서 키를 불러오지 않음 */ }
 
 // ── 로그인 ──
 function doLogin() {
@@ -399,19 +391,16 @@ async function callClaudeVision(apiKey, b64, mediaType) {
   "totalAmount": 합계금액숫자(총액, 부가세 포함 최종 청구금액)
 }
 규칙: 숫자는 콤마·원 없이 숫자만. 칸이 비었으면 0. 품목은 표에 있는 행 순서대로 모두 포함. 품명을 임의로 바꾸거나 요약하지 말 것.`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({
-      model: MODEL, max_tokens: 2048,
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
-        { type: 'text', text: prompt }
-      ]}]
-    })
+  // 서버 프록시(claudeProxy)로 호출 — API 키는 브라우저에 내려오지 않음
+  const fn = firebase.app().functions('asia-northeast3').httpsCallable('claudeProxy');
+  const resp = await fn({
+    model: MODEL, max_tokens: 2048,
+    messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+      { type: 'text', text: prompt }
+    ]}]
   });
-  if (!res.ok) { const t = await res.text(); throw new Error(`API ${res.status}: ${t.slice(0,140)}`); }
-  const data = await res.json();
+  const data = resp.data;
   let txt = (data.content?.[0]?.text || '').trim();
   const m = txt.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('추출 결과를 해석할 수 없습니다.');
@@ -448,8 +437,6 @@ async function handlePhoto(e) {
 
 // ── 한 건 파싱 (file 또는 저장 이미지) ──
 async function parseOne(id, file) {
-  const apiKey = localStorage.getItem(API_KEY_STORE) || '';
-  if (!apiKey) { showToast('🔑 AI 키가 없습니다. 우측 상단 🔑 AI 키에서 설정하세요.'); return false; }
   try {
     let b64, type;
     if (file) { type = file.type; if (!SUPPORTED.includes(type)) { showToast('⚠️ JPEG/PNG 형식만 AI 인식이 됩니다.'); return false; } b64 = await fileToBase64(file); }
@@ -460,7 +447,7 @@ async function parseOne(id, file) {
       type = blob.type; if (!SUPPORTED.includes(type)) { showToast('⚠️ 지원하지 않는 이미지 형식'); return false; }
       b64 = await fileToBase64(new File([blob], 'img', { type }));
     }
-    const r = await callClaudeVision(apiKey, b64, type);
+    const r = await callClaudeVision(null, b64, type);
     await fsdb.collection(COL).doc(id).update({
       date: r.date || new Date().toISOString().slice(0,10),
       vendor: r.vendor, items: r.items, totalAmount: r.totalAmount,
@@ -474,7 +461,6 @@ async function parseOne(id, file) {
 async function batchParse() {
   const targets = invoices.filter(b => !isParsed(b) && b.imageUrl);
   if (!targets.length) { showToast('인식할 미인식 명세서가 없습니다.'); return; }
-  if (!localStorage.getItem(API_KEY_STORE)) { openApiModal(); return; }
   if (!confirm(`미인식 명세서 ${targets.length}건을 AI로 인식합니다. 진행할까요?`)) return;
   let ok = 0;
   for (let i = 0; i < targets.length; i++) {
@@ -622,7 +608,6 @@ async function saveDetail() {
 }
 async function reparseCurrent() {
   if (!currentId) return;
-  if (!localStorage.getItem(API_KEY_STORE)) { openApiModal(); return; }
   const btn = document.getElementById('reparseBtn'); btn.textContent = '🔄 인식 중…'; btn.disabled = true;
   const ok = await parseOne(currentId, null);
   btn.textContent = '🔄 AI 다시 인식'; btn.disabled = false;
