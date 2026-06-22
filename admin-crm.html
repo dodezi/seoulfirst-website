@@ -424,7 +424,7 @@ let allBookings = [];
 let tab = 'reminder';
 let targetDate = null;
 let openId = null;   // 펼쳐진 항목 id
-function defaultDateFor(t){ return t === 'reminder' ? ymd(addDays(new Date(),1)) : ymd(addDays(new Date(),-1)); }
+function defaultDateFor(t){ return t === 'reminder' ? ymd(addDays(new Date(),1)) : ymd(new Date()); }
 function setTab(t){
   tab = t; openId = null;
   document.getElementById('tabReminder').classList.toggle('on', t==='reminder');
@@ -472,7 +472,7 @@ const SENT_FIELD = () => tab==='reminder' ? 'crmReminderAt' : 'crmFollowupAt';
 function render(){
   const sub = tab==='reminder'
     ? '내일 검사 확정자에게 오늘 안내를 보냅니다'
-    : '이 날짜에 검사를 마친 분께 다음날(오늘) 안부를 보냅니다';
+    : '이 날짜에 검사를 마친 분께 다음날 안부를 보냅니다';
   document.getElementById('dnLabel').textContent = targetDate ? labelOf(targetDate) : '—';
   document.getElementById('dnSub').textContent = sub;
 
