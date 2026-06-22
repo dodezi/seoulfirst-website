@@ -105,6 +105,11 @@ service cloud.firestore {
       allow read, write: if isAdmin() || hasPagePerm('checkup') || hasPagePerm('invoice') || hasPagePerm('lunch');
     }
 
+    // 검진 CRM 공식 문구(템플릿): 관리자·'CRM'·'예약' 권한 직원 읽기·쓰기
+    match /crm_templates/{doc} {
+      allow read, write: if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
+    }
+
     // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
     //  - 생성: 관리자·재직 직원(본인 행동 기록)
     //  - 읽기: 원장 전용
