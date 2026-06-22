@@ -216,8 +216,8 @@
     </div>
     <div class="hint">
       예약명단의 <b>확정 검사일시</b>를 실시간으로 가져옵니다.
-      <b>검사 후 안부</b>는 각 환자에 <b>조직검사 / 용종절제</b>를 클릭하면 메시지가 달라지고, 둘 다 없는 <b>단순검사(내시경·초음파)</b>는 자동으로 <b>발송 안 함</b> 처리됩니다.
-      왼쪽 <b>체크박스</b>로 발송 대상을 정한 뒤 <b>「📨 선택 발송」</b>으로 한 번에 보낼 수 있고, 각 행을 누르면 메시지를 <b>확인·수정·개별 발송</b>할 수 있습니다.
+      <b>검사 후 안부</b>는 각 환자에 <b>조직검사 / 용종절제 / 발송 안 함</b> 중 하나를 직접 누릅니다.
+      조직검사·용종절제를 고른 환자만 발송 대상이 되어 <b>「📨 선택 발송」</b>으로 한 번에 보낼 수 있고, 각 행을 누르면 메시지를 <b>확인·수정·개별 발송</b>할 수 있습니다.
     </div>
 
     <div class="tabs">
@@ -523,7 +523,7 @@ function render(){
   bar.className = 'bulk-bar on';
   bar.innerHTML = `
     <span class="bb-count">발송 대상 <b>${selected.length}</b>명
-      <span class="bb-sub">· 미발송 ${pending.length} · 제외 ${sendable.length - selected.length}${tab==='followup' ? ` · 단순(발송 안 함) ${simpleN}` : ''}</span>
+      <span class="bb-sub">· 미발송 ${pending.length}${tab==='reminder' ? ` · 제외 ${sendable.length - selected.length}` : ` · 발송 대상 아님 ${simpleN}`}</span>
     </span>
     ${tab==='reminder' ? `<button class="bb-mini" data-bb="selall">모두 대상</button><button class="bb-mini" data-bb="selnone">모두 제외</button>` : ''}
     <span class="bb-spacer"></span>
