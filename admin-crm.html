@@ -95,6 +95,22 @@
     .chip.on.biopsy { background:#fff3e0; border-color:#e8a13d; color:#c87a1a; }
     .chip.on.polyp  { background:#fdecea; border-color:#e07c70; color:#c0392b; }
     .tag-simple { font-size:11.5px; font-weight:700; color:#9aa6b1; background:#eef1f4; padding:4px 10px; border-radius:14px; white-space:nowrap; }
+    .row-check { width:19px; height:19px; flex:0 0 auto; accent-color:#0d7377; cursor:pointer; margin:0; }
+    .row-check.ph { visibility:hidden; }
+    .item.excluded .row-main { background:#fbfcfd; }
+    .item.excluded .it-name, .item.excluded .it-svc { color:#9aa6b1; }
+
+    /* 일괄 발송 바 */
+    .bulk-bar { display:none; align-items:center; gap:9px; flex-wrap:wrap; background:#fff; border:1px solid #e3e9ec; border-radius:12px; padding:11px 14px; margin-bottom:12px; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+    .bulk-bar.on { display:flex; }
+    .bulk-bar .bb-count { font-size:14px; font-weight:800; color:#0f2b3d; }
+    .bulk-bar .bb-count b { color:#0d7377; }
+    .bulk-bar .bb-sub { font-weight:600; color:#8a96a2; font-size:12.5px; }
+    .bulk-bar .bb-spacer { flex:1; }
+    .bulk-bar button { border:none; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .bb-mini { background:#eef2f6; color:#51606e; }
+    .bb-send { background:#0d7377; color:#fff; }
+    .bb-send:disabled { opacity:.45; cursor:default; }
 
     .it-status { margin-left:auto; display:flex; align-items:center; gap:8px; }
     .sent-badge { font-size:11px; font-weight:800; color:#fff; background:#27ae60; padding:3px 10px; border-radius:11px; }
@@ -199,9 +215,8 @@
     </div>
     <div class="hint">
       예약명단의 <b>확정 검사일시</b>를 실시간으로 가져옵니다.
-      <b>검사 후 안부</b>는 각 환자에 <b>조직검사 / 용종절제</b>를 클릭하면 메시지가 달라지며,
-      둘 다 없는 <b>단순검사(내시경·초음파)</b>는 안부를 생략해도 됩니다.
-      메시지는 <b>공식 문구(템플릿)</b>를 기준으로 자동 작성되니, 위 버튼에서 문구를 다듬어 심사용으로도 쓰실 수 있습니다.
+      <b>검사 후 안부</b>는 각 환자에 <b>조직검사 / 용종절제</b>를 클릭하면 메시지가 달라지고, 둘 다 없는 <b>단순검사(내시경·초음파)</b>는 자동으로 <b>발송 안 함</b> 처리됩니다.
+      왼쪽 <b>체크박스</b>로 발송 대상을 정한 뒤 <b>「📨 선택 발송」</b>으로 한 번에 보낼 수 있고, 각 행을 누르면 메시지를 <b>확인·수정·개별 발송</b>할 수 있습니다.
     </div>
 
     <div class="tabs">
@@ -216,6 +231,8 @@
       <button class="dn-today" onclick="resetDay()">기본</button>
       <span class="dn-sub" id="dnSub"></span>
     </div>
+
+    <div class="bulk-bar" id="bulkBar"></div>
 
     <div class="list" id="listWrap">
       <div class="empty-msg"><span class="em-ic">⏳</span>불러오는 중...</div>
@@ -481,12 +498,30 @@ function render(){
 
   const list = tab==='reminder' ? reminderListFor(targetDate) : followupListFor(targetDate);
   const wrap = document.getElementById('listWrap');
+  const bar = document.getElementById('bulkBar');
   if (!list.length){
+    bar.className = 'bulk-bar';
     wrap.innerHTML = `<div class="empty-msg"><span class="em-ic">${tab==='reminder'?'📭':'🩺'}</span>${
       tab==='reminder' ? '이 날짜에 확정된 검사 예약이 없습니다.' : '이 날짜에 검사완료된 명단이 없습니다.'
     }<br><small style="color:#bbb">예약명단에서 상태를 ${tab==='reminder'?'<b>확정</b> + 확정 검사일시':'<b>검사완료</b>'}로 지정하면 여기에 표시됩니다.</small></div>`;
     return;
   }
+
+  // 발송 대상 집계: 발송가능(reminder=전체 / followup=조직·용종 한 사람) 중 제외 안 한 사람
+  const sendable = list.filter(isSendable);
+  const selected = sendable.filter(b => !b[skipField()]);
+  const pending  = selected.filter(b => !b[SENT_FIELD()] && phoneDigits(b.phone));
+  const simpleN  = list.length - sendable.length;
+  bar.className = 'bulk-bar on';
+  bar.innerHTML = `
+    <span class="bb-count">발송 대상 <b>${selected.length}</b>명
+      <span class="bb-sub">· 미발송 ${pending.length} · 제외 ${sendable.length - selected.length}${tab==='followup' ? ` · 단순(발송 안 함) ${simpleN}` : ''}</span>
+    </span>
+    <button class="bb-mini" data-bb="selall">모두 대상</button>
+    <button class="bb-mini" data-bb="selnone">모두 제외</button>
+    <span class="bb-spacer"></span>
+    <button class="bb-send" data-bb="bulksend" ${pending.length ? '' : 'disabled'}>📨 선택 발송 (${pending.length})</button>`;
+
   wrap.innerHTML = list.map(b => itemHtml(b)).join('');
 }
 
@@ -498,6 +533,14 @@ function itemHtml(b){
   const chart = b.chartNo ? `<span class="it-chart">${esc(b.chartNo)}</span>` : '';
   const phoneHtml = dig ? `<span class="it-phone">${esc(phone)}</span>` : `<span class="it-phone none">⚠ 연락처 없음</span>`;
 
+  // 발송 대상 체크박스 (발송가능 행만) / 단순검사는 자동 발송 안 함
+  const sendable = isSendable(b);
+  const selected = sendable && !b[skipField()];
+  const excluded = sendable && !selected;
+  const checkbox = sendable
+    ? `<input type="checkbox" class="row-check" data-act="togglesel" data-id="${id}" ${selected?'checked':''} title="발송 대상">`
+    : `<span class="row-check ph"></span>`;
+
   // 안부 탭: 시술 칩 / 단순검사 태그
   let mid = '';
   let simple = false;
@@ -507,7 +550,7 @@ function itemHtml(b){
     mid = `<div class="proc-chips">
       <button class="chip biopsy ${biopsy?'on':''}" data-act="proc" data-id="${id}" data-field="crmBiopsy">🧪 조직검사</button>
       <button class="chip polyp ${polyp?'on':''}" data-act="proc" data-id="${id}" data-field="crmPolyp">✂️ 용종절제</button>
-      ${simple?`<span class="tag-simple">단순검사 · 안부 생략 가능</span>`:''}
+      ${simple?`<span class="tag-simple">단순검사 · 발송 안 함</span>`:''}
     </div>`;
   }
 
@@ -518,8 +561,9 @@ function itemHtml(b){
   const callBtn = dig ? `<a class="b-call" href="tel:${dig}">📞 전화</a>` : '';
 
   return `
-    <div class="item ${simple?'simple':''} ${done?'sent':''} ${open?'open':''}">
+    <div class="item ${simple?'simple':''} ${excluded?'excluded':''} ${done?'sent':''} ${open?'open':''}">
       <div class="row-main" data-act="open" data-id="${id}">
+        ${checkbox}
         ${b.confirmedTime?`<span class="it-time">${esc(b.confirmedTime)}</span>`:`<span class="it-time">–</span>`}
         <span class="it-name">${esc(b.name||'-')}</span>
         ${chart}
@@ -554,6 +598,7 @@ document.getElementById('listWrap').addEventListener('click', e => {
   if (id && !SAFE_ID.test(id)) return;   // 비정상 ID는 무시
   switch (el.getAttribute('data-act')) {
     case 'open':     toggleOpen(id); break;
+    case 'togglesel': toggleSkip(id); break;
     case 'proc':     toggleProc(id, el.getAttribute('data-field') === 'crmPolyp' ? 'crmPolyp' : 'crmBiopsy'); break;
     case 'copy':     copyMsg(id); break;
     case 'markdone': markDone(id); break;   // sms: 링크는 기본 동작(이동) 그대로
@@ -568,6 +613,66 @@ async function toggleProc(id, field){
   try { await db.collection('bookings').doc(id).update({ [field]: nv }); }
   catch(e){ b[field] = !nv; render(); showToast('저장 실패: '+e.message); }
 }
+
+// ── 발송 대상 선택 / 일괄 발송 ─────────────────────────
+// 템플릿 승인·설정 완료 후 true로 바꾸면 「선택 발송」이 실제 알림톡을 보냅니다.
+let AUTO_SEND_READY = false;
+function skipField(){ return tab==='reminder' ? 'crmReminderSkip' : 'crmFollowupSkip'; }
+// 발송 가능: 검사 전=전체 / 검사 후=조직검사·용종절제 한 사람(단순검사는 발송 안 함)
+function isSendable(b){ return tab==='reminder' ? true : (!!b.crmBiopsy || !!b.crmPolyp); }
+function sendKey(b){ return tab==='reminder' ? 'reminder' : (b.crmPolyp ? 'followup_polyp' : 'followup_biopsy'); }
+function varsFor(b){
+  if (tab==='reminder') return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사', '#{검사일}':b.confirmedDate?labelOf(b.confirmedDate):'', '#{시간}':b.confirmedTime||'' };
+  return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사' };
+}
+function currentList(){ return tab==='reminder' ? reminderListFor(targetDate) : followupListFor(targetDate); }
+
+async function toggleSkip(id){
+  const b = allBookings.find(x=>x.id===id); if(!b) return;
+  const f = skipField(); const nv = !b[f];
+  b[f] = nv; render();
+  try { await db.collection('bookings').doc(id).update({ [f]: nv }); }
+  catch(e){ b[f] = !nv; render(); showToast('저장 실패: '+e.message); }
+}
+async function setAllSkip(skip){
+  const list = currentList().filter(isSendable);
+  const f = skipField();
+  list.forEach(b => b[f] = skip); render();
+  try {
+    const batch = db.batch();
+    list.forEach(b => batch.update(db.collection('bookings').doc(b.id), { [f]: skip }));
+    await batch.commit();
+  } catch(e){ showToast('저장 실패: '+e.message); }
+}
+async function bulkSend(){
+  const list = currentList().filter(b => isSendable(b) && !b[skipField()] && !b[SENT_FIELD()] && phoneDigits(b.phone));
+  if (!list.length){ showToast('발송할 대상이 없습니다.'); return; }
+  if (!AUTO_SEND_READY){
+    showToast('알림톡 자동 발송은 템플릿 승인·설정 후 활성화됩니다. 지금은 각 행의 [문자앱 열기]로 보내주세요.');
+    return;
+  }
+  if (!confirm(`발송 대상 ${list.length}명에게 카카오 알림톡을 발송할까요?`)) return;
+  const sendFn = firebase.app().functions('asia-northeast3').httpsCallable('sendKakao');
+  let ok=0, fail=0;
+  for (let i=0;i<list.length;i++){
+    const b = list[i];
+    showToast(`📨 발송 중… (${i+1}/${list.length})`);
+    try {
+      await sendFn({ to: phoneDigits(b.phone), templateKey: sendKey(b), variables: varsFor(b) });
+      await db.collection('bookings').doc(b.id).update({ [SENT_FIELD()]: firebase.firestore.FieldValue.serverTimestamp() });
+      b[SENT_FIELD()] = new Date(); ok++;
+    } catch(e){ fail++; console.error('send fail', b.id, e); }
+  }
+  render();
+  showToast(`✅ 발송 완료: ${ok}건${fail?` · 실패 ${fail}건`:''}`);
+}
+document.getElementById('bulkBar').addEventListener('click', e => {
+  const el = e.target.closest('[data-bb]'); if(!el) return;
+  const a = el.getAttribute('data-bb');
+  if (a==='selall') setAllSkip(false);
+  else if (a==='selnone') setAllSkip(true);
+  else if (a==='bulksend') bulkSend();
+});
 
 function copyMsg(id){
   const ta = document.getElementById('msg-'+id); if(!ta) return;
