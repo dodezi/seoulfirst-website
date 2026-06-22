@@ -79,7 +79,7 @@
     .item:last-child { border-bottom:none; }
     .item.simple .row-main { background:#fbfcfd; }
     .item.simple .it-name { color:#7a8794; }
-    .item.sent .row-main { background:#f3faf4; }
+    .item.sent .row-main { background:#f3faf4; box-shadow: inset 4px 0 0 #27ae60; }
     .row-main { display:flex; align-items:center; gap:11px; padding:12px 16px; cursor:pointer; flex-wrap:wrap; }
     .row-main:hover { background:#f8fafc; }
     .it-time { font-size:14px; font-weight:800; color:#1b5e8a; background:#eef4fb; padding:3px 9px; border-radius:7px; min-width:54px; text-align:center; }
@@ -94,6 +94,7 @@
     .chip { font-size:12px; font-weight:700; padding:5px 11px; border-radius:16px; border:1.5px solid #dde1e7; background:#fff; color:#888; cursor:pointer; font-family:inherit; white-space:nowrap; user-select:none; }
     .chip.on.biopsy { background:#fff3e0; border-color:#e8a13d; color:#c87a1a; }
     .chip.on.polyp  { background:#fdecea; border-color:#e07c70; color:#c0392b; }
+    .chip.on.skip   { background:#e7eaee; border-color:#9aa6b1; color:#51606e; }
     .tag-simple { font-size:11.5px; font-weight:700; color:#9aa6b1; background:#eef1f4; padding:4px 10px; border-radius:14px; white-space:nowrap; }
     .row-check { width:19px; height:19px; flex:0 0 auto; accent-color:#0d7377; cursor:pointer; margin:0; }
     .row-check.ph { visibility:hidden; }
@@ -487,6 +488,13 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 function formatPhone(p){ const d=String(p||'').replace(/[^0-9]/g,''); if(d.length===11) return d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3'); if(d.length===10) return d.replace(/(\d{3})(\d{3,4})(\d{4})/,'$1-$2-$3'); return p||''; }
 function phoneDigits(p){ return String(p||'').replace(/[^0-9]/g,''); }
 const SENT_FIELD = () => tab==='reminder' ? 'crmReminderAt' : 'crmFollowupAt';
+function sentLabel(b){
+  const v = b[SENT_FIELD()];
+  if (!v) return '✅ 발송완료';
+  const d = v.toDate ? v.toDate() : (v instanceof Date ? v : null);
+  if (!d) return '✅ 발송완료';
+  return `✅ 발송완료 ${String(d.getMonth()+1)}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
 
 // ── 렌더 ──────────────────────────────────────────────
 function render(){
@@ -517,8 +525,7 @@ function render(){
     <span class="bb-count">발송 대상 <b>${selected.length}</b>명
       <span class="bb-sub">· 미발송 ${pending.length} · 제외 ${sendable.length - selected.length}${tab==='followup' ? ` · 단순(발송 안 함) ${simpleN}` : ''}</span>
     </span>
-    <button class="bb-mini" data-bb="selall">모두 대상</button>
-    <button class="bb-mini" data-bb="selnone">모두 제외</button>
+    ${tab==='reminder' ? `<button class="bb-mini" data-bb="selall">모두 대상</button><button class="bb-mini" data-bb="selnone">모두 제외</button>` : ''}
     <span class="bb-spacer"></span>
     <button class="bb-send" data-bb="bulksend" ${pending.length ? '' : 'disabled'}>📨 선택 발송 (${pending.length})</button>`;
 
@@ -533,24 +540,21 @@ function itemHtml(b){
   const chart = b.chartNo ? `<span class="it-chart">${esc(b.chartNo)}</span>` : '';
   const phoneHtml = dig ? `<span class="it-phone">${esc(phone)}</span>` : `<span class="it-phone none">⚠ 연락처 없음</span>`;
 
-  // 발송 대상 체크박스 (발송가능 행만) / 단순검사는 자동 발송 안 함
-  const sendable = isSendable(b);
-  const selected = sendable && !b[skipField()];
-  const excluded = sendable && !selected;
-  const checkbox = sendable
-    ? `<input type="checkbox" class="row-check" data-act="togglesel" data-id="${id}" ${selected?'checked':''} title="발송 대상">`
+  // 검사 전 안내(reminder)는 왼쪽 체크박스로 발송 대상 선택,
+  // 검사 후 안부(followup)는 아래 칩(조직검사/용종절제/발송 안 함)을 직접 눌러 결정.
+  const excluded = tab==='reminder' ? !!b.crmReminderSkip : !!b.crmFollowupSkip;
+  const checkbox = (tab==='reminder')
+    ? `<input type="checkbox" class="row-check" data-act="togglesel" data-id="${id}" ${b.crmReminderSkip?'':'checked'} title="발송 대상">`
     : `<span class="row-check ph"></span>`;
 
-  // 안부 탭: 시술 칩 / 단순검사 태그
+  // 안부 탭: 직접 선택하는 칩 3종
   let mid = '';
-  let simple = false;
   if (tab === 'followup'){
-    const biopsy = !!b.crmBiopsy, polyp = !!b.crmPolyp;
-    simple = !biopsy && !polyp;
+    const biopsy = !!b.crmBiopsy, polyp = !!b.crmPolyp, skip = !!b.crmFollowupSkip;
     mid = `<div class="proc-chips">
       <button class="chip biopsy ${biopsy?'on':''}" data-act="proc" data-id="${id}" data-field="crmBiopsy">🧪 조직검사</button>
       <button class="chip polyp ${polyp?'on':''}" data-act="proc" data-id="${id}" data-field="crmPolyp">✂️ 용종절제</button>
-      ${simple?`<span class="tag-simple">단순검사 · 발송 안 함</span>`:''}
+      <button class="chip skip ${skip?'on':''}" data-act="skip" data-id="${id}">🚫 발송 안 함</button>
     </div>`;
   }
 
@@ -561,7 +565,7 @@ function itemHtml(b){
   const callBtn = dig ? `<a class="b-call" href="tel:${dig}">📞 전화</a>` : '';
 
   return `
-    <div class="item ${simple?'simple':''} ${excluded?'excluded':''} ${done?'sent':''} ${open?'open':''}">
+    <div class="item ${excluded?'excluded':''} ${done?'sent':''} ${open?'open':''}">
       <div class="row-main" data-act="open" data-id="${id}">
         ${checkbox}
         ${b.confirmedTime?`<span class="it-time">${esc(b.confirmedTime)}</span>`:`<span class="it-time">–</span>`}
@@ -571,7 +575,7 @@ function itemHtml(b){
         ${mid}
         ${phoneHtml}
         <span class="it-status">
-          ${done?`<span class="sent-badge">발송완료</span>`:''}
+          ${done?`<span class="sent-badge">${esc(sentLabel(b))}</span>`:''}
           <button class="it-toggle" data-act="open" data-id="${id}">${open?'닫기 ▲':'메시지 ▾'}</button>
         </span>
       </div>
@@ -600,6 +604,7 @@ document.getElementById('listWrap').addEventListener('click', e => {
     case 'open':     toggleOpen(id); break;
     case 'togglesel': toggleSkip(id); break;
     case 'proc':     toggleProc(id, el.getAttribute('data-field') === 'crmPolyp' ? 'crmPolyp' : 'crmBiopsy'); break;
+    case 'skip':     toggleFollowupSkip(id); break;
     case 'copy':     copyMsg(id); break;
     case 'markdone': markDone(id); break;   // sms: 링크는 기본 동작(이동) 그대로
     case 'done':     toggleDone(id, el.getAttribute('data-done') === '1'); break;
@@ -609,9 +614,22 @@ document.getElementById('listWrap').addEventListener('click', e => {
 async function toggleProc(id, field){
   const b = allBookings.find(x=>x.id===id); if(!b) return;
   const nv = !b[field];
-  b[field] = nv; render();   // 즉시 반영
-  try { await db.collection('bookings').doc(id).update({ [field]: nv }); }
+  const upd = { [field]: nv };
+  b[field] = nv;
+  if (nv && b.crmFollowupSkip){ b.crmFollowupSkip = false; upd.crmFollowupSkip = false; } // 시술 선택 시 '발송 안 함' 해제
+  render();
+  try { await db.collection('bookings').doc(id).update(upd); }
   catch(e){ b[field] = !nv; render(); showToast('저장 실패: '+e.message); }
+}
+async function toggleFollowupSkip(id){
+  const b = allBookings.find(x=>x.id===id); if(!b) return;
+  const nv = !b.crmFollowupSkip;
+  const upd = { crmFollowupSkip: nv };
+  b.crmFollowupSkip = nv;
+  if (nv){ b.crmBiopsy = false; b.crmPolyp = false; upd.crmBiopsy = false; upd.crmPolyp = false; } // 발송 안 함 선택 시 시술 해제
+  render();
+  try { await db.collection('bookings').doc(id).update(upd); }
+  catch(e){ b.crmFollowupSkip = !nv; render(); showToast('저장 실패: '+e.message); }
 }
 
 // ── 발송 대상 선택 / 일괄 발송 ─────────────────────────
