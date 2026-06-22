@@ -823,7 +823,9 @@ async function loadBookings() {
     '<tr><td colspan="13" class="empty-msg">불러오는 중...</td></tr>';
   try {
     const snap = await db.collection('bookings').orderBy('createdAt','desc').get();
-    allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Firestore 자동 ID 형식이 아닌 문서(직접 SDK로 주입된 악성 ID)는 차단 — 속성 주입 XSS 방어
+    allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                      .filter(b => /^[A-Za-z0-9_-]{1,128}$/.test(b.id));
     renderTable();
     renderCalendars();
   } catch(e) {
@@ -1003,7 +1005,7 @@ function renderTable() {
     /* ── 액션 버튼 ── */
     const actionCell = isDeleted
       ? `<button class="btn-restore" onclick="restoreBooking('${b.id}')">♻️ 복원</button>`
-      : `<button class="btn-del-row" onclick="openDel('${b.id}','${esc(b.name||'')}','${esc(b.date||'')}')">삭제</button>`;
+      : `<button class="btn-del-row" onclick="openDel('${b.id}')">삭제</button>`;
 
     const rowCls = isDeleted ? 'row-deleted' : (status === '대기중' ? 'row-waiting' : '');
     return `
@@ -1167,9 +1169,11 @@ function setFilter(f, btn) {
 }
 
 // ── 소프트 삭제 (deleted:true 표시) ──────────────────────
-function openDel(id, name, date) {
+function openDel(id) {
   deleteId = id;
-  document.getElementById('delPreview').textContent = `${name} 님 (희망일: ${date})`;
+  const b = allBookings.find(x => x.id === id) || {};
+  // textContent로 출력하므로 값 자체는 안전 — 인라인 핸들러에 값을 넣지 않아 JS 문자열 주입도 차단
+  document.getElementById('delPreview').textContent = `${b.name || ''} 님 (희망일: ${b.date || '-'})`;
   document.getElementById('delModal').classList.add('on');
 }
 document.getElementById('delCancel').addEventListener('click', () => {
@@ -1591,7 +1595,7 @@ function formatPhone(v) {
 }
 
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
 <script src="audit.js"></script>

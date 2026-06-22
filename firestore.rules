@@ -30,9 +30,26 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // 온라인 예약: 누구나 신청(생성) / 관리자·'예약' 권한 직원은 조회·수정·삭제
+    // 온라인 예약:
+    //  - 공개 생성(예약폼)은 허용하되, 필드 화이트리스트·길이·금지문자(<>)로 검증 → 저장형 XSS·스팸 차단
+    //  - 직원/관리자는 추가 필드(확정일시·차트번호 등) 포함 생성 가능
+    //  - 조회·수정·삭제는 관리자·'예약' 권한 직원만
     match /bookings/{doc} {
-      allow create: if true;
+      function safeStr(v, max) {
+        return v is string && v.size() <= max && !v.matches('[\\s\\S]*[<>][\\s\\S]*');
+      }
+      function validPublicBooking() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['name','phone','date','time','service','memo','status','createdAt'])
+          && safeStr(d.name, 40)  && d.name.size()  > 0
+          && safeStr(d.phone, 20) && d.phone.size() > 0
+          && safeStr(d.get('date',''), 20)
+          && safeStr(d.get('time',''), 30)
+          && safeStr(d.get('service',''), 200)
+          && safeStr(d.get('memo',''), 1000)
+          && d.status == '대기중';
+      }
+      allow create: if validPublicBooking() || isAdmin() || hasPagePerm('booking');
       allow read, update, delete: if isAdmin() || hasPagePerm('booking');
     }
 
