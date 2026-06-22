@@ -127,6 +127,12 @@ service cloud.firestore {
       allow read, write: if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
     }
 
+    // 검진 CRM 발송 설정(솔라피 pfId·템플릿ID·발신번호): 관리자 전용.
+    // 직원은 직접 읽지 않고 sendKakao 함수(admin SDK)를 통해서만 사용.
+    match /crm_config/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
     //  - 생성: 관리자·재직 직원(본인 행동 기록)
     //  - 읽기: 원장 전용

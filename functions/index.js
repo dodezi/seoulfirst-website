@@ -19,6 +19,8 @@ const TELEGRAM_TOKEN = defineSecret("TELEGRAM_TOKEN");
 const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
 const WEBHOOK_SECRET = defineSecret("WEBHOOK_SECRET");
 const LUNCH_TELEGRAM_TOKEN = defineSecret("LUNCH_TELEGRAM_TOKEN");
+const SOLAPI_API_KEY = defineSecret("SOLAPI_API_KEY");
+const SOLAPI_API_SECRET = defineSecret("SOLAPI_API_SECRET");
 
 const PROMPT = `이 이미지는 거래명세서 또는 세금계산서입니다. 표에 적힌 품목들을 정확히 읽어 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만 출력합니다.
 {
@@ -222,6 +224,73 @@ exports.claudeProxy = onCall(
       throw new HttpsError("internal", m);
     }
     return j; // { content: [{ text }], ... } — 클라이언트는 기존과 동일하게 content[0].text 사용
+  }
+);
+
+// ───────────────────────────────────────────────────────────
+// 카카오 알림톡 발송 (솔라피) — 검진 안내·안부 CRM
+//  - 로그인 + (관리자/crm/booking 권한) 확인 후 발송.
+//  - 발신프로필 키·템플릿 ID·발신번호는 Firestore crm_config/solapi(관리자 전용)에서 읽음.
+//  - 솔라피 API 키/시크릿은 Secret Manager에만 존재.
+// ───────────────────────────────────────────────────────────
+function solapiAuthHeader(apiKey, apiSecret) {
+  const date = new Date().toISOString();
+  const salt = crypto.randomBytes(32).toString("hex");
+  const signature = crypto.createHmac("sha256", apiSecret).update(date + salt).digest("hex");
+  return `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
+}
+
+exports.sendKakao = onCall(
+  { secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], region: "asia-northeast3", timeoutSeconds: 60 },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    const email = (auth.token && auth.token.email || "").toLowerCase();
+
+    let allowed = SUPER_ADMINS.includes(email);
+    if (!allowed && email) {
+      const snap = await admin.firestore().collection("users").doc(email).get();
+      const u = snap.exists ? snap.data() : null;
+      const perms = (u && u.perms) || {};
+      allowed = !!(u && u.active !== false && (perms.crm || perms.booking));
+    }
+    if (!allowed) throw new HttpsError("permission-denied", "발송 권한이 없습니다.");
+
+    const data = request.data || {};
+    const to = String(data.to || "").replace(/[^0-9]/g, "");
+    const templateKey = String(data.templateKey || "");
+    const variables = (data.variables && typeof data.variables === "object") ? data.variables : {};
+    if (!to) throw new HttpsError("invalid-argument", "수신 번호가 없습니다.");
+
+    const cfgSnap = await admin.firestore().collection("crm_config").doc("solapi").get();
+    const cfg = cfgSnap.exists ? cfgSnap.data() : null;
+    if (!cfg || !cfg.pfId || !cfg.templates || !cfg.templates[templateKey]) {
+      throw new HttpsError("failed-precondition", "발송 설정(pfId/템플릿)이 아직 준비되지 않았습니다.");
+    }
+
+    const kakaoOptions = {
+      pfId: cfg.pfId,
+      templateId: cfg.templates[templateKey],
+      variables,
+      // 발신번호가 등록돼 있으면 실패 시 문자 대체발송 허용, 없으면 비활성화
+      disableSms: cfg.from ? false : true,
+    };
+    const message = { to, kakaoOptions };
+    if (cfg.from) message.from = String(cfg.from).replace(/[^0-9]/g, "");
+
+    const r = await fetch("https://api.solapi.com/messages/v4/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: solapiAuthHeader(SOLAPI_API_KEY.value(), SOLAPI_API_SECRET.value()),
+      },
+      body: JSON.stringify({ message }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      throw new HttpsError("internal", j.errorMessage || j.message || `solapi ${r.status}`);
+    }
+    return j;
   }
 );
 
