@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>검진 안내·안부 CRM | 서울퍼스트내과의원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f9; color: #1e2a38; min-height: 100vh; }
+
+    /* 로그인 */
+    #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #fff; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.12); }
+    .login-box .logo { text-align: center; margin-bottom: 24px; }
+    .login-box .logo img { height: 38px; }
+    .login-box h2 { font-size: 19px; font-weight: 700; text-align: center; color: #0f2b3d; margin-bottom: 24px; }
+    .lf { margin-bottom: 14px; }
+    .lf label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .lf input { width: 100%; padding: 11px 14px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 15px; font-family: inherit; }
+    .lf input:focus { outline: none; border-color: #0d7377; }
+    .btn-login { width: 100%; padding: 13px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; }
+    #loginError { color: #c0392b; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+    #noPermScreen { display:none; }
+    #adminScreen { display: none; }
+
+    .top-bar { background: #0f2b3d; color: #fff; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .top-bar .tl { display: flex; align-items: center; gap: 14px; }
+    .top-bar .tl img { height: 28px; }
+    .top-bar .tl span { font-size: 15px; font-weight: 700; }
+    .top-bar .tr { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .btn-small  { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+    .btn-logout { background: rgba(255,255,255,.15); color: #fff; }
+    .btn-back   { background: rgba(255,255,255,.1); color: #fff; text-decoration: none; display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+    .page-body { max-width: 1200px; margin: 0 auto; padding: 26px 20px; }
+
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .toolbar h1 { font-size: 22px; font-weight: 700; color: #0f2b3d; flex: 1; }
+    .hint { font-size: 13px; color: #5a6b7a; background: #eef5f5; border: 1px solid #d4e8e8; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; line-height: 1.6; }
+    .hint b { color: #0d7377; }
+
+    /* 탭 */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab { padding: 9px 20px; border-radius: 22px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid #dde1e7; background: #fff; color: #666; font-family: inherit; }
+    .tab.on { background: #0d7377; border-color: #0d7377; color: #fff; }
+    .tab .cnt { display:inline-block; margin-left:7px; background:rgba(0,0,0,.12); border-radius:11px; padding:0 8px; font-size:12px; }
+    .tab.on .cnt { background: rgba(255,255,255,.28); }
+
+    /* 날짜 네비 */
+    .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .date-nav .dn-btn { width: 38px; height: 38px; border-radius: 9px; border: 1.5px solid #dde1e7; background: #fff; cursor: pointer; font-size: 17px; font-weight: 700; color: #0d7377; }
+    .date-nav .dn-label { font-size: 17px; font-weight: 800; color: #0f2b3d; min-width: 220px; text-align: center; }
+    .date-nav .dn-today { padding: 8px 14px; border-radius: 9px; border: 1.5px solid #dde1e7; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: #555; }
+    .date-nav .dn-sub { font-size: 12.5px; color: #8a96a2; font-weight: 600; }
+
+    /* 카드 목록 */
+    .cards-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+    .pcard { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 16px 18px; border-left: 5px solid #0d7377; }
+    .pcard.done { opacity: .62; border-left-color: #bbb; }
+    .pcard .pc-top { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; flex-wrap: wrap; }
+    .pcard .pc-name { font-size: 17px; font-weight: 800; color: #0f2b3d; }
+    .pcard .pc-time { font-size: 14px; font-weight: 700; color: #1b5e8a; background: #eef4fb; padding: 2px 9px; border-radius: 7px; }
+    .pcard .pc-chart { font-size: 12px; font-weight: 700; color: #1b5e8a; background: #eef4fb; padding: 1px 7px; border-radius: 6px; }
+    .pcard .pc-done-badge { margin-left:auto; font-size:11px; font-weight:800; color:#fff; background:#27ae60; padding:3px 10px; border-radius:11px; }
+    .pcard .pc-svc { font-size: 13px; color: #444; margin: 6px 0 4px; line-height: 1.5; }
+    .pcard .pc-phone { font-size: 15px; font-weight: 800; color: #0a5c5f; letter-spacing: .3px; margin-bottom: 10px; }
+    .pcard .pc-phone .nophone { color:#c0392b; font-size:13px; font-weight:700; }
+    .pcard textarea { width: 100%; border: 1.5px solid #dde1e7; border-radius: 9px; padding: 10px 12px; font-size: 13px; font-family: inherit; line-height: 1.6; resize: vertical; min-height: 132px; background: #fafcfc; color:#222; }
+    .pcard textarea:focus { outline: none; border-color: #0d7377; background:#fff; }
+    .pc-btns { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+    .pc-btns button, .pc-btns a { flex: 1 1 auto; text-align:center; text-decoration:none; padding: 9px 10px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; border: none; }
+    .b-copy { background: #0d7377; color: #fff; }
+    .b-sms  { background: #e8f4f4; color: #0d7377; }
+    .b-call { background: #eef4fb; color: #1b5e8a; }
+    .b-done { background: #e8f8e8; color: #1e7a3a; border:1px solid #bfe6c6 !important; }
+    .b-undone { background: #f4f6f9; color: #888; border:1px solid #dde1e7 !important; }
+
+    .empty-msg { text-align: center; padding: 60px 20px; color: #aaa; font-size: 15px; grid-column: 1 / -1; background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .empty-msg .em-ic { font-size: 40px; display:block; margin-bottom: 10px; }
+
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: #0f2b3d; color: #fff; padding: 11px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .soon-note { margin-top: 22px; font-size: 12.5px; color: #8a96a2; background:#fbfcfd; border:1px dashed #dde1e7; border-radius:10px; padding: 12px 14px; line-height:1.6; }
+    .soon-note b { color:#5a6b7a; }
+
+    @media (max-width: 600px) {
+      .page-body { padding: 16px 10px; }
+      .top-bar { padding: 0 12px; height: 52px; }
+      .top-bar .tl span { display: none; }
+      .top-bar #adminEmail { display: none; }
+      .cards-list { grid-template-columns: 1fr; }
+      .date-nav .dn-label { min-width: 150px; font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo"><img src="images/logo.png" alt="로고" /></div>
+    <h2>🔐 검진 CRM 관리자 로그인</h2>
+    <div class="lf"><label>이메일</label><input type="email" id="lEmail" placeholder="관리자 이메일" autocomplete="username" /></div>
+    <div class="lf"><label>비밀번호</label><input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" /></div>
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- 권한 없음 -->
+<div id="noPermScreen" style="align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:30px;">
+  <div style="background:#fff; border-radius:16px; padding:40px; max-width:430px; box-shadow:0 8px 40px rgba(0,0,0,.12);">
+    <div style="font-size:48px; margin-bottom:8px;">🚫</div>
+    <h2 style="color:#c0392b; font-size:20px; margin-bottom:10px;">접근 권한이 없습니다</h2>
+    <p id="npMsg" style="color:#5a6b7a; font-size:14px; line-height:1.7;"></p>
+    <p style="color:#aab4bd; font-size:12px; margin-top:8px;">현재 계정: <span id="npEmail"></span></p>
+    <a href="admin.html" style="display:inline-block; margin-top:18px; background:#0d7377; color:#fff; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:700;">🏠 관리홈으로</a>
+    <div style="margin-top:12px;"><button id="btnLogoutNp" style="background:#eef1f5; color:#51606e; border:none; padding:8px 16px; border-radius:7px; font-weight:600; cursor:pointer; font-family:inherit;">로그아웃</button></div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div id="adminScreen">
+  <div class="top-bar">
+    <div class="tl">
+      <a href="admin.html" style="display:inline-flex;align-items:center;"><img src="images/logo.png" alt="로고" style="cursor:pointer;" /></a>
+      <span>검진 안내·안부 CRM</span>
+    </div>
+    <div class="tr">
+      <span id="adminEmail" style="opacity:.7; font-size:12px;"></span>
+      <a href="admin.html" class="btn-back">🏠 관리홈</a>
+      <a href="booking-list.html" class="btn-back">📋 예약명단</a>
+      <button class="btn-small btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="toolbar">
+      <h1>💬 검진 안내·안부 CRM</h1>
+    </div>
+    <div class="hint">
+      예약명단의 <b>확정 검사일시</b>를 실시간으로 가져옵니다.
+      <b>검사 전 안내</b>는 내일 검사 확정자, <b>검사 후 안부</b>는 검사 다음날 발송 대상을 보여줍니다.
+      메시지는 검사 종류에 맞춰 자동 작성되며, 필요하면 수정한 뒤 <b>복사</b>해서 카카오톡으로 보내거나 <b>문자앱 열기</b>로 바로 보낼 수 있습니다.
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" id="tabReminder" onclick="setTab('reminder')">📅 검사 전 안내<span class="cnt" id="cntReminder">0</span></button>
+      <button class="tab"    id="tabFollowup" onclick="setTab('followup')">🩺 검사 후 안부<span class="cnt" id="cntFollowup">0</span></button>
+    </div>
+
+    <div class="date-nav">
+      <button class="dn-btn" onclick="shiftDay(-1)">‹</button>
+      <span class="dn-label" id="dnLabel">—</span>
+      <button class="dn-btn" onclick="shiftDay(1)">›</button>
+      <button class="dn-today" onclick="resetDay()" id="dnTodayBtn">기본</button>
+      <span class="dn-sub" id="dnSub"></span>
+    </div>
+
+    <div class="cards-list" id="cardsList">
+      <div class="empty-msg"><span class="em-ic">⏳</span>불러오는 중...</div>
+    </div>
+
+    <div class="soon-note">
+      <b>🚀 2단계 예정:</b> 솔라피(발송대행) 가입 + 카카오 알림톡 템플릿 심사가 끝나면,
+      이 화면의 <b>복사</b> 버튼이 <b>자동 발송</b>(알림톡 → 실패 시 문자 대체) 버튼으로 바뀝니다.
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── 인증 ───────────────────────────────────────────────
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+async function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw    = document.getElementById('lPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  try { await auth.signInWithEmailAndPassword(email, pw); }
+  catch(e) { errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; btn.textContent = '로그인'; btn.disabled = false; }
+}
+
+const SUPER_ADMINS = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
+const PAGE_KEY = 'crm';
+function isSuperAdmin(email){ return SUPER_ADMINS.includes((email||'').toLowerCase()); }
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('noPermScreen').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  if (isSuperAdmin(user.email)) { grantAccess(user); return; }
+  try {
+    const doc = await db.collection('users').doc((user.email||'').toLowerCase()).get();
+    const u = doc.exists ? doc.data() : null;
+    // crm 권한이 없으면 예약명단(booking) 권한자에게도 허용 (같은 명단을 다룸)
+    const ok = u && u.active !== false && u.perms && (u.perms[PAGE_KEY] === true || u.perms.booking === true);
+    if (ok) grantAccess(user); else showNoPerm(user, u);
+  } catch(e) { showNoPerm(user, null); }
+});
+function grantAccess(user){
+  document.getElementById('noPermScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('adminEmail').textContent = user.email;
+  subscribeBookings();
+}
+function showNoPerm(user, u){
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('noPermScreen').style.display = 'flex';
+  document.getElementById('npEmail').textContent = user.email;
+  let m = '이 페이지(검진 CRM)에 대한 접근 권한이 없습니다. 원장에게 권한을 요청하세요.';
+  if (u && u.status === 'pending') m = '가입 신청이 아직 승인되지 않았습니다. 원장 승인 후 이용할 수 있습니다.';
+  else if (u && u.active === false) m = '계정이 비활성 상태입니다. 원장에게 문의하세요.';
+  document.getElementById('npMsg').textContent = m;
+}
+document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
+document.getElementById('btnLogoutNp').addEventListener('click', () => auth.signOut());
+
+// ── 날짜 유틸 (로컬 시간 기준 — UTC 버그 방지) ─────────────
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function parseYmd(s){ const [y,m,dd] = s.split('-').map(Number); return new Date(y, m-1, dd); }
+const DOW = ['일','월','화','수','목','금','토'];
+function labelOf(s){ const d = parseYmd(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`; }
+
+// ── 상태 ──────────────────────────────────────────────
+let allBookings = [];
+let tab = 'reminder';          // 'reminder' | 'followup'
+let targetDate = null;         // 현재 보고 있는 '검사일' (YYYY-MM-DD)
+
+// 탭별 기본 검사일: 안내=내일 검사 / 안부=어제 검사(오늘 보내는 안부)
+function defaultDateFor(t){ return t === 'reminder' ? ymd(addDays(new Date(),1)) : ymd(addDays(new Date(),-1)); }
+
+function setTab(t){
+  tab = t;
+  document.getElementById('tabReminder').classList.toggle('on', t==='reminder');
+  document.getElementById('tabFollowup').classList.toggle('on', t==='followup');
+  targetDate = defaultDateFor(t);
+  render();
+}
+function shiftDay(n){ targetDate = ymd(addDays(parseYmd(targetDate), n)); render(); }
+function resetDay(){ targetDate = defaultDateFor(tab); render(); }
+
+// ── 데이터 구독 (실시간) ───────────────────────────────
+let _unsub = null;
+function subscribeBookings(){
+  if (_unsub) return;
+  targetDate = defaultDateFor(tab);
+  _unsub = db.collection('bookings').onSnapshot(snap => {
+    allBookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateCounts();
+    render();
+  }, err => {
+    document.getElementById('cardsList').innerHTML =
+      `<div class="empty-msg" style="color:#c0392b;"><span class="em-ic">⚠️</span>불러오지 못했습니다.<br><small>${err.message}</small></div>`;
+  });
+}
+
+function isLive(b){ return !b.deleted; }
+// 안내 대상: 확정 + 그 날짜 확정검사
+function reminderListFor(date){
+  return allBookings.filter(b => isLive(b) && b.status==='확정' && b.confirmedDate===date)
+    .sort((a,b)=>(a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+}
+// 안부 대상: 검사완료 + 그 날짜 검사
+function followupListFor(date){
+  return allBookings.filter(b => isLive(b) && b.status==='검사완료' && b.confirmedDate===date)
+    .sort((a,b)=>(a.confirmedTime||'').localeCompare(b.confirmedTime||''));
+}
+
+function updateCounts(){
+  document.getElementById('cntReminder').textContent = reminderListFor(defaultDateFor('reminder')).length;
+  document.getElementById('cntFollowup').textContent = followupListFor(defaultDateFor('followup')).length;
+}
+
+// ── 메시지 자동 작성 ───────────────────────────────────
+const CLINIC = '서울퍼스트내과의원';
+function svcText(b){ return String(b.service||''); }
+function has(s, arr){ const x = s.replace(/\s/g,''); return arr.some(k=>x.includes(k)); }
+function isColono(s){ return has(s, ['대장내시경','대장','용종','폴립','대장암']); }
+function isGastro(s){ return has(s, ['위내시경','위장','위암','위']); }
+function isPolypectomy(s){ return has(s, ['용종','폴립','절제','제거']); }
+function isSedation(s){ return has(s, ['수면']); }
+
+// 검사 전 안내문
+function reminderMsg(b){
+  const name = b.name || '';
+  const dlabel = b.confirmedDate ? labelOf(b.confirmedDate) : '';
+  const time = b.confirmedTime ? b.confirmedTime : '';
+  const svc = svcText(b) || '검사';
+  let lines = [];
+  lines.push(`[${CLINIC}] 검사 예약 안내`);
+  lines.push('');
+  lines.push(`${name}님, 안녕하세요. ${CLINIC}입니다.`);
+  lines.push(`내일 ${dlabel}${time?(' '+time):''}에 「${svc}」 예약이 확정되어 안내드립니다.`);
+  lines.push('');
+  const colo = isColono(svc), gas = isGastro(svc), sed = isSedation(svc) || colo || gas;
+  if (colo) {
+    lines.push('• 대장내시경 전날 저녁부터 안내된 식이(저잔류식)와 장정결제 복용 방법을 꼭 지켜주세요.');
+    lines.push('• 장이 깨끗할수록 정확한 검사가 가능합니다. 마지막 물(세정액)이 맑은 노란색이 될 때까지 드세요.');
+  }
+  if (gas) {
+    lines.push('• 위내시경은 검사 전 금식이 필요합니다. 검사 전날 밤 9시 이후 금식해 주세요.');
+  }
+  if (!colo && !gas) {
+    lines.push('• 공복(금식)이 필요한 검사가 포함될 수 있습니다. 검사 전 안내사항을 확인해 주세요.');
+  }
+  if (sed) {
+    lines.push('• 수면(진정) 검사 시 검사 후 운전이 어려우므로 보호자 동반 또는 대중교통 이용을 권장합니다.');
+  }
+  lines.push('• 복용 중인 약(특히 항혈전제·당뇨약)이 있으면 미리 알려주세요.');
+  lines.push('');
+  lines.push('변경·문의사항은 본원으로 연락 부탁드립니다. 감사합니다.');
+  return lines.join('\n');
+}
+
+// 검사 후 안부문
+function followupMsg(b){
+  const name = b.name || '';
+  const svc = svcText(b) || '검사';
+  const colo = isColono(svc), gas = isGastro(svc), polyp = isPolypectomy(svc);
+  let lines = [];
+  lines.push(`[${CLINIC}] 검사 후 안부 인사`);
+  lines.push('');
+  lines.push(`${name}님, 안녕하세요. ${CLINIC}입니다.`);
+  lines.push(`어제 받으신 「${svc}」 이후 불편하신 점은 없으신지 확인차 연락드립니다.`);
+  lines.push('');
+  if (polyp || colo) {
+    lines.push('대장 용종 절제 후에는 드물게 출혈·복통·발열이 생길 수 있습니다. 아래 증상이 있으면 본원 또는 응급실로 연락 주세요.');
+    lines.push('• 지속되는 복통이나 점점 심해지는 배 통증');
+    lines.push('• 38℃ 이상의 발열, 오한');
+    lines.push('• 검붉은 혈변·다량의 출혈');
+    lines.push('');
+    lines.push('절제 부위 보호를 위해 2~3일간 과격한 운동, 음주, 장거리 여행은 피해 주세요.');
+  } else if (gas) {
+    lines.push('위내시경 후 목 이물감·가벼운 복부 불편감은 보통 하루 내 좋아집니다.');
+    lines.push('다만 심한 복통, 토혈·흑색변, 지속되는 발열이 있으면 본원으로 연락 주세요.');
+  } else {
+    lines.push('검사 후 특별히 불편하신 점이나 궁금하신 점이 있으면 언제든 본원으로 연락 주세요.');
+  }
+  lines.push('');
+  lines.push('빠른 쾌차 바랍니다. 감사합니다.');
+  return lines.join('\n');
+}
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatPhone(p){ const d=String(p||'').replace(/[^0-9]/g,''); if(d.length===11) return d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3'); if(d.length===10) return d.replace(/(\d{3})(\d{3,4})(\d{4})/,'$1-$2-$3'); return p||''; }
+function phoneDigits(p){ return String(p||'').replace(/[^0-9]/g,''); }
+
+// ── 렌더 ──────────────────────────────────────────────
+function render(){
+  // 날짜 라벨
+  const sub = tab==='reminder'
+    ? '내일 검사 확정자에게 오늘 안내를 보냅니다'
+    : '이 날짜에 검사를 마친 분께 다음날(오늘) 안부를 보냅니다';
+  document.getElementById('dnLabel').textContent = targetDate ? labelOf(targetDate) : '—';
+  document.getElementById('dnSub').textContent = sub;
+
+  const list = tab==='reminder' ? reminderListFor(targetDate) : followupListFor(targetDate);
+  const wrap = document.getElementById('cardsList');
+  if (!list.length){
+    wrap.innerHTML = `<div class="empty-msg"><span class="em-ic">${tab==='reminder'?'📭':'🩺'}</span>${
+      tab==='reminder' ? '이 날짜에 확정된 검사 예약이 없습니다.' : '이 날짜에 검사완료된 명단이 없습니다.'
+    }<br><small style="color:#bbb">예약명단에서 상태를 ${tab==='reminder'?'<b>확정</b>으로 두고 확정 검사일시를':'<b>검사완료</b>로'} 지정하면 여기에 표시됩니다.</small></div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(b => cardHtml(b)).join('');
+}
+
+function cardHtml(b){
+  const sentKey = tab==='reminder' ? 'crmReminderAt' : 'crmFollowupAt';
+  const done = !!b[sentKey];
+  const msg = tab==='reminder' ? reminderMsg(b) : followupMsg(b);
+  const phone = formatPhone(b.phone);
+  const dig = phoneDigits(b.phone);
+  const chart = b.chartNo ? `<span class="pc-chart">${esc(b.chartNo)}</span>` : '';
+  const phoneHtml = dig ? esc(phone) : `<span class="nophone">⚠ 연락처 없음 — 예약명단에서 입력</span>`;
+  const smsBtn = dig
+    ? `<a class="b-sms" href="sms:${dig}?body=${encodeURIComponent(msg)}" onclick="markDone('${b.id}')">💬 문자앱 열기</a>`
+    : `<button class="b-sms" disabled style="opacity:.5;cursor:default;">💬 문자앱</button>`;
+  const callBtn = dig ? `<a class="b-call" href="tel:${dig}">📞 전화</a>` : '';
+  return `
+    <div class="pcard ${done?'done':''}">
+      <div class="pc-top">
+        <span class="pc-name">${esc(b.name||'-')}</span>
+        ${chart}
+        ${b.confirmedTime?`<span class="pc-time">${esc(b.confirmedTime)}</span>`:''}
+        ${done?`<span class="pc-done-badge">발송완료</span>`:''}
+      </div>
+      <div class="pc-svc">🔬 ${esc(b.service||'검사 항목 미입력')}</div>
+      <div class="pc-phone">${phoneHtml}</div>
+      <textarea id="msg-${b.id}">${esc(msg)}</textarea>
+      <div class="pc-btns">
+        <button class="b-copy" onclick="copyMsg('${b.id}')">📋 복사</button>
+        ${smsBtn}
+        ${callBtn}
+        <button class="${done?'b-undone':'b-done'}" onclick="toggleDone('${b.id}',${done})">${done?'↩ 발송취소':'✅ 발송완료'}</button>
+      </div>
+    </div>`;
+}
+
+function copyMsg(id){
+  const ta = document.getElementById('msg-'+id);
+  if (!ta) return;
+  const text = ta.value;
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('📋 메시지를 복사했습니다. 카카오톡에 붙여넣기 하세요.');
+    markDone(id);
+  }).catch(()=>{ ta.select(); document.execCommand('copy'); showToast('📋 복사했습니다.'); markDone(id); });
+}
+
+const SENT_FIELD = () => tab==='reminder' ? 'crmReminderAt' : 'crmFollowupAt';
+async function markDone(id){
+  const field = SENT_FIELD();
+  const b = allBookings.find(x=>x.id===id);
+  if (b && b[field]) return; // 이미 표시됨
+  try {
+    await db.collection('bookings').doc(id).update({ [field]: firebase.firestore.FieldValue.serverTimestamp() });
+    if (b) b[field] = new Date();
+    render();
+  } catch(e){ /* 권한 등 실패는 조용히 */ }
+}
+async function toggleDone(id, currentlyDone){
+  const field = SENT_FIELD();
+  const b = allBookings.find(x=>x.id===id);
+  try {
+    if (currentlyDone){
+      await db.collection('bookings').doc(id).update({ [field]: firebase.firestore.FieldValue.delete() });
+      if (b) delete b[field];
+      showToast('발송완료 표시를 해제했습니다.');
+    } else {
+      await db.collection('bookings').doc(id).update({ [field]: firebase.firestore.FieldValue.serverTimestamp() });
+      if (b) b[field] = new Date();
+      showToast('✅ 발송완료로 표시했습니다.');
+    }
+    render();
+  } catch(e){ showToast('표시 변경 실패: '+e.message); }
+}
+
+let _toastT=null;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+</script>
+</body>
+</html>

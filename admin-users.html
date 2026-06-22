@@ -255,6 +255,7 @@ function isOwner(email){ return (email||'').toLowerCase() === OWNER; }
 // 페이지 단위 권한 정의 (런처 카드와 동일)
 const PAGES = [
   { key:'booking',   ic:'📅', name:'온라인 예약 명단',     file:'booking-list.html' },
+  { key:'crm',       ic:'💬', name:'검진 안내·안부 CRM',    file:'admin-crm.html' },
   { key:'leaves',    ic:'🌴', name:'직원 연차 관리',        file:'admin-leaves.html' },
   { key:'checkup',   ic:'🏥', name:'종합검진 결과보고서',   file:'admin-checkup.html' },
   { key:'narcotics', ic:'💉', name:'마약·향정 기록지',      file:'admin-narcotics.html' },
