@@ -288,8 +288,15 @@ exports.sendKakao = onCall(
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
+      console.error("solapi http error", r.status, JSON.stringify(j).slice(0, 600));
       throw new HttpsError("internal", j.errorMessage || j.message || `solapi ${r.status}`);
     }
+    // 솔라피는 HTTP 200이어도 메시지 단위로 실패할 수 있음 (statusCode 2000 = 성공 접수)
+    if (j.statusCode && j.statusCode !== "2000") {
+      console.error("solapi msg fail", JSON.stringify(j).slice(0, 600));
+      throw new HttpsError("internal", `${j.statusMessage || "발송 실패"} (${j.statusCode})`);
+    }
+    console.log("solapi ok", JSON.stringify(j).slice(0, 300));
     return j;
   }
 );

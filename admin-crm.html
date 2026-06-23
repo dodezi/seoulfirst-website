@@ -701,7 +701,7 @@ async function bulkSend(){
   }
   if (!confirm(`발송 대상 ${list.length}명에게 카카오 알림톡을 발송할까요?`)) return;
   const sendFn = firebase.app().functions('asia-northeast3').httpsCallable('sendKakao');
-  let ok=0, fail=0;
+  let ok=0, fail=0, lastErr='';
   for (let i=0;i<list.length;i++){
     const b = list[i];
     showToast(`📨 발송 중… (${i+1}/${list.length})`);
@@ -709,10 +709,10 @@ async function bulkSend(){
       await sendFn({ to: phoneDigits(b.phone), templateKey: sendKey(b), variables: varsFor(b) });
       await db.collection('bookings').doc(b.id).update({ [SENT_FIELD()]: firebase.firestore.FieldValue.serverTimestamp() });
       b[SENT_FIELD()] = new Date(); ok++;
-    } catch(e){ fail++; console.error('send fail', b.id, e); }
+    } catch(e){ fail++; lastErr = (e && e.message) || String(e); console.error('send fail', b.id, e); }
   }
   render();
-  showToast(`✅ 발송 완료: ${ok}건${fail?` · 실패 ${fail}건`:''}`);
+  showToast(`발송 결과: 성공 ${ok}건${fail?` · 실패 ${fail}건 — ${lastErr}`:''}`);
 }
 document.getElementById('bulkBar').addEventListener('click', e => {
   const el = e.target.closest('[data-bb]'); if(!el) return;
