@@ -330,7 +330,7 @@ exports.sendKakao = onCall(
         throw new HttpsError("internal", (sch.j && sch.j.errorMessage) || "예약 설정 실패");
       }
       console.log("solapi scheduled ok", groupId, scheduledDate);
-      return sch.j;
+      return Object.assign({ groupId, scheduled: true }, sch.j || {});
     }
 
     // 즉시 발송
@@ -351,6 +351,38 @@ exports.sendKakao = onCall(
     }
     console.log("solapi ok", JSON.stringify(j).slice(0, 300));
     return j;
+  }
+);
+
+// 예약(스케줄) 발송 취소 — 솔라피 그룹의 예약을 해제한다.
+exports.cancelKakao = onCall(
+  { secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], region: "asia-northeast3", timeoutSeconds: 30 },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    const email = (auth.token && auth.token.email || "").toLowerCase();
+    let allowed = SUPER_ADMINS.includes(email);
+    if (!allowed && email) {
+      const snap = await admin.firestore().collection("users").doc(email).get();
+      const u = snap.exists ? snap.data() : null;
+      const perms = (u && u.perms) || {};
+      allowed = !!(u && u.active !== false && (perms.crm || perms.booking));
+    }
+    if (!allowed) throw new HttpsError("permission-denied", "권한이 없습니다.");
+
+    const groupId = String((request.data && request.data.groupId) || "").trim();
+    if (!groupId) throw new HttpsError("invalid-argument", "예약 그룹 ID가 없습니다.");
+
+    const apiKey = SOLAPI_API_KEY.value();
+    const apiSecret = SOLAPI_API_SECRET.value();
+    // 예약 취소 (스케줄 해제)
+    const r = await solapiReq("DELETE", `/messages/v4/groups/${groupId}/schedule`, {}, apiKey, apiSecret);
+    if (!r.ok) {
+      console.error("cancel schedule fail", groupId, JSON.stringify(r.j).slice(0, 400));
+      throw new HttpsError("internal", (r.j && (r.j.errorMessage || r.j.message)) || `취소 실패 (${r.status}) — 이미 발송됐을 수 있습니다.`);
+    }
+    console.log("solapi schedule canceled", groupId);
+    return r.j || { ok: true };
   }
 );
 
