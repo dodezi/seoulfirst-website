@@ -289,9 +289,11 @@ exports.sendKakao = onCall(
     };
     const message = { to, kakaoOptions };
     if (cfg.from) message.from = String(cfg.from).replace(/[^0-9]/g, "");
-    // 예약 발송 (KST 기준 "YYYY-MM-DD HH:mm:ss")
+
+    const body = { message };
+    // 예약 발송: scheduledDate는 message 안이 아니라 요청 본문 최상위 (KST "YYYY-MM-DD HH:mm:ss")
     if (data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))) {
-      message.scheduledDate = String(data.scheduledDate);
+      body.scheduledDate = String(data.scheduledDate);
     }
 
     const r = await fetch("https://api.solapi.com/messages/v4/send", {
@@ -300,7 +302,7 @@ exports.sendKakao = onCall(
         "Content-Type": "application/json",
         Authorization: solapiAuthHeader(SOLAPI_API_KEY.value(), SOLAPI_API_SECRET.value()),
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
