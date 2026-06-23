@@ -276,7 +276,8 @@
     <p class="tsub">솔라피 발신프로필·발신번호·<b>승인된 템플릿 ID</b>를 입력합니다. (관리자 전용 · 모든 직원 공유)</p>
     <div class="cfg-f"><label>발신프로필 키 (pfId)</label><input id="cfgPfId" placeholder="KA01PF..."></div>
     <div class="cfg-f"><label>발신번호</label><input id="cfgFrom" placeholder="0315151500"></div>
-    <div class="cfg-f"><label>템플릿 ID — 검사 전 안내</label><input id="cfgTplReminder" placeholder="KA01TP..."></div>
+    <div class="cfg-f"><label>템플릿 ID — 검사 전 안내(일반)</label><input id="cfgTplReminder" placeholder="KA01TP..."></div>
+    <div class="cfg-f"><label>템플릿 ID — 검사 전 안내(대장내시경) <span style="color:#aaa;font-weight:500;">— 승인 후 입력</span></label><input id="cfgTplReminderColono" placeholder="KA01TP... (비우면 일반 문구로 발송)"></div>
     <div class="cfg-f"><label>템플릿 ID — 검사 후 안부(용종절제)</label><input id="cfgTplPolyp" placeholder="KA01TP..."></div>
     <div class="cfg-f"><label>템플릿 ID — 검사 후 안부(조직검사)</label><input id="cfgTplBiopsy" placeholder="KA01TP..."></div>
     <div class="tpl-btns">
@@ -373,7 +374,8 @@ const DEFAULT_TPL = {
 
 내일 #{검사일} #{시간}에 「#{검사명}」 검사가 예약되어 안내드립니다.
 
-- 검사 전 안내받으신 금식·준비사항을 꼭 지켜주세요.
+- 전날 저녁부터 안내받으신 식이(저잔류식)와 장정결제 복용법을 꼭 지켜주세요.
+- 마지막 세정액이 맑은 노란색이 될 때까지 충분히 드셔야 깨끗한 검사가 가능합니다.
 - 수면(진정) 검사 시 검사 후 운전이 어려우니 보호자 동반 또는 대중교통을 권장합니다.
 - 복용 중인 약(특히 항혈전제·당뇨약)이 있으면 미리 알려주세요.
 
@@ -669,7 +671,10 @@ let AUTO_SEND_READY = true;
 function skipField(){ return tab==='reminder' ? 'crmReminderSkip' : 'crmFollowupSkip'; }
 // 발송 가능: 검사 전=전체 / 검사 후=조직검사·용종절제 한 사람(단순검사는 발송 안 함)
 function isSendable(b){ return tab==='reminder' ? true : (!!b.crmBiopsy || !!b.crmPolyp); }
-function sendKey(b){ return tab==='reminder' ? 'reminder' : (b.crmPolyp ? 'followup_polyp' : 'followup_biopsy'); }
+function sendKey(b){
+  if (tab==='reminder') return isColono(b.service) ? 'reminder_colono' : 'reminder';
+  return b.crmPolyp ? 'followup_polyp' : 'followup_biopsy';
+}
 function varsFor(b){
   if (tab==='reminder') return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사', '#{검사일}':b.confirmedDate?labelOf(b.confirmedDate):'', '#{시간}':b.confirmedTime||'' };
   return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사' };
@@ -799,6 +804,7 @@ async function openSolapi(){
     document.getElementById('cfgPfId').value = c.pfId || SOLAPI_DEFAULTS.pfId;
     document.getElementById('cfgFrom').value = c.from || SOLAPI_DEFAULTS.from;
     document.getElementById('cfgTplReminder').value = t.reminder || '';
+    document.getElementById('cfgTplReminderColono').value = t.reminder_colono || '';
     document.getElementById('cfgTplPolyp').value = t.followup_polyp || '';
     document.getElementById('cfgTplBiopsy').value = t.followup_biopsy || '';
   } catch(e){ showToast('설정 불러오기 실패: '+e.message); }
@@ -811,6 +817,7 @@ async function saveSolapi(){
     from: document.getElementById('cfgFrom').value.trim(),
     templates: {
       reminder: document.getElementById('cfgTplReminder').value.trim(),
+      reminder_colono: document.getElementById('cfgTplReminderColono').value.trim(),
       followup_polyp: document.getElementById('cfgTplPolyp').value.trim(),
       followup_biopsy: document.getElementById('cfgTplBiopsy').value.trim()
     }

@@ -258,7 +258,7 @@ exports.sendKakao = onCall(
 
     const data = request.data || {};
     const to = String(data.to || "").replace(/[^0-9]/g, "");
-    const templateKey = String(data.templateKey || "");
+    let templateKey = String(data.templateKey || "");
     const variables = (data.variables && typeof data.variables === "object") ? data.variables : {};
     if (!to) throw new HttpsError("invalid-argument", "수신 번호가 없습니다.");
 
@@ -272,6 +272,10 @@ exports.sendKakao = onCall(
       tplKeys: cfg && cfg.templates ? Object.keys(cfg.templates) : [],
       tplForKey: cfg && cfg.templates && cfg.templates[templateKey] ? "set" : "missing",
     }));
+    // 대장내시경 전용 템플릿이 아직 등록 안 됐으면 일반 검사 전 안내로 대체
+    if (templateKey === "reminder_colono" && cfg && cfg.templates && !cfg.templates.reminder_colono) {
+      templateKey = "reminder";
+    }
     if (!cfg || !cfg.pfId || !cfg.templates || !cfg.templates[templateKey]) {
       throw new HttpsError("failed-precondition", "발송 설정이 준비되지 않았습니다 — 관리자 ⚙️ 발송 설정에서 pfId·발신번호·템플릿 ID를 저장하세요.");
     }
