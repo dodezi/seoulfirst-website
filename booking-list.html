@@ -1056,10 +1056,13 @@ function renderTable() {
   // 확정·검사완료 탭: 확정 검사일(confirmedDate)별로 그룹 헤더를 넣어 구분
   const useDateGroup = (currentFilter === '확정' || currentFilter === '검사완료');
   if (useDateGroup) {
-    list = list.slice().sort((a, b) =>
-      (a.confirmedDate || '9999').localeCompare(b.confirmedDate || '9999') ||
-      (a.confirmedTime || '').localeCompare(b.confirmedTime || '')
-    );
+    // 검사완료 탭은 최신 검사일이 위로(내림차순), 확정 탭은 가까운 날짜가 위로(오름차순)
+    const dateDesc = (currentFilter === '검사완료');
+    list = list.slice().sort((a, b) => {
+      const dc = (a.confirmedDate || '9999').localeCompare(b.confirmedDate || '9999');
+      if (dc !== 0) return dateDesc ? -dc : dc;
+      return (a.confirmedTime || '').localeCompare(b.confirmedTime || '');
+    });
     const counts = {};
     list.forEach(b => { const d = b.confirmedDate || '미정'; counts[d] = (counts[d] || 0) + 1; });
     let html = '', lastDate = null, idx = 0;
@@ -1090,6 +1093,9 @@ const statusCycle = ['대기중','확정','검사완료'];
 async function cycleStatus(id, current) {
   // 현재가 취소(목록에 없음)면 indexOf=-1 → 대기중부터 시작
   const next = statusCycle[(statusCycle.indexOf(current)+1) % statusCycle.length];
+  // 변경 전 확인 — 어떤 상태로 바뀌는지 미리 알려 혼란 방지
+  const extra = (current === '검사완료') ? '\n(검사완료 → 대기중으로 되돌아가며, 검사완료 명단에서 사라집니다)' : '';
+  if (!confirm(`상태를 "${current}" → "${next}"(으)로 변경할까요?${extra}`)) return;
   await setStatus(id, next, `✅ 상태: ${current} → ${next}`);
 }
 // ── 상태 직접 지정 (취소/취소해제 버튼) ───────────────────
