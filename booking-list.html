@@ -984,19 +984,23 @@ function renderTable() {
     let confCell;
     if (isDeleted) {
       confCell = cd ? `<span class="conf-saved">${esc(cd)}${ct ? ' '+esc(ct) : ''}</span>` : `<span class="conf-none">-</span>`;
-    } else if (cd) {
+    } else if (cd && !b._editConf) {
       confCell = `<div class="conf-wrap">
         <span class="conf-saved" id="cfs-${b.id}">📅 ${esc(cd)}${ct ? ' &nbsp;'+esc(ct) : ''}</span>
         <button class="btn-xs btn-xs-edit" onclick="editConf('${b.id}')">수정</button>
       </div>`;
     } else {
+      const editing = !!b._editConf;
       confCell = `<div class="conf-wrap">
         <div class="conf-row">
-          <input type="date" class="conf-input cd" id="cfd-${b.id}" />
+          <input type="date" class="conf-input cd" id="cfd-${b.id}" value="${esc(cd)}" />
           <select class="conf-input ct" id="cft-${b.id}">${timeSlotOptions(b.confirmedTime || '09:00')}</select>
         </div>
         <input type="text" class="conf-input cs" id="cfx-${b.id}" placeholder="확정 검사항목" maxlength="40" value="${esc(b.service||'')}" />
-        <button class="btn-xs btn-xs-save" onclick="saveConf('${b.id}')">확정 저장</button>
+        <div class="conf-row">
+          <button class="btn-xs btn-xs-save" onclick="saveConf('${b.id}')">${editing ? '저장' : '확정 저장'}</button>
+          ${editing ? `<button class="btn-xs btn-xs-edit" onclick="cancelConf('${b.id}')">취소</button>` : ''}
+        </div>
       </div>`;
     }
 
@@ -1228,24 +1232,26 @@ async function saveConf(id) {
     const item0 = allBookings.find(b => b.id === id);
     if (item0 && (item0.status || '대기중') === '대기중') upd.status = '확정';
     await db.collection('bookings').doc(id).update(upd);
-    if (item0) Object.assign(item0, upd);
+    if (item0) { Object.assign(item0, upd); item0._editConf = false; }
+    // 확정/검사완료 탭에서 월 보기 중이면, 수정된 날짜의 월로 따라 이동
+    if ((currentFilter === '확정' || currentFilter === '검사완료') && bkMonth) {
+      bkMonth = date.slice(0, 7);   // YYYY-MM
+    }
     renderTable();
     showToast(`✅ 확정 검사일: ${date}${time ? ' '+time : ''}`);
   } catch(e) { alert('저장 오류: '+e.message); }
 }
+// 확정일시 수정: confirmedDate를 지우지 않고 그 행만 편집모드로 전환(목록에서 사라지지 않음)
 function editConf(id) {
   const item = allBookings.find(b => b.id === id);
   if (!item) return;
-  const oldDate = item.confirmedDate || '';
-  const oldTime = item.confirmedTime || '';
-  item.confirmedDate = '';
+  item._editConf = true;
   renderTable();
-  setTimeout(() => {
-    const di = document.getElementById('cfd-'+id);
-    const ti = document.getElementById('cft-'+id);
-    if (di) { di.value = oldDate; di.focus(); }
-    if (ti) ti.value = oldTime;
-  }, 30);
+  setTimeout(() => { const di = document.getElementById('cfd-'+id); if (di) di.focus(); }, 30);
+}
+function cancelConf(id) {
+  const item = allBookings.find(b => b.id === id);
+  if (item) { item._editConf = false; renderTable(); }
 }
 
 // ── 직접 추가 ─────────────────────────────────────────────
