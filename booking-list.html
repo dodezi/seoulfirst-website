@@ -1093,9 +1093,10 @@ const statusCycle = ['대기중','확정','검사완료'];
 async function cycleStatus(id, current) {
   // 현재가 취소(목록에 없음)면 indexOf=-1 → 대기중부터 시작
   const next = statusCycle[(statusCycle.indexOf(current)+1) % statusCycle.length];
-  // 변경 전 확인 — 어떤 상태로 바뀌는지 미리 알려 혼란 방지
-  const extra = (current === '검사완료') ? '\n(검사완료 → 대기중으로 되돌아가며, 검사완료 명단에서 사라집니다)' : '';
-  if (!confirm(`상태를 "${current}" → "${next}"(으)로 변경할까요?${extra}`)) return;
+  // 검사완료 → 대기중(되돌리기)일 때만 확인창 — 나머지(대기중→확정, 확정→검사완료)는 바로 변경
+  if (current === '검사완료') {
+    if (!confirm('검사완료 → 대기중으로 되돌립니다.\n검사완료 명단에서 사라집니다. 계속할까요?')) return;
+  }
   await setStatus(id, next, `✅ 상태: ${current} → ${next}`);
 }
 // ── 상태 직접 지정 (취소/취소해제 버튼) ───────────────────
