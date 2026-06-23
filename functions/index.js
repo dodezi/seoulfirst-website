@@ -264,8 +264,16 @@ exports.sendKakao = onCall(
 
     const cfgSnap = await admin.firestore().collection("crm_config").doc("solapi").get();
     const cfg = cfgSnap.exists ? cfgSnap.data() : null;
+    console.log("sendKakao req", JSON.stringify({
+      templateKey,
+      hasCfg: !!cfg,
+      pfId: cfg && cfg.pfId ? "set" : "missing",
+      from: cfg && cfg.from ? "set" : "missing",
+      tplKeys: cfg && cfg.templates ? Object.keys(cfg.templates) : [],
+      tplForKey: cfg && cfg.templates && cfg.templates[templateKey] ? "set" : "missing",
+    }));
     if (!cfg || !cfg.pfId || !cfg.templates || !cfg.templates[templateKey]) {
-      throw new HttpsError("failed-precondition", "발송 설정(pfId/템플릿)이 아직 준비되지 않았습니다.");
+      throw new HttpsError("failed-precondition", "발송 설정이 준비되지 않았습니다 — 관리자 ⚙️ 발송 설정에서 pfId·발신번호·템플릿 ID를 저장하세요.");
     }
 
     const kakaoOptions = {
