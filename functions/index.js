@@ -239,6 +239,18 @@ function solapiAuthHeader(apiKey, apiSecret) {
   const signature = crypto.createHmac("sha256", apiSecret).update(date + salt).digest("hex");
   return `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
 }
+async function solapiReq(method, path, bodyObj, apiKey, apiSecret) {
+  const r = await fetch("https://api.solapi.com" + path, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: solapiAuthHeader(apiKey, apiSecret),
+    },
+    body: bodyObj === undefined ? undefined : JSON.stringify(bodyObj),
+  });
+  const j = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, j };
+}
 
 exports.sendKakao = onCall(
   { secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], region: "asia-northeast3", timeoutSeconds: 60 },
@@ -290,32 +302,48 @@ exports.sendKakao = onCall(
     const message = { to, kakaoOptions };
     if (cfg.from) message.from = String(cfg.from).replace(/[^0-9]/g, "");
 
-    // 예약발송(scheduledDate)은 messages 배열 형식 + 본문 최상위에서만 지원됨
-    const body = { messages: [message] };
-    if (data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))) {
-      body.scheduledDate = String(data.scheduledDate);
+    const apiKey = SOLAPI_API_KEY.value();
+    const apiSecret = SOLAPI_API_SECRET.value();
+    const scheduledDate =
+      data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))
+        ? String(data.scheduledDate)
+        : null;
+
+    if (scheduledDate) {
+      // 예약 발송: 그룹 생성 → 메시지 추가 → 예약 (단일 send 엔드포인트는 예약 미지원)
+      const g = await solapiReq("POST", "/messages/v4/groups", {}, apiKey, apiSecret);
+      const groupId = g.j && g.j.groupId;
+      if (!g.ok || !groupId) {
+        console.error("group create fail", JSON.stringify(g.j).slice(0, 400));
+        throw new HttpsError("internal", (g.j && g.j.errorMessage) || "예약 그룹 생성 실패");
+      }
+      const add = await solapiReq("PUT", `/messages/v4/groups/${groupId}/messages`, { messages: [message] }, apiKey, apiSecret);
+      const addErr = add.j && add.j.resultList && add.j.resultList.find((x) => x && x.statusCode && x.statusCode !== "2000");
+      if (!add.ok || (add.j && add.j.errorCount > 0) || addErr) {
+        console.error("group add fail", JSON.stringify(add.j).slice(0, 600));
+        throw new HttpsError("internal", (addErr && addErr.statusMessage) || (add.j && add.j.errorMessage) || "예약 메시지 등록 실패");
+      }
+      const sch = await solapiReq("POST", `/messages/v4/groups/${groupId}/schedule`, { scheduledDate }, apiKey, apiSecret);
+      if (!sch.ok) {
+        console.error("schedule fail", JSON.stringify(sch.j).slice(0, 400));
+        throw new HttpsError("internal", (sch.j && sch.j.errorMessage) || "예약 설정 실패");
+      }
+      console.log("solapi scheduled ok", groupId, scheduledDate);
+      return sch.j;
     }
 
-    const r = await fetch("https://api.solapi.com/messages/v4/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: solapiAuthHeader(SOLAPI_API_KEY.value(), SOLAPI_API_SECRET.value()),
-      },
-      body: JSON.stringify(body),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      console.error("solapi http error", r.status, JSON.stringify(j).slice(0, 600));
-      throw new HttpsError("internal", j.errorMessage || j.message || `solapi ${r.status}`);
+    // 즉시 발송
+    const send = await solapiReq("POST", "/messages/v4/send", { message }, apiKey, apiSecret);
+    const j = send.j;
+    if (!send.ok) {
+      console.error("solapi http error", send.status, JSON.stringify(j).slice(0, 600));
+      throw new HttpsError("internal", j.errorMessage || j.message || `solapi ${send.status}`);
     }
-    // messages 배열 응답: 실패 목록이 있으면 그 사유로 실패 처리
     if (Array.isArray(j.failedMessageList) && j.failedMessageList.length) {
       const f = j.failedMessageList[0] || {};
       console.error("solapi msg fail", JSON.stringify(j).slice(0, 600));
       throw new HttpsError("internal", `${f.statusMessage || "발송 실패"} (${f.statusCode || ""})`);
     }
-    // 단일 message 응답 호환: HTTP 200이어도 statusCode 2000이 아니면 실패
     if (j.statusCode && j.statusCode !== "2000") {
       console.error("solapi msg fail", JSON.stringify(j).slice(0, 600));
       throw new HttpsError("internal", `${j.statusMessage || "발송 실패"} (${j.statusCode})`);
