@@ -688,7 +688,8 @@ function scheduledFor(b){
   d.setHours(10, 0, 0, 0);
   if (d.getTime() <= Date.now() + 60000) return null;   // 과거·임박 → 즉시
   const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:00`;
+  // 한국시간(+09:00) 명시 — 솔라피가 UTC로 해석하지 않도록
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00+09:00`;
 }
 function currentList(){ return tab==='reminder' ? reminderListFor(targetDate) : followupListFor(targetDate); }
 

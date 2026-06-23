@@ -305,7 +305,7 @@ exports.sendKakao = onCall(
     const apiKey = SOLAPI_API_KEY.value();
     const apiSecret = SOLAPI_API_SECRET.value();
     const scheduledDate =
-      data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))
+      data.scheduledDate && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\+09:00)?$/.test(String(data.scheduledDate))
         ? String(data.scheduledDate)
         : null;
 
