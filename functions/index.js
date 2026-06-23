@@ -290,8 +290,8 @@ exports.sendKakao = onCall(
     const message = { to, kakaoOptions };
     if (cfg.from) message.from = String(cfg.from).replace(/[^0-9]/g, "");
 
-    const body = { message };
-    // 예약 발송: scheduledDate는 message 안이 아니라 요청 본문 최상위 (KST "YYYY-MM-DD HH:mm:ss")
+    // 예약발송(scheduledDate)은 messages 배열 형식 + 본문 최상위에서만 지원됨
+    const body = { messages: [message] };
     if (data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))) {
       body.scheduledDate = String(data.scheduledDate);
     }
@@ -309,7 +309,13 @@ exports.sendKakao = onCall(
       console.error("solapi http error", r.status, JSON.stringify(j).slice(0, 600));
       throw new HttpsError("internal", j.errorMessage || j.message || `solapi ${r.status}`);
     }
-    // 솔라피는 HTTP 200이어도 메시지 단위로 실패할 수 있음 (statusCode 2000 = 성공 접수)
+    // messages 배열 응답: 실패 목록이 있으면 그 사유로 실패 처리
+    if (Array.isArray(j.failedMessageList) && j.failedMessageList.length) {
+      const f = j.failedMessageList[0] || {};
+      console.error("solapi msg fail", JSON.stringify(j).slice(0, 600));
+      throw new HttpsError("internal", `${f.statusMessage || "발송 실패"} (${f.statusCode || ""})`);
+    }
+    // 단일 message 응답 호환: HTTP 200이어도 statusCode 2000이 아니면 실패
     if (j.statusCode && j.statusCode !== "2000") {
       console.error("solapi msg fail", JSON.stringify(j).slice(0, 600));
       throw new HttpsError("internal", `${j.statusMessage || "발송 실패"} (${j.statusCode})`);
