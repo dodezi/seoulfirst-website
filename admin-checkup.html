@@ -360,6 +360,7 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
   color:#1a4a1a;
   white-space:pre-wrap;
 }
+.result-box:focus { outline:2px solid #4a90d9; background:#fff; }
 .result-box.empty { color:#adb5bd; font-style:italic; background:#fafbfc; border-color:var(--border); }
 .result-box.loading { color:var(--muted); font-style:italic; background:#f8f9fa; border-color:var(--border); }
 .action-row { margin-top:8px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
@@ -644,7 +645,6 @@ textarea.raw-input:focus { outline:none; border-color:var(--accent); }
 
   <div class="sidebar-footer">
     <button class="btn-sm-outline" onclick="location.href='admin.html'">🏠 홈</button>
-    <button class="btn-sm-outline" onclick="showApiModal()">🔑 API키</button>
     <button class="btn-sm-outline" onclick="exportData()">📤 백업</button>
     <button class="btn-sm-outline" onclick="importData()">📥 복원</button>
     <button class="btn-sm-outline" id="logoutBtn" style="display:none;">🔓 로그아웃</button>
@@ -1587,7 +1587,7 @@ function collectData() {
     if (!p.exams[s]) p.exams[s] = {};
     p.exams[s].raw = document.getElementById('raw-' + s)?.value || '';
     const res = document.getElementById('result-' + s);
-    p.exams[s].result = (res && !res.classList.contains('empty')) ? res.textContent : '';
+    p.exams[s].result = (res && !res.classList.contains('empty') && !res.classList.contains('loading')) ? res.innerText.trim() : '';
   });
   p.checkHp = document.getElementById('check-hp')?.checked || false;
   p.checkPoly = document.getElementById('check-poly')?.checked || false;
@@ -1720,7 +1720,6 @@ async function bloodSummary() {
   const p = db[currentId];
   const bt = p && p.bloodTest;
   if (!bt || !bt.rows || !bt.rows.length) { showToast('먼저 엑셀 결과지를 첨부하세요.'); return; }
-  if (!apiKey) { showApiModal(); return; }
   const el = document.getElementById('blood-note');
   const lines = bt.rows.filter(r => !r.group && r.result)
     .map(r => `${r.name}: ${r.result} ${r.unit} (참고 ${r.ref})${r.flag ? ' [' + r.flag + ']' : ''}`).join('\n');
@@ -1840,6 +1839,32 @@ function setReadonlyMode() {
 
 function markEditing() {}
 function clearEditingBadge() {}
+
+// ──── AI 변환 결과 직접 수정 가능하게 (contenteditable) ────
+function setupEditableResults() {
+  document.querySelectorAll('.result-box').forEach(el => {
+    el.setAttribute('contenteditable', 'true');
+    el.setAttribute('spellcheck', 'false');
+    el.title = '클릭해서 직접 수정할 수 있습니다';
+  });
+  const editor = document.getElementById('editor');
+  if (!editor) return;
+  // 빈 칸/로딩 표시는 편집 시작하면 비우고, 비워두면 안내문 복원
+  editor.addEventListener('focusin', e => {
+    const b = e.target.closest && e.target.closest('.result-box'); if (!b) return;
+    b.dataset.orig = b.classList.contains('empty') ? '' : b.innerText.trim();
+    if (b.classList.contains('empty') || b.classList.contains('loading')) {
+      b.textContent = ''; b.classList.remove('empty', 'loading');
+    }
+  });
+  editor.addEventListener('focusout', e => {
+    const b = e.target.closest && e.target.closest('.result-box'); if (!b) return;
+    const now = b.innerText.trim();
+    if (!now) { b.textContent = '변환 결과가 여기에 나타납니다.'; b.classList.add('empty'); }
+    if ((b.dataset.orig || '') !== now && currentId) { collectData(); saveDb(); }
+  });
+}
+document.addEventListener('DOMContentLoaded', setupEditableResults);
 
 // ──── 탭 전환 ────
 function showTab(name, btn) {
@@ -1994,7 +2019,7 @@ async function autoSummary() {
     const name = isKo ? SECTION_NAMES_KO[id] : SECTION_NAMES_EN[id];
     const res = document.getElementById('result-' + id);
     if (res && !res.classList.contains('empty') && !res.classList.contains('loading')) {
-      parts.push(`[${name}]\n${res.textContent}`);
+      parts.push(`[${name}]\n${res.innerText.trim()}`);
     }
     const raw = document.getElementById('raw-' + id)?.value.trim();
     if (raw && res.classList.contains('empty')) {
