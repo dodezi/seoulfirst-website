@@ -679,6 +679,17 @@ function varsFor(b){
   if (tab==='reminder') return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사', '#{검사일}':b.confirmedDate?labelOf(b.confirmedDate):'', '#{시간}':b.confirmedTime||'' };
   return { '#{이름}':b.name||'', '#{검사명}':b.service||'검사' };
 }
+// 검사 후 안부는 "검사 다음날 오전 10시"에 예약발송. (안내는 즉시 발송 → null)
+// 그 시각이 이미 지났으면 null(즉시 발송).
+function scheduledFor(b){
+  if (tab !== 'followup' || !b.confirmedDate) return null;
+  const d = parseYmd(b.confirmedDate);
+  d.setDate(d.getDate() + 1);
+  d.setHours(10, 0, 0, 0);
+  if (d.getTime() <= Date.now() + 60000) return null;   // 과거·임박 → 즉시
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:00`;
+}
 function currentList(){ return tab==='reminder' ? reminderListFor(targetDate) : followupListFor(targetDate); }
 
 async function toggleSkip(id){
@@ -707,18 +718,20 @@ async function bulkSend(){
   }
   if (!confirm(`발송 대상 ${list.length}명에게 카카오 알림톡을 발송할까요?`)) return;
   const sendFn = firebase.app().functions('asia-northeast3').httpsCallable('sendKakao');
-  let ok=0, fail=0, lastErr='';
+  let ok=0, fail=0, lastErr='', schedN=0;
   for (let i=0;i<list.length;i++){
     const b = list[i];
     showToast(`📨 발송 중… (${i+1}/${list.length})`);
     try {
-      await sendFn({ to: phoneDigits(b.phone), templateKey: sendKey(b), variables: varsFor(b) });
+      const sched = scheduledFor(b);
+      await sendFn({ to: phoneDigits(b.phone), templateKey: sendKey(b), variables: varsFor(b), scheduledDate: sched || undefined });
       await db.collection('bookings').doc(b.id).update({ [SENT_FIELD()]: firebase.firestore.FieldValue.serverTimestamp() });
-      b[SENT_FIELD()] = new Date(); ok++;
+      b[SENT_FIELD()] = new Date(); ok++; if (sched) schedN++;
     } catch(e){ fail++; lastErr = (e && e.message) || String(e); console.error('send fail', b.id, e); }
   }
   render();
-  showToast(`발송 결과: 성공 ${ok}건${fail?` · 실패 ${fail}건 — ${lastErr}`:''}`);
+  const schedMsg = schedN ? ` (검사 다음날 오전 10시 예약 ${schedN}건)` : '';
+  showToast(`발송 결과: 성공 ${ok}건${schedMsg}${fail?` · 실패 ${fail}건 — ${lastErr}`:''}`);
 }
 document.getElementById('bulkBar').addEventListener('click', e => {
   const el = e.target.closest('[data-bb]'); if(!el) return;

@@ -289,6 +289,10 @@ exports.sendKakao = onCall(
     };
     const message = { to, kakaoOptions };
     if (cfg.from) message.from = String(cfg.from).replace(/[^0-9]/g, "");
+    // 예약 발송 (KST 기준 "YYYY-MM-DD HH:mm:ss")
+    if (data.scheduledDate && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(data.scheduledDate))) {
+      message.scheduledDate = String(data.scheduledDate);
+    }
 
     const r = await fetch("https://api.solapi.com/messages/v4/send", {
       method: "POST",
