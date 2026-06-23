@@ -424,6 +424,9 @@
 
   <div class="page-body">
 
+    <!-- 검사 전 안내 자동발송 오류 경고 (있을 때만) -->
+    <a id="reminderErrBanner" href="admin-crm.html" style="display:none; text-decoration:none;"></a>
+
     <div class="toolbar">
       <h1>📋 예약명단</h1>
       <div class="search-box">
@@ -714,6 +717,29 @@ function grantAccess(user){
   document.getElementById('adminEmail').textContent = user.email;
   loadBookings();
   loadStaffLeaves();
+  checkReminderErrors();
+}
+// 검사 전 안내 자동발송 오류 확인 → 빨간 경고 배너
+async function checkReminderErrors(){
+  const el = document.getElementById('reminderErrBanner');
+  if (!el) return;
+  try {
+    const snap = await db.collection('crm_auto_log').orderBy('date', 'desc').limit(5).get();
+    const todayStr = (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
+    const twoAgo = (d => { d.setDate(d.getDate()-2); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(new Date());
+    let failed = 0, dates = [];
+    snap.docs.forEach(doc => {
+      const r = doc.data();
+      if (r.date >= twoAgo && r.date <= todayStr && (r.failed||0) > 0) { failed += r.failed; dates.push(r.date); }
+    });
+    if (failed > 0) {
+      el.style.display = 'block';
+      el.style.cssText += 'background:#fdecea;border:1.5px solid #f3b4ac;color:#c0392b;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:700;';
+      el.innerHTML = `🔴 예약 문자 발송 오류가 ${failed}건 있습니다 (${dates.join(', ')}). 클릭하여 CRM에서 확인·재발송하세요.`;
+    } else {
+      el.style.display = 'none';
+    }
+  } catch(e) { /* 권한·미배포 시 조용히 무시 */ }
 }
 function showNoPerm(user, u){
   document.getElementById('adminScreen').style.display = 'none';

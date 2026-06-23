@@ -9,6 +9,7 @@
  * → 관리 페이지(admin-invoices.html)에 실시간으로 나타남. PC를 켜둘 필요 없음.
  */
 const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
@@ -350,6 +351,105 @@ exports.sendKakao = onCall(
     }
     console.log("solapi ok", JSON.stringify(j).slice(0, 300));
     return j;
+  }
+);
+
+// ───────────────────────────────────────────────────────────
+// 검사 전 안내 자동 발송 (스케줄): 매일 한국시간 오전 10시
+//  - 내일 검사가 '확정'된 환자에게 안내 알림톡 자동 발송
+//  - 직원이 별도 확인/조작할 필요 없음 (예약명단에서 확정만 해두면 됨)
+//  - 결과를 예약 문서(crmReminderAt/crmReminderStatus)와 일별 로그(crm_auto_log)에 기록
+// ───────────────────────────────────────────────────────────
+const CRM_DOW = ["일", "월", "화", "수", "목", "금", "토"];
+function crmLabelOf(ymd) {
+  const [y, m, d] = String(ymd).split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return `${m}월 ${d}일 (${CRM_DOW[dt.getUTCDay()]})`;
+}
+function crmIsColono(s) {
+  const x = String(s || "").replace(/\s/g, "");
+  return ["대장내시경", "대장", "용종", "폴립", "대장암"].some((k) => x.includes(k));
+}
+async function solapiSendOne(to, templateId, pfId, from, variables, apiKey, apiSecret) {
+  const kakaoOptions = { pfId, templateId, variables, disableSms: from ? false : true };
+  const message = { to, kakaoOptions };
+  if (from) message.from = String(from).replace(/[^0-9]/g, "");
+  const send = await solapiReq("POST", "/messages/v4/send", { message }, apiKey, apiSecret);
+  const j = send.j || {};
+  if (!send.ok) throw new Error(j.errorMessage || j.message || `solapi ${send.status}`);
+  if (Array.isArray(j.failedMessageList) && j.failedMessageList.length) {
+    const f = j.failedMessageList[0] || {};
+    throw new Error(`${f.statusMessage || "발송 실패"} (${f.statusCode || ""})`);
+  }
+  if (j.statusCode && j.statusCode !== "2000") throw new Error(`${j.statusMessage || "발송 실패"} (${j.statusCode})`);
+  return j;
+}
+
+exports.autoReminder = onSchedule(
+  { schedule: "0 10 * * *", timeZone: "Asia/Seoul", region: "asia-northeast3", secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], timeoutSeconds: 300 },
+  async () => {
+    const dbf = admin.firestore();
+    // 한국시간 기준 '내일' 날짜
+    const kst = new Date(Date.now() + 9 * 3600 * 1000);
+    kst.setUTCDate(kst.getUTCDate() + 1);
+    const pad = (n) => String(n).padStart(2, "0");
+    const tomorrow = `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth() + 1)}-${pad(kst.getUTCDate())}`;
+
+    const cfgSnap = await dbf.collection("crm_config").doc("solapi").get();
+    const cfg = cfgSnap.exists ? cfgSnap.data() : null;
+    const apiKey = SOLAPI_API_KEY.value();
+    const apiSecret = SOLAPI_API_SECRET.value();
+
+    const snap = await dbf.collection("bookings").where("confirmedDate", "==", tomorrow).get();
+    let sent = 0, failed = 0, skipped = 0;
+    const errors = [];
+
+    for (const docSnap of snap.docs) {
+      const b = docSnap.data();
+      if (b.deleted) continue;
+      if (b.status !== "확정") continue;
+      if (b.crmReminderSkip) { skipped++; continue; }
+      if (b.crmReminderAt) { skipped++; continue; } // 이미 발송됨(수동 포함)
+
+      const to = String(b.phone || "").replace(/[^0-9]/g, "");
+      const FieldValue = admin.firestore.FieldValue;
+      if (!to) {
+        failed++; errors.push(`${b.name || "?"}: 연락처 없음`);
+        await docSnap.ref.update({ crmReminderStatus: "발송오류", crmReminderError: "연락처 없음", crmReminderAuto: true });
+        continue;
+      }
+      let key = crmIsColono(b.service) ? "reminder_colono" : "reminder";
+      if (key === "reminder_colono" && !(cfg && cfg.templates && cfg.templates.reminder_colono)) key = "reminder";
+      const variables = {
+        "#{이름}": b.name || "",
+        "#{검사명}": b.service || "검사",
+        "#{검사일}": b.confirmedDate ? crmLabelOf(b.confirmedDate) : "",
+        "#{시간}": b.confirmedTime || "",
+      };
+      try {
+        if (!cfg || !cfg.pfId || !cfg.templates || !cfg.templates[key]) throw new Error("발송 설정 미완료(pfId/템플릿)");
+        await solapiSendOne(to, cfg.templates[key], cfg.pfId, cfg.from, variables, apiKey, apiSecret);
+        sent++;
+        await docSnap.ref.update({
+          crmReminderAt: FieldValue.serverTimestamp(),
+          crmReminderAuto: true,
+          crmReminderStatus: "발송완료",
+          crmReminderError: FieldValue.delete(),
+        });
+      } catch (e) {
+        failed++; errors.push(`${b.name || "?"}: ${e.message || e}`);
+        await docSnap.ref.update({ crmReminderStatus: "발송오류", crmReminderError: String(e.message || e), crmReminderAuto: true });
+      }
+    }
+
+    // 일별 자동발송 로그 (예약 시스템 경고 배너·CRM 표시용)
+    await dbf.collection("crm_auto_log").doc(tomorrow).set({
+      date: tomorrow,
+      ranAt: admin.firestore.FieldValue.serverTimestamp(),
+      sent, failed, skipped,
+      errors: errors.slice(0, 50),
+    }, { merge: true });
+    console.log("autoReminder", tomorrow, "sent", sent, "failed", failed, "skipped", skipped);
   }
 );
 

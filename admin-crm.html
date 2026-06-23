@@ -116,6 +116,7 @@
 
     .it-status { margin-left:auto; display:flex; align-items:center; gap:8px; }
     .sent-badge { font-size:11px; font-weight:800; color:#fff; background:#27ae60; padding:3px 10px; border-radius:11px; }
+    .err-badge { font-size:11px; font-weight:800; color:#fff; background:#e74c3c; padding:3px 10px; border-radius:11px; }
     .it-toggle { font-size:12px; font-weight:700; color:#0d7377; background:#e8f4f4; border:none; padding:6px 12px; border-radius:8px; cursor:pointer; font-family:inherit; }
 
     /* 펼침 메시지 패널 */
@@ -608,7 +609,9 @@ function itemHtml(b){
         ${mid}
         ${phoneHtml}
         <span class="it-status">
-          ${done?`<span class="sent-badge">${esc(sentLabel(b))}</span>`:''}
+          ${(tab==='reminder' && b.crmReminderStatus==='발송오류' && !done)
+            ? `<span class="err-badge" title="${esc(b.crmReminderError||'발송 오류')}">⚠ 발송 오류</span>`
+            : (done?`<span class="sent-badge">${esc(sentLabel(b))}${(tab==='reminder'&&b.crmReminderAuto)?' (자동)':''}</span>`:'')}
           <button class="it-toggle" data-act="open" data-id="${id}">${open?'닫기 ▲':'메시지 ▾'}</button>
         </span>
       </div>

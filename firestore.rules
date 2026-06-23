@@ -133,6 +133,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 검사 전 안내 자동발송 일별 로그: 함수(admin SDK)가 기록, 화면은 읽기만
+    //  - 예약 시스템 발송오류 경고 배너·CRM 발송결과 표시용
+    match /crm_auto_log/{doc} {
+      allow read:  if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
+      allow write: if false;
+    }
+
     // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
     //  - 생성: 관리자·재직 직원(본인 행동 기록)
     //  - 읽기: 원장 전용
