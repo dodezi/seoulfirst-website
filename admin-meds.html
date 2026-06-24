@@ -59,6 +59,14 @@
     .hint { font-size: 13px; color: #5a6b7a; background: #eef5f5; border: 1px solid #d4e8e8; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; line-height: 1.6; }
     .hint b { color: #0d7377; }
 
+    /* 의약품 식별(외부 health.kr) */
+    .id-bar { display:flex; align-items:center; gap:12px; background:#f3eafa; border:1px solid #e2d2f3; border-radius:12px; padding:12px 16px; margin-bottom:20px; flex-wrap:wrap; }
+    .id-bar .id-title { font-size:14.5px; font-weight:800; color:#6c3fb5; }
+    .id-bar .id-sub { font-size:12px; color:#8a7aa5; margin-top:2px; }
+    .id-bar .id-btn { margin-left:auto; padding:10px 16px; background:#8e44ad; color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .id-bar .id-btn:hover { opacity:.92; }
+    .sec-title { font-size:14.5px; font-weight:800; color:#0f2b3d; margin: 4px 0 12px; }
+
     /* 입력 영역 */
     .dropzone { border: 2px dashed #b9ccd6; border-radius: 14px; background: #fff; padding: 30px 20px; text-align: center; cursor: pointer; transition: .15s; margin-bottom: 14px; }
     .dropzone:hover, .dropzone.drag { border-color: #0d7377; background: #f3faf9; }
@@ -128,7 +136,7 @@
   <div class="top-bar">
     <div class="tl">
       <a href="admin.html" style="display:inline-flex;align-items:center;"><img src="images/logo.png" alt="로고" style="cursor:pointer;" /></a>
-      <span>복약·처방 정리</span>
+      <span>의약품·복약 관리</span>
     </div>
     <div class="tr">
       <span id="adminEmail" style="opacity:.7; font-size:12px;"></span>
@@ -138,7 +146,17 @@
   </div>
 
   <div class="page-body">
-    <div class="toolbar"><h1>📋 복약·처방 정리</h1></div>
+    <div class="toolbar"><h1>💊 의약품·복약 관리</h1></div>
+
+    <div class="id-bar">
+      <div>
+        <div class="id-title">💊 의약품 모양·식별 검색</div>
+        <div class="id-sub">색·모양·각인으로 약 찾기 (health.kr · 새 창에서 열림)</div>
+      </div>
+      <button class="id-btn" onclick="window.open('https://health.kr/searchIdentity/Search.asp','_blank','noopener')">식별 검색 열기 ↗</button>
+    </div>
+
+    <div class="sec-title">📋 처방전·복약 내용 AI 정리</div>
     <div class="hint">
       환자 <b>처방전 사진</b>이나 <b>약품조회 화면(프린트스크린)</b>을 올리면, AI가
       <b>약품명 · 용량 · 1일 횟수 · 일수</b>로 정리해 줍니다. 정리된 글을 <b>복사</b>해서 차트에 붙여넣으세요.
