@@ -704,6 +704,7 @@ auth.onAuthStateChanged(async user => {
     const u = doc.exists ? doc.data() : null;
     if (u && u.active !== false && u.perms && u.perms[PAGE_KEY] === true) {
       grantAccess(user);
+      if (u.viewer === true) showViewerBanner();
     } else {
       showNoPerm(user, u);
     }
@@ -711,6 +712,14 @@ auth.onAuthStateChanged(async user => {
     showNoPerm(user, null);
   }
 });
+function showViewerBanner(){
+  if (document.getElementById('viewerBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'viewerBanner';
+  b.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#1f6feb;color:#fff;font-size:13px;font-weight:700;text-align:center;padding:9px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.18);";
+  b.textContent = '👁 살펴보기 전용 계정입니다 — 자유롭게 둘러보세요. (저장·수정·삭제는 적용되지 않습니다)';
+  document.body.appendChild(b);
+}
 function grantAccess(user){
   document.getElementById('noPermScreen').style.display = 'none';
   document.getElementById('adminScreen').style.display = 'block';

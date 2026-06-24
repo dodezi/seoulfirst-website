@@ -24,6 +24,14 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.get('perms', {}).get(page, false) == true;
     }
 
+    // 살펴보기 전용(읽기만) 계정인지 — viewer=true 이면 모든 쓰기 차단(데모/견학용)
+    function isViewer() {
+      return isActiveUser()
+        && get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.get('viewer', false) == true;
+    }
+    // 해당 페이지를 '수정'할 수 있는가 = 관리자 또는 (권한 있고 + 뷰어가 아님)
+    function canEdit(page) { return isAdmin() || (hasPagePerm(page) && !isViewer()); }
+
     // 공지사항: 누구나 읽기 / 관리자만 작성·수정·삭제
     match /notices/{doc} {
       allow read: if true;
@@ -32,8 +40,8 @@ service cloud.firestore {
 
     // 온라인 예약:
     //  - 공개 생성(예약폼)은 허용하되, 필드 화이트리스트·길이·금지문자(<>)로 검증 → 저장형 XSS·스팸 차단
-    //  - 직원/관리자는 추가 필드(확정일시·차트번호 등) 포함 생성 가능
-    //  - 조회·수정·삭제는 관리자·'예약' 권한 직원만
+    //  - 직원/관리자는 추가 필드(확정일시·차트번호 등) 포함 생성 가능 (뷰어 제외)
+    //  - 조회는 관리자·'예약' 권한 직원 / 수정·삭제는 뷰어 제외
     match /bookings/{doc} {
       function safeStr(v, max) {
         return v is string && v.size() <= max && !v.matches('[\\s\\S]*[<>][\\s\\S]*');
@@ -49,67 +57,67 @@ service cloud.firestore {
           && safeStr(d.get('memo',''), 1000)
           && d.status == '대기중';
       }
-      allow create: if validPublicBooking() || isAdmin() || hasPagePerm('booking');
-      allow read, update, delete: if isAdmin() || hasPagePerm('booking');
+      allow create: if validPublicBooking() || canEdit('booking');
+      allow read:          if isAdmin() || hasPagePerm('booking');
+      allow update, delete: if canEdit('booking');
     }
 
     // 검진 환자 정보 (민감): 관리자·'검진' 권한 직원
     match /checkup_patients/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('checkup');
+      allow read:  if isAdmin() || hasPagePerm('checkup');
+      allow write: if canEdit('checkup');
     }
 
-    // 거래명세서 (민감): 관리자·'거래명세서' 권한 직원
+    // 거래명세서 (민감)
     match /invoices/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('invoice');
+      allow read:  if isAdmin() || hasPagePerm('invoice');
+      allow write: if canEdit('invoice');
     }
 
-    // 마약류 기록 (민감): 관리자·'마약류' 권한 직원
+    // 마약류 기록 (민감)
     match /narcotics_records/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('narcotics');
+      allow read:  if isAdmin() || hasPagePerm('narcotics');
+      allow write: if canEdit('narcotics');
     }
 
-    // 점심 영수증: 관리자·'점심' 권한 직원 (서버 Functions는 admin SDK라 규칙 우회)
+    // 점심 영수증 (서버 Functions는 admin SDK라 규칙 우회)
     match /lunch_receipts/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('lunch');
+      allow read:  if isAdmin() || hasPagePerm('lunch');
+      allow write: if canEdit('lunch');
     }
 
-    // 장비 수리·관리(AS 이력): 관리자·'장비' 권한 직원
+    // 장비 수리·관리(AS 이력)
     match /equipment_repairs/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('equip');
+      allow read:  if isAdmin() || hasPagePerm('equip');
+      allow write: if canEdit('equip');
     }
 
     // 복약·처방 정리(텔레그램 수신): 관리자·'의약품'·'검진' 권한 직원
-    //  (서버 Functions는 admin SDK라 규칙 우회하여 기록)
     match /meds_records/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('meds') || hasPagePerm('checkup');
+      allow read:  if isAdmin() || hasPagePerm('meds') || hasPagePerm('checkup');
+      allow write: if isAdmin() || ((hasPagePerm('meds') || hasPagePerm('checkup')) && !isViewer());
     }
 
-    // 직원 명부 (연차 관리): 재직 직원은 읽기 / 쓰기는 관리자·'연차' 권한 직원
+    // 직원 명부 (연차 관리): 재직 직원은 읽기 / 쓰기는 '연차' 권한 직원(뷰어 제외)
     match /staff/{doc} {
       allow read:  if isAdmin() || isActiveUser();
-      allow write: if isAdmin() || hasPagePerm('leaves');
+      allow write: if canEdit('leaves');
     }
 
-    // 직원 연차 기록:
-    //  - 읽기: 관리자·재직 직원(예약 달력 등에 연차 표시)
-    //  - 생성·수정: 관리자·'연차' 권한 직원 (직원 계정은 deleteRequested 플래그로 삭제요청)
-    //  - 실제 삭제: 원장 계정만
+    // 직원 연차 기록
     match /staff_leaves/{doc} {
       allow read:           if isAdmin() || isActiveUser();
-      allow create, update: if isAdmin() || hasPagePerm('leaves');
+      allow create, update: if canEdit('leaves');
       allow delete:         if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
-    // 임시공휴일(휴무일): 재직 직원 읽기 / 쓰기는 관리자·예약·연차 권한 직원
+    // 임시공휴일(휴무일)
     match /custom_holidays/{doc} {
       allow read:  if isAdmin() || isActiveUser();
-      allow write: if isAdmin() || hasPagePerm('booking') || hasPagePerm('leaves');
+      allow write: if isAdmin() || ((hasPagePerm('booking') || hasPagePerm('leaves')) && !isViewer());
     }
 
-    // 포털 사용자·권한 (페이지 단위 접근권한):
-    //  - 읽기: 원장 전체 / 일반 직원은 '자기 문서'만
-    //  - 생성: 원장(직접 추가) 또는 본인이 '대기·권한없음' 상태의 자기 가입신청서
-    //  - 수정·삭제(승인·권한부여): 원장만
+    // 포털 사용자·권한
     match /users/{email} {
       allow read:   if (request.auth != null && request.auth.token.email == 'dodezi82@gmail.com')
                     || (request.auth != null && request.auth.token.email == email);
@@ -122,33 +130,29 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';
     }
 
-    // 앱 공용 설정: AI 키는 서버(Functions/Secret Manager)로 이전됨.
-    // 더 이상 클라이언트에 키를 노출하지 않도록 관리자만 접근 허용.
+    // 앱 공용 설정(AI 키 등): 관리자 전용
     match /app_config/{doc} {
       allow read, write: if isAdmin();
     }
 
-    // 검진 CRM 공식 문구(템플릿): 관리자·'CRM'·'예약' 권한 직원 읽기·쓰기
+    // 검진 CRM 공식 문구(템플릿)
     match /crm_templates/{doc} {
-      allow read, write: if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
+      allow read:  if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
+      allow write: if isAdmin() || ((hasPagePerm('crm') || hasPagePerm('booking')) && !isViewer());
     }
 
-    // 검진 CRM 발송 설정(솔라피 pfId·템플릿ID·발신번호): 관리자 전용.
-    // 직원은 직접 읽지 않고 sendKakao 함수(admin SDK)를 통해서만 사용.
+    // 검진 CRM 발송 설정(솔라피): 관리자 전용
     match /crm_config/{doc} {
       allow read, write: if isAdmin();
     }
 
     // 검사 전 안내 자동발송 일별 로그: 함수(admin SDK)가 기록, 화면은 읽기만
-    //  - 예약 시스템 발송오류 경고 배너·CRM 발송결과 표시용
     match /crm_auto_log/{doc} {
       allow read:  if isAdmin() || hasPagePerm('crm') || hasPagePerm('booking');
       allow write: if false;
     }
 
     // 변경·접속 이력 (감사 로그): 추가(append)만 가능, 수정·삭제 불가
-    //  - 생성: 관리자·재직 직원(본인 행동 기록)
-    //  - 읽기: 원장 전용
     match /audit_logs/{doc} {
       allow create: if isAdmin() || isActiveUser();
       allow read:   if request.auth != null && request.auth.token.email == 'dodezi82@gmail.com';

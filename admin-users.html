@@ -90,6 +90,7 @@
     .u-chip.none { background: #fdecea; color: #c0392b; }
     .badge-active { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #e8f8e8; color: #1e7a3a; }
     .badge-inactive { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #f0f0f0; color: #999; }
+    .badge-viewer { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #e3ecfa; color: #1f6feb; }
     .badge-super { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #fdebd0; color: #b9651b; }
     .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .row-actions button { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #dde2e8; background: #fff; color: #51606e; cursor: pointer; font-family: inherit; }
@@ -405,13 +406,15 @@ function renderUsers(){
         ? keys.map(k=>`<span class="u-chip">${PAGE_NAME[k]||k}</span>`).join('')
         : `<span class="u-chip none">접근 권한 없음</span>`;
       const status = u.active===false ? `<span class="badge-inactive">비활성</span>` : `<span class="badge-active">재직</span>`;
+      const viewerBadge = u.viewer===true ? ` <span class="badge-viewer">👁 보기전용</span>` : '';
       return `<tr>
         <td><span class="u-name">${esc(u.name||'-')}</span><br><span class="u-email">${esc(u.email||u.id)}</span></td>
         <td><div class="u-perms">${chips}</div></td>
-        <td>${status}</td>
+        <td>${status}${viewerBadge}</td>
         <td><div class="row-actions">
           <button onclick="openEdit('${esc(u.id)}')">권한 수정</button>
           <button onclick="toggleActive('${esc(u.id)}')">${u.active===false?'재직 ON':'재직 OFF'}</button>
+          <button onclick="toggleViewer('${esc(u.id)}')">${u.viewer===true?'✏️ 편집허용':'👁 보기전용'}</button>
           <button onclick="resetPw('${esc(u.id)}')">비번 재설정 메일</button>
           <button class="danger" onclick="removeUser('${esc(u.id)}')">계정 삭제</button>
         </div></td>
@@ -481,6 +484,20 @@ async function toggleActive(id){
     await db.collection('users').doc(id).update({ active: next });
     if(window.logAudit) logAudit('account', next?'재직 ON':'재직 OFF(접근 차단)', (u.name||'')+' · '+id);
     showToast(next ? '✅ 재직으로 변경' : '⏸️ 비활성(접근 차단)으로 변경');
+    loadUsers();
+  } catch(e){ alert('오류: '+e.message); }
+}
+async function toggleViewer(id){
+  const u=allUsers.find(x=>x.id===id); if(!u) return;
+  const next = !(u.viewer===true);   // 토글
+  const msg = next
+    ? `${u.name||''} 계정을 '살펴보기 전용'으로 바꿀까요?\n\n· 모든 기능을 볼 수는 있지만 저장·수정·삭제가 차단됩니다(데모·견학용).`
+    : `${u.name||''} 계정의 '살펴보기 전용'을 해제할까요?\n\n· 권한 있는 기능을 다시 편집할 수 있게 됩니다.`;
+  if(!confirm(msg)) return;
+  try {
+    await db.collection('users').doc(id).update({ viewer: next });
+    if(window.logAudit) logAudit('account', next?'보기전용 ON':'보기전용 해제', (u.name||'')+' · '+id);
+    showToast(next ? '👁 살펴보기 전용으로 변경했습니다.' : '✏️ 편집 허용으로 변경했습니다.');
     loadUsers();
   } catch(e){ alert('오류: '+e.message); }
 }

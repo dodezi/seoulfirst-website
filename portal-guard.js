@@ -12,6 +12,18 @@
 (function () {
   var SUPER = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
 
+  // 살펴보기 전용 안내 배너(화면 하단 고정) — 실제 차단은 보안 규칙이 담당
+  function viewerBanner() {
+    if (document.getElementById('viewerBanner')) return;
+    var b = document.createElement('div');
+    b.id = 'viewerBanner';
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#1f6feb;color:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:13px;font-weight:700;text-align:center;padding:9px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.18);';
+    b.textContent = '👁 살펴보기 전용 계정입니다 — 자유롭게 둘러보세요. (저장·수정·삭제는 적용되지 않습니다)';
+    document.body.appendChild(b);
+    document.body.style.paddingBottom = '44px';
+  }
+  window.__applyViewerBanner = viewerBanner;
+
   function overlay(state, msg, email) {
     var id = 'portalGuardOverlay';
     var el = document.getElementById(id);
@@ -54,6 +66,7 @@
       var key = window.PORTAL_PAGE_KEY;
       if (u && u.active !== false && u.perms && u.perms[key] === true) {
         overlay('hide');
+        if (u.viewer === true) viewerBanner();
       } else {
         var msg = '이 페이지에 대한 접근 권한이 없습니다. 원장에게 권한을 요청하세요.';
         if (u && u.status === 'pending') msg = '가입 신청이 아직 승인되지 않았습니다. 원장 승인 후 이용할 수 있습니다.';
