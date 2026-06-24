@@ -344,12 +344,13 @@ const PROMPT = `이 이미지는 한국 약국의 조제 라벨(약봉투) 또�
 - 사진이 여러 장이면, 약품명·용량·횟수가 또렷하게 보이는(확대된) 사진을 우선 근거로 삼으세요.
 
 [출력 형식] — 설명·머리말·표·마크다운 기호 없이, 약 목록만 한국어로 한 줄씩.
-약품명 용량 - 1일 N회 - 총 N일분
+약품명 용량 - 1회 N정 - 1일 N회
+(총 투약일수는 출력하지 마세요.)
 
 예시)
-졸피드정 10mg - 1일 1회 - 총 28일분
-일성이트라코나졸서방정 180mg - 1일 2회 - 총 15일분
-소론도정 - 1일 1회 - 총 10일분`;
+졸피드정 10mg - 1회 1정 - 1일 1회
+일성이트라코나졸서방정 180mg - 1회 1정 - 1일 2회
+소론도정 - 1회 2정 - 1일 1회`;
 
 async function parseMeds(){
   if (!images.length) { showToast('먼저 이미지를 올려주세요.'); return; }
@@ -439,9 +440,7 @@ function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader
 async function reparseMeds(id){
   const rec = medsRecords.find(r=>r.id===id);
   if (!rec || !rec.imageUrl) { showToast('이미지가 없어 다시 인식할 수 없습니다.'); return; }
-  const ta = document.getElementById('tgta-'+id);
-  const prev = ta ? ta.value : '';
-  if (ta) ta.value = '⏳ 다시 인식 중...';
+  showToast('⏳ 다시 인식 중...');
   try {
     const resp = await fetch(rec.imageUrl);
     const blob = await resp.blob();
@@ -453,10 +452,11 @@ async function reparseMeds(id){
       { type:'text', text: PROMPT }
     ]}] });
     const text = (r.data && r.data.content && r.data.content[0] && r.data.content[0].text || '').trim();
+    if (!text) { showToast('다시 인식 결과가 비었습니다. 사진을 확인해 주세요.'); return; }
+    // Firestore 갱신 → onSnapshot이 카드(텍스트)를 다시 그림
     await db.collection('meds_records').doc(id).update({ text, source:'parsed' });
     showToast('🔄 다시 인식 완료 — 확인 후 복사하세요.');
   } catch(e) {
-    if (ta) ta.value = prev;
     showToast('다시 인식 실패: ' + (e && e.message || e));
   }
 }
