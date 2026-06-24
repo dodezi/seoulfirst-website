@@ -419,7 +419,9 @@ async function solapiSendOne(to, templateId, pfId, from, variables, apiKey, apiS
 }
 
 exports.autoReminder = onSchedule(
-  { schedule: "0 10 * * *", timeZone: "Asia/Seoul", region: "asia-northeast3", secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], timeoutSeconds: 300 },
+  // 매일 오전 10시 + 오후 5시(KST). 5시 실행은 오전에 보낸 사람을 건너뛰고(crmReminderAt)
+  // 오후에 새로 확정된 내일 검사자에게만 추가 발송한다.
+  { schedule: "0 10,17 * * *", timeZone: "Asia/Seoul", region: "asia-northeast3", secrets: [SOLAPI_API_KEY, SOLAPI_API_SECRET], timeoutSeconds: 300 },
   async () => {
     const dbf = admin.firestore();
     // 한국시간 기준 '내일' 날짜
