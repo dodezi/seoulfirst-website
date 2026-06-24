@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>복약·처방 정리 | 서울퍼스트내과의원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDJ09WizY9hxfszG_AbCnlydkoKwh0CiHo",
+      authDomain:        "seoulfirst-ba9d4.firebaseapp.com",
+      projectId:         "seoulfirst-ba9d4",
+      storageBucket:     "seoulfirst-ba9d4.firebasestorage.app",
+      messagingSenderId: "702099053597",
+      appId:             "1:702099053597:web:27efd596ee2156a8fefaf4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db   = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f9; color: #1e2a38; min-height: 100vh; }
+
+    #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #fff; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.12); }
+    .login-box .logo { text-align: center; margin-bottom: 24px; }
+    .login-box .logo img { height: 38px; }
+    .login-box h2 { font-size: 19px; font-weight: 700; text-align: center; color: #0f2b3d; margin-bottom: 24px; }
+    .lf { margin-bottom: 14px; }
+    .lf label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .lf input { width: 100%; padding: 11px 14px; border: 1.5px solid #dde1e7; border-radius: 8px; font-size: 15px; font-family: inherit; }
+    .lf input:focus { outline: none; border-color: #0d7377; }
+    .btn-login { width: 100%; padding: 13px; background: #0d7377; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; }
+    #loginError { color: #c0392b; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; }
+
+    #noPermScreen { display:none; }
+    #adminScreen { display: none; }
+
+    .top-bar { background: #0f2b3d; color: #fff; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .top-bar .tl { display: flex; align-items: center; gap: 14px; }
+    .top-bar .tl img { height: 28px; }
+    .top-bar .tl span { font-size: 15px; font-weight: 700; }
+    .top-bar .tr { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .btn-small  { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+    .btn-logout { background: rgba(255,255,255,.15); color: #fff; }
+    .btn-back   { background: rgba(255,255,255,.1); color: #fff; text-decoration: none; display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+    .page-body { max-width: 900px; margin: 0 auto; padding: 26px 20px; }
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .toolbar h1 { font-size: 22px; font-weight: 700; color: #0f2b3d; flex: 1; }
+    .hint { font-size: 13px; color: #5a6b7a; background: #eef5f5; border: 1px solid #d4e8e8; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; line-height: 1.6; }
+    .hint b { color: #0d7377; }
+
+    /* 입력 영역 */
+    .dropzone { border: 2px dashed #b9ccd6; border-radius: 14px; background: #fff; padding: 30px 20px; text-align: center; cursor: pointer; transition: .15s; margin-bottom: 14px; }
+    .dropzone:hover, .dropzone.drag { border-color: #0d7377; background: #f3faf9; }
+    .dropzone .dz-ic { font-size: 40px; margin-bottom: 8px; }
+    .dropzone .dz-main { font-size: 15px; font-weight: 700; color: #0f2b3d; margin-bottom: 4px; }
+    .dropzone .dz-sub { font-size: 12.5px; color: #8a96a2; }
+    .dropzone kbd { background:#eef2f6; border:1px solid #cdd5dd; border-radius:5px; padding:1px 6px; font-size:12px; font-family:inherit; color:#445; }
+
+    .thumbs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .thumb { position: relative; width: 120px; height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid #dde1e7; background:#fff; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb .rm { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 13px; cursor: pointer; line-height: 1; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .btn-go { padding: 12px 22px; background: #0d7377; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-go:disabled { opacity: .5; cursor: default; }
+    .btn-clear { padding: 12px 18px; background: #f0f2f5; color: #555; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+    .result-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 18px; display: none; }
+    .result-card.on { display: block; }
+    .result-card h3 { font-size: 15px; font-weight: 800; color: #0f2b3d; margin-bottom: 10px; display:flex; align-items:center; gap:8px; }
+    .result-card textarea { width: 100%; border: 1.5px solid #dde1e7; border-radius: 10px; padding: 13px 14px; font-size: 14px; font-family: inherit; line-height: 1.8; resize: vertical; min-height: 180px; color:#222; }
+    .result-card textarea:focus { outline: none; border-color: #0d7377; }
+    .res-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .b-copy { padding: 10px 18px; background: #0d7377; color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .b-redo { padding: 10px 18px; background: #e8f4f4; color: #0d7377; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .warn-note { font-size: 12px; color: #b9651b; background:#fef5e9; border:1px solid #f5d9b3; border-radius:8px; padding:8px 12px; margin-top:12px; line-height:1.6; }
+
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: #0f2b3d; color: #fff; padding: 11px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .page-body { padding: 16px 10px; }
+      .top-bar { padding: 0 12px; height: 52px; }
+      .top-bar .tl span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo"><img src="images/logo.png" alt="로고" /></div>
+    <h2>🔐 복약·처방 정리 로그인</h2>
+    <div class="lf"><label>이메일</label><input type="email" id="lEmail" placeholder="관리자 이메일" autocomplete="username" /></div>
+    <div class="lf"><label>비밀번호</label><input type="password" id="lPw" placeholder="비밀번호" autocomplete="current-password" /></div>
+    <button class="btn-login" id="btnLogin">로그인</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- 권한 없음 -->
+<div id="noPermScreen" style="align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:30px;">
+  <div style="background:#fff; border-radius:16px; padding:40px; max-width:430px; box-shadow:0 8px 40px rgba(0,0,0,.12);">
+    <div style="font-size:48px; margin-bottom:8px;">🚫</div>
+    <h2 style="color:#c0392b; font-size:20px; margin-bottom:10px;">접근 권한이 없습니다</h2>
+    <p id="npMsg" style="color:#5a6b7a; font-size:14px; line-height:1.7;"></p>
+    <p style="color:#aab4bd; font-size:12px; margin-top:8px;">현재 계정: <span id="npEmail"></span></p>
+    <a href="admin.html" style="display:inline-block; margin-top:18px; background:#0d7377; color:#fff; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:700;">🏠 관리홈으로</a>
+    <div style="margin-top:12px;"><button id="btnLogoutNp" style="background:#eef1f5; color:#51606e; border:none; padding:8px 16px; border-radius:7px; font-weight:600; cursor:pointer; font-family:inherit;">로그아웃</button></div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div id="adminScreen">
+  <div class="top-bar">
+    <div class="tl">
+      <a href="admin.html" style="display:inline-flex;align-items:center;"><img src="images/logo.png" alt="로고" style="cursor:pointer;" /></a>
+      <span>복약·처방 정리</span>
+    </div>
+    <div class="tr">
+      <span id="adminEmail" style="opacity:.7; font-size:12px;"></span>
+      <a href="admin.html" class="btn-back">🏠 관리홈</a>
+      <button class="btn-small btn-logout" id="btnLogout">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="toolbar"><h1>📋 복약·처방 정리</h1></div>
+    <div class="hint">
+      환자 <b>처방전 사진</b>이나 <b>약품조회 화면(프린트스크린)</b>을 올리면, AI가
+      <b>약품명 · 용량 · 1일 횟수 · 일수</b>로 정리해 줍니다. 정리된 글을 <b>복사</b>해서 차트에 붙여넣으세요.
+      여러 장(처방전 2장 등)도 한꺼번에 올릴 수 있습니다.
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dz-ic">🖼️</div>
+      <div class="dz-main">여기에 캡처를 <kbd>Ctrl</kbd>+<kbd>V</kbd>로 붙여넣거나, 사진을 끌어다 놓으세요</div>
+      <div class="dz-sub">또는 클릭해서 파일 선택 · 약품조회 프린트스크린은 붙여넣기가 가장 빠릅니다</div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+    </div>
+
+    <div class="thumbs" id="thumbs"></div>
+
+    <div class="actions">
+      <button class="btn-go" id="btnGo" onclick="parseMeds()" disabled>⚡ AI로 복약내용 정리</button>
+      <button class="btn-clear" onclick="clearAll()">비우기</button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <h3>💊 정리 결과 <span style="font-size:12px;font-weight:500;color:#8a96a2;">(수정 가능)</span></h3>
+      <textarea id="resultText" placeholder="정리된 복약 내용이 여기에 나타납니다."></textarea>
+      <div class="res-btns">
+        <button class="b-copy" onclick="copyResult()">📋 복사 (차트 붙여넣기)</button>
+        <button class="b-redo" onclick="parseMeds()">🔄 다시 정리</button>
+      </div>
+      <div class="warn-note">⚠️ AI 자동 인식 결과입니다. 차트에 입력하기 전 <b>약품명·용량·횟수를 반드시 확인</b>해 주세요.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── 인증 ───────────────────────────────────────────────
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('lPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+async function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const pw    = document.getElementById('lPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해 주세요.'; return; }
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  try { await auth.signInWithEmailAndPassword(email, pw); }
+  catch(e) { errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; btn.textContent = '로그인'; btn.disabled = false; }
+}
+
+const SUPER_ADMINS = ['dodezi82@gmail.com', 'seoulfirst2023@gmail.com'];
+const PAGE_KEY = 'meds';
+function isSuperAdmin(email){ return SUPER_ADMINS.includes((email||'').toLowerCase()); }
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('noPermScreen').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  if (isSuperAdmin(user.email)) { grantAccess(user); return; }
+  try {
+    const doc = await db.collection('users').doc((user.email||'').toLowerCase()).get();
+    const u = doc.exists ? doc.data() : null;
+    const ok = u && u.active !== false && u.perms && (u.perms[PAGE_KEY] === true || u.perms.checkup === true);
+    if (ok) grantAccess(user); else showNoPerm(user, u);
+  } catch(e) { showNoPerm(user, null); }
+});
+function grantAccess(user){
+  document.getElementById('noPermScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  document.getElementById('adminEmail').textContent = user.email;
+}
+function showNoPerm(user, u){
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('noPermScreen').style.display = 'flex';
+  document.getElementById('npEmail').textContent = user.email;
+  let m = '이 페이지(복약·처방 정리)에 대한 접근 권한이 없습니다. 원장에게 권한을 요청하세요.';
+  if (u && u.status === 'pending') m = '가입 신청이 아직 승인되지 않았습니다. 원장 승인 후 이용할 수 있습니다.';
+  else if (u && u.active === false) m = '계정이 비활성 상태입니다. 원장에게 문의하세요.';
+  document.getElementById('npMsg').textContent = m;
+}
+document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
+document.getElementById('btnLogoutNp').addEventListener('click', () => auth.signOut());
+
+// ── 이미지 입력 (붙여넣기 / 드래그 / 파일) ───────────────
+let images = [];   // { dataUrl, b64, mediaType }
+const SUPPORTED = ['image/jpeg','image/png','image/webp','image/gif'];
+const MAX_IMAGES = 6;
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value=''; });
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+// 붙여넣기(Ctrl+V) — 약품조회 프린트스크린에 최적
+document.addEventListener('paste', e => {
+  if (document.getElementById('adminScreen').style.display !== 'block') return;
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  const files = [];
+  for (const it of items) { if (it.kind === 'file' && it.type.startsWith('image/')) files.push(it.getAsFile()); }
+  if (files.length) { e.preventDefault(); addFiles(files); }
+});
+
+function addFiles(fileList){
+  const arr = Array.from(fileList || []);
+  let added = 0;
+  arr.forEach(file => {
+    if (!file || !file.type.startsWith('image/')) return;
+    if (images.length >= MAX_IMAGES) { showToast(`이미지는 최대 ${MAX_IMAGES}장까지입니다.`); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const b64 = dataUrl.split(',')[1];
+      let mediaType = file.type;
+      if (!SUPPORTED.includes(mediaType)) mediaType = 'image/png';
+      images.push({ dataUrl, b64, mediaType });
+      renderThumbs();
+    };
+    reader.readAsDataURL(file);
+    added++;
+  });
+  if (added) showToast(`🖼️ 이미지 추가됨`);
+}
+function renderThumbs(){
+  const wrap = document.getElementById('thumbs');
+  wrap.innerHTML = images.map((im,i) =>
+    `<div class="thumb"><img src="${im.dataUrl}" alt="img${i}"><button class="rm" onclick="removeImg(${i})" title="삭제">✕</button></div>`
+  ).join('');
+  document.getElementById('btnGo').disabled = images.length === 0;
+}
+function removeImg(i){ images.splice(i,1); renderThumbs(); }
+function clearAll(){
+  images = []; renderThumbs();
+  document.getElementById('resultText').value = '';
+  document.getElementById('resultCard').classList.remove('on');
+}
+
+// ── AI 정리 (서버 프록시 claudeProxy) ───────────────────
+const PROMPT = `이 이미지는 처방전 또는 약품 조회 화면입니다. 환자가 복용 중인 약을 차트에 붙여넣을 수 있도록 정리하세요.
+각 약을 보이는 순서대로 한 줄씩, 아래 형식으로만 출력합니다.
+
+형식: 제품명 용량(성분명) - 1일 N회 - 총 N일분
+
+규칙:
+- 제품명을 우선 쓰고, 괄호 안에 성분명을 병기. 성분명만 있으면 성분명만.
+- 용량은 1정/1회 용량(mg 등).
+- "1일 N회"는 하루 투여 횟수. 화면에 1일 투여횟수가 있으면 그 값, 없으면 추정하지 말고 "1일 ?회"로.
+- 투여일수가 보이면 "총 N일분", 없으면 그 부분 생략.
+- 설명·머리말·표·마크다운 기호 없이 약 목록만 한국어로 출력.
+
+예시)
+노바스크정 5mg(암로디핀) - 1일 1회 - 총 60일분
+아스피린프로텍트정 100mg(아스피린) - 1일 1회 - 총 60일분`;
+
+async function parseMeds(){
+  if (!images.length) { showToast('먼저 이미지를 올려주세요.'); return; }
+  const btn = document.getElementById('btnGo');
+  const prevTxt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 정리 중...';
+  document.getElementById('resultCard').classList.add('on');
+  const ta = document.getElementById('resultText');
+  ta.value = '⏳ AI가 복약 내용을 정리하고 있습니다...';
+  try {
+    const content = images.map(im => ({ type:'image', source:{ type:'base64', media_type: im.mediaType, data: im.b64 } }));
+    content.push({ type:'text', text: PROMPT });
+    const fn = firebase.app().functions('asia-northeast3').httpsCallable('claudeProxy');
+    const r = await fn({ model:'claude-opus-4-8', max_tokens: 1500, messages:[{ role:'user', content }] });
+    const text = (r.data && r.data.content && r.data.content[0] && r.data.content[0].text || '').trim();
+    ta.value = text || '(인식 결과가 비어 있습니다. 이미지가 선명한지 확인해 주세요.)';
+    showToast('✅ 정리 완료 — 확인 후 복사하세요.');
+  } catch(e) {
+    ta.value = '❌ 오류: ' + (e && e.message || e);
+    showToast('정리 실패: ' + (e && e.message || e));
+  } finally {
+    btn.disabled = images.length === 0; btn.textContent = prevTxt;
+  }
+}
+
+function copyResult(){
+  const ta = document.getElementById('resultText');
+  const text = ta.value;
+  if (!text.trim()) { showToast('복사할 내용이 없습니다.'); return; }
+  navigator.clipboard.writeText(text).then(()=> showToast('📋 복사했습니다. 차트에 붙여넣기 하세요.'))
+    .catch(()=>{ ta.select(); document.execCommand('copy'); showToast('📋 복사했습니다.'); });
+}
+
+let _toastT=null;
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'),2600); }
+</script>
+</body>
+</html>

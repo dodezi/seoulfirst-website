@@ -196,7 +196,7 @@ exports.claudeProxy = onCall(
       const snap = await admin.firestore().collection("users").doc(email).get();
       const u = snap.exists ? snap.data() : null;
       const perms = (u && u.perms) || {};
-      allowed = !!(u && u.active !== false && (perms.checkup || perms.invoice || perms.lunch));
+      allowed = !!(u && u.active !== false && (perms.checkup || perms.invoice || perms.lunch || perms.meds));
     }
     if (!allowed) throw new HttpsError("permission-denied", "AI 사용 권한이 없습니다.");
 

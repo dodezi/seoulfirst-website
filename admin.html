@@ -94,6 +94,7 @@ body {
 .card.users .badge { background: #e7e0f5; color: #6c3fb5; }
 .card.audit .badge { background: #e7eaee; color: #51606e; }
 .card.crm .badge { background: #dff5f3; color: #0d7377; }
+.card.meds .badge { background: #e7f0fb; color: #2c6fb0; }
 .footer {
   margin-top: 40px;
   color: rgba(255,255,255,.35);
@@ -193,6 +194,13 @@ body {
       <div class="badge">Patient CRM</div>
     </a>
 
+    <a class="card meds" href="admin-meds.html">
+      <div class="icon">📋</div>
+      <h2>복약·처방<br>정리</h2>
+      <p>처방전·약품조회 사진을 올리면<br>약·용량·횟수 AI 정리</p>
+      <div class="badge">Medication Review</div>
+    </a>
+
     <a class="card drug" href="viewer.html?app=drug">
       <div class="icon">💊</div>
       <h2>의약품<br>식별</h2>
@@ -262,7 +270,7 @@ body {
   var SUPER = ['dodezi82@gmail.com','seoulfirst2023@gmail.com'];
   var OWNER = 'dodezi82@gmail.com';
   var PERM_BY_HREF = {
-    'admin-checkup.html':'checkup', 'admin-narcotics.html':'narcotics', 'booking-list.html':'booking', 'admin-crm.html':'crm',
+    'admin-checkup.html':'checkup', 'admin-narcotics.html':'narcotics', 'booking-list.html':'booking', 'admin-crm.html':'crm', 'admin-meds.html':'meds',
     'viewer.html?app=drug':'drug', 'viewer.html?app=parking':'parking', 'admin-invoices.html':'invoice',
     'admin-lunch.html':'lunch', 'admin-equipment.html':'equip', 'admin-leaves.html':'leaves',
     'admin-users.html':'__owner', 'admin-audit.html':'__owner'
