@@ -113,6 +113,7 @@
     .tg-card .tg-btns { display:flex; gap:7px; margin-top:8px; flex-wrap:wrap; }
     .tg-card .tg-btns button { padding:7px 13px; border:none; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; }
     .tg-btns .b-copy2 { background:#0d7377; color:#fff; }
+    .tg-btns .b-redo2 { background:#e8f4f4; color:#0d7377; }
     .tg-btns .b-del2 { background:#fdecea; color:#c0392b; }
     .tg-empty { text-align:center; color:#aaa; font-size:13.5px; padding:24px; background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
     @media(max-width:600px){ .tg-card{flex-direction:column;} .tg-card .tg-img{width:100%;height:160px;} }
@@ -412,6 +413,7 @@ function renderMeds(){
         <textarea id="tgta-${id}" data-id="${id}" placeholder="(인식 결과 없음 — 직접 입력하거나 사진을 확인하세요)">${esc(r.text||'')}</textarea>
         <div class="tg-btns">
           <button class="b-copy2" data-act="copy" data-id="${id}">📋 복사</button>
+          <button class="b-redo2" data-act="redo" data-id="${id}">🔄 다시 인식</button>
           <button class="b-del2" data-act="del" data-id="${id}">삭제</button>
         </div>
       </div>
@@ -426,11 +428,38 @@ document.getElementById('tgList').addEventListener('click', e => {
     const ta = document.getElementById('tgta-'+id); if(!ta) return;
     navigator.clipboard.writeText(ta.value).then(()=>showToast('📋 복사했습니다. 차트에 붙여넣기 하세요.'))
       .catch(()=>{ ta.select(); document.execCommand('copy'); showToast('📋 복사했습니다.'); });
+  } else if (el.getAttribute('data-act') === 'redo') {
+    reparseMeds(id);
   } else if (el.getAttribute('data-act') === 'del') {
     if (!confirm('이 처방전 기록을 삭제할까요?')) return;
     db.collection('meds_records').doc(id).delete().then(()=>showToast('삭제했습니다.')).catch(err=>showToast('삭제 실패: '+err.message));
   }
 });
+function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); }); }
+async function reparseMeds(id){
+  const rec = medsRecords.find(r=>r.id===id);
+  if (!rec || !rec.imageUrl) { showToast('이미지가 없어 다시 인식할 수 없습니다.'); return; }
+  const ta = document.getElementById('tgta-'+id);
+  const prev = ta ? ta.value : '';
+  if (ta) ta.value = '⏳ 다시 인식 중...';
+  try {
+    const resp = await fetch(rec.imageUrl);
+    const blob = await resp.blob();
+    let mt = blob.type; if (!SUPPORTED.includes(mt)) mt = 'image/jpeg';
+    const b64 = await blobToB64(blob);
+    const fn = firebase.app().functions('asia-northeast3').httpsCallable('claudeProxy');
+    const r = await fn({ model:'claude-opus-4-8', max_tokens:1500, messages:[{ role:'user', content:[
+      { type:'image', source:{ type:'base64', media_type: mt, data: b64 } },
+      { type:'text', text: PROMPT }
+    ]}] });
+    const text = (r.data && r.data.content && r.data.content[0] && r.data.content[0].text || '').trim();
+    await db.collection('meds_records').doc(id).update({ text, source:'parsed' });
+    showToast('🔄 다시 인식 완료 — 확인 후 복사하세요.');
+  } catch(e) {
+    if (ta) ta.value = prev;
+    showToast('다시 인식 실패: ' + (e && e.message || e));
+  }
+}
 document.getElementById('tgList').addEventListener('focusout', e => {
   const ta = e.target.closest && e.target.closest('textarea[data-id]'); if(!ta) return;
   const id = ta.getAttribute('data-id'); const rec = medsRecords.find(r=>r.id===id);
