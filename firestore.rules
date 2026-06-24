@@ -78,6 +78,12 @@ service cloud.firestore {
       allow read, write: if isAdmin() || hasPagePerm('equip');
     }
 
+    // 복약·처방 정리(텔레그램 수신): 관리자·'의약품'·'검진' 권한 직원
+    //  (서버 Functions는 admin SDK라 규칙 우회하여 기록)
+    match /meds_records/{doc} {
+      allow read, write: if isAdmin() || hasPagePerm('meds') || hasPagePerm('checkup');
+    }
+
     // 직원 명부 (연차 관리): 재직 직원은 읽기 / 쓰기는 관리자·'연차' 권한 직원
     match /staff/{doc} {
       allow read:  if isAdmin() || isActiveUser();

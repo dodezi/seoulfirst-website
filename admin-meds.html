@@ -95,6 +95,28 @@
     .b-redo { padding: 10px 18px; background: #e8f4f4; color: #0d7377; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
     .warn-note { font-size: 12px; color: #b9651b; background:#fef5e9; border:1px solid #f5d9b3; border-radius:8px; padding:8px 12px; margin-top:12px; line-height:1.6; }
 
+    /* 텔레그램 수신 처방전 */
+    .tg-section { margin-top: 28px; }
+    .tg-head { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; color:#0f2b3d; margin-bottom:4px; }
+    .tg-head .tg-count { font-size:11px; font-weight:700; color:#fff; background:#0d7377; padding:2px 9px; border-radius:11px; }
+    .tg-guide { font-size:12.5px; color:#5a6b7a; background:#eef5f5; border:1px solid #d4e8e8; border-radius:10px; padding:9px 13px; margin:8px 0 14px; line-height:1.6; }
+    .tg-guide b { color:#0d7377; }
+    .tg-card { display:flex; gap:14px; background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.06); padding:14px; margin-bottom:12px; }
+    .tg-card .tg-img { width:120px; height:120px; flex:0 0 auto; border-radius:9px; overflow:hidden; border:1px solid #dde1e7; cursor:pointer; background:#f4f6f9; }
+    .tg-card .tg-img img { width:100%; height:100%; object-fit:cover; }
+    .tg-card .tg-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .tg-card .tg-meta { font-size:11.5px; color:#8a96a2; margin-bottom:6px; }
+    .tg-card .tg-meta b { color:#5a6b7a; }
+    .tg-card .tg-fail { font-size:11px; font-weight:700; color:#c0392b; background:#fdecea; padding:1px 7px; border-radius:9px; margin-left:6px; }
+    .tg-card textarea { width:100%; border:1.5px solid #dde1e7; border-radius:8px; padding:9px 11px; font-size:13px; font-family:inherit; line-height:1.7; resize:vertical; min-height:96px; color:#222; }
+    .tg-card textarea:focus { outline:none; border-color:#0d7377; }
+    .tg-card .tg-btns { display:flex; gap:7px; margin-top:8px; flex-wrap:wrap; }
+    .tg-card .tg-btns button { padding:7px 13px; border:none; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .tg-btns .b-copy2 { background:#0d7377; color:#fff; }
+    .tg-btns .b-del2 { background:#fdecea; color:#c0392b; }
+    .tg-empty { text-align:center; color:#aaa; font-size:13.5px; padding:24px; background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    @media(max-width:600px){ .tg-card{flex-direction:column;} .tg-card .tg-img{width:100%;height:160px;} }
+
     #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: #0f2b3d; color: #fff; padding: 11px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -186,6 +208,15 @@
       </div>
       <div class="warn-note">⚠️ AI 자동 인식 결과입니다. 차트에 입력하기 전 <b>약품명·용량·횟수를 반드시 확인</b>해 주세요.</div>
     </div>
+
+    <div class="tg-section">
+      <div class="tg-head">📲 텔레그램으로 받은 처방전 <span class="tg-count" id="tgCount">0</span></div>
+      <div class="tg-guide">
+        폰으로 봇에게 처방전 사진을 보내면 자동으로 정리되어 여기에 표시됩니다(최근 순).
+        텔레그램에서 <b id="tgBotName">봇</b>을 검색해 사진을 보내세요.
+      </div>
+      <div id="tgList"><div class="tg-empty">아직 받은 처방전이 없습니다.</div></div>
+    </div>
   </div>
 </div>
 
@@ -231,6 +262,7 @@ function grantAccess(user){
   document.getElementById('noPermScreen').style.display = 'none';
   document.getElementById('adminScreen').style.display = 'block';
   document.getElementById('adminEmail').textContent = user.email;
+  subscribeMeds();
 }
 function showNoPerm(user, u){
   document.getElementById('adminScreen').style.display = 'none';
@@ -346,6 +378,64 @@ function copyResult(){
   navigator.clipboard.writeText(text).then(()=> showToast('📋 복사했습니다. 차트에 붙여넣기 하세요.'))
     .catch(()=>{ ta.select(); document.execCommand('copy'); showToast('📋 복사했습니다.'); });
 }
+
+// ── 텔레그램 수신 처방전 (실시간) ───────────────────────
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
+let _medsUnsub = null, medsRecords = [];
+function subscribeMeds(){
+  if (_medsUnsub) return;
+  _medsUnsub = db.collection('meds_records').orderBy('createdAt','desc').limit(50).onSnapshot(snap => {
+    medsRecords = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(r => SAFE_ID.test(r.id));
+    renderMeds();
+  }, err => { showToast('수신 목록 로드 실패: ' + err.message); });
+}
+function fmtTime(ts){
+  const d = ts && ts.toDate ? ts.toDate() : null; if(!d) return '';
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function renderMeds(){
+  document.getElementById('tgCount').textContent = medsRecords.length;
+  const wrap = document.getElementById('tgList');
+  if (!medsRecords.length){ wrap.innerHTML = `<div class="tg-empty">아직 받은 처방전이 없습니다.</div>`; return; }
+  wrap.innerHTML = medsRecords.map(r => {
+    const id = esc(r.id);
+    const fail = r.source !== 'parsed' ? `<span class="tg-fail">자동인식 실패</span>` : '';
+    const img = r.imageUrl ? `<div class="tg-img" onclick="window.open('${esc(r.imageUrl)}','_blank','noopener')"><img src="${esc(r.imageUrl)}" alt="처방전"></div>` : '';
+    return `<div class="tg-card">
+      ${img}
+      <div class="tg-body">
+        <div class="tg-meta">🕒 <b>${esc(fmtTime(r.createdAt))}</b> · 보낸사람 ${esc(r.tgFrom||'-')}${fail}</div>
+        <textarea id="tgta-${id}" data-id="${id}" placeholder="(인식 결과 없음 — 직접 입력하거나 사진을 확인하세요)">${esc(r.text||'')}</textarea>
+        <div class="tg-btns">
+          <button class="b-copy2" data-act="copy" data-id="${id}">📋 복사</button>
+          <button class="b-del2" data-act="del" data-id="${id}">삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+// 위임: 복사·삭제 + 편집 자동저장
+document.getElementById('tgList').addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const id = el.getAttribute('data-id'); if(!SAFE_ID.test(id)) return;
+  if (el.getAttribute('data-act') === 'copy') {
+    const ta = document.getElementById('tgta-'+id); if(!ta) return;
+    navigator.clipboard.writeText(ta.value).then(()=>showToast('📋 복사했습니다. 차트에 붙여넣기 하세요.'))
+      .catch(()=>{ ta.select(); document.execCommand('copy'); showToast('📋 복사했습니다.'); });
+  } else if (el.getAttribute('data-act') === 'del') {
+    if (!confirm('이 처방전 기록을 삭제할까요?')) return;
+    db.collection('meds_records').doc(id).delete().then(()=>showToast('삭제했습니다.')).catch(err=>showToast('삭제 실패: '+err.message));
+  }
+});
+document.getElementById('tgList').addEventListener('focusout', e => {
+  const ta = e.target.closest && e.target.closest('textarea[data-id]'); if(!ta) return;
+  const id = ta.getAttribute('data-id'); const rec = medsRecords.find(r=>r.id===id);
+  if (rec && (rec.text||'') !== ta.value) {
+    db.collection('meds_records').doc(id).update({ text: ta.value }).catch(()=>{});
+  }
+});
 
 let _toastT=null;
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'),2600); }

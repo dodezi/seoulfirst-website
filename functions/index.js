@@ -22,6 +22,7 @@ const WEBHOOK_SECRET = defineSecret("WEBHOOK_SECRET");
 const LUNCH_TELEGRAM_TOKEN = defineSecret("LUNCH_TELEGRAM_TOKEN");
 const SOLAPI_API_KEY = defineSecret("SOLAPI_API_KEY");
 const SOLAPI_API_SECRET = defineSecret("SOLAPI_API_SECRET");
+const MEDS_TELEGRAM_TOKEN = defineSecret("MEDS_TELEGRAM_TOKEN");
 
 const PROMPT = `이 이미지는 거래명세서 또는 세금계산서입니다. 표에 적힌 품목들을 정확히 읽어 JSON으로만 답하세요. 설명·코드블록 없이 순수 JSON만 출력합니다.
 {
@@ -615,6 +616,118 @@ exports.lunchWebhook = onRequest(
       res.status(200).send("ok");
     } catch (err) {
       console.error("lunch webhook error", err);
+      res.status(200).send("ok");
+    }
+  }
+);
+
+// ───────────────────────────────────────────────────────────
+// 처방전·약품조회 수신 함수 (의약품 식별 — 별도 봇)
+//  직원이 봇에게 처방전/약품조회 사진을 보내면:
+//  Storage 저장 → Claude로 약품명·용량·1일횟수·일수 정리 → meds_records 저장
+//  → admin-meds.html에 실시간 표시. 차트에 복사해 붙여넣기.
+// ───────────────────────────────────────────────────────────
+const MEDS_PROMPT = `이 이미지는 처방전 또는 약품 조회 화면입니다. 환자가 복용 중인 약을 차트에 붙여넣을 수 있도록 정리하세요.
+각 약을 보이는 순서대로 한 줄씩, 아래 형식으로만 출력합니다.
+
+형식: 제품명 용량(성분명) - 1일 N회 - 총 N일분
+
+규칙:
+- 제품명을 우선 쓰고, 괄호 안에 성분명을 병기. 성분명만 있으면 성분명만.
+- 용량은 1정/1회 용량(mg 등).
+- "1일 N회"는 하루 투여 횟수. 화면에 1일 투여횟수가 있으면 그 값, 없으면 추정하지 말고 "1일 ?회"로.
+- 투여일수가 보이면 "총 N일분", 없으면 그 부분 생략.
+- 설명·머리말·표·마크다운 기호 없이 약 목록만 한국어로 출력.`;
+
+async function parseMedsImage(apiKey, b64, mediaType) {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: "claude-opus-4-8", max_tokens: 1500,
+      messages: [{ role: "user", content: [
+        { type: "image", source: { type: "base64", media_type: mediaType, data: b64 } },
+        { type: "text", text: MEDS_PROMPT },
+      ]}],
+    }),
+  });
+  if (!r.ok) throw new Error(`anthropic ${r.status}: ${(await r.text()).slice(0, 140)}`);
+  const j = await r.json();
+  return ((j.content && j.content[0] && j.content[0].text) || "").trim();
+}
+
+exports.medsWebhook = onRequest(
+  { secrets: [MEDS_TELEGRAM_TOKEN, ANTHROPIC_KEY, WEBHOOK_SECRET], region: "asia-northeast3" },
+  async (req, res) => {
+    const expected = WEBHOOK_SECRET.value();
+    if (expected && req.get("X-Telegram-Bot-Api-Secret-Token") !== expected) {
+      res.status(401).send("unauthorized");
+      return;
+    }
+    try {
+      const update = req.body || {};
+      const msg = update.message || update.channel_post;
+      if (!msg) { res.status(200).send("ok"); return; }
+
+      let fileId = null;
+      let fname = `meds_${Date.now()}.jpg`;
+      if (msg.photo && msg.photo.length) {
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+      } else if (msg.document && (msg.document.mime_type || "").startsWith("image/")) {
+        fileId = msg.document.file_id;
+        fname = msg.document.file_name || fname;
+      }
+      if (!fileId) { res.status(200).send("ok"); return; }
+
+      const token = MEDS_TELEGRAM_TOKEN.value();
+      const gf = await (await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`)).json();
+      if (!gf.ok) throw new Error("getFile 실패");
+      const filePath = gf.result.file_path;
+      const fr = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
+      const buf = Buffer.from(await fr.arrayBuffer());
+      let contentType = fr.headers.get("content-type") || "";
+      if (!/^image\/(jpeg|png|gif|webp)$/.test(contentType)) {
+        const ext = (filePath.split(".").pop() || "").toLowerCase();
+        contentType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : "image/jpeg";
+      }
+
+      const db = admin.firestore();
+      const id = db.collection("meds_records").doc().id;
+      const spath = `meds_records/${id}_${fname}`;
+      const dlToken = crypto.randomUUID();
+      const bucket = admin.storage().bucket();
+      await bucket.file(spath).save(buf, { metadata: { contentType, metadata: { firebaseStorageDownloadTokens: dlToken } } });
+      const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(spath)}?alt=media&token=${dlToken}`;
+
+      const base = {
+        text: "", memo: msg.caption || "", imageUrl, imagePath: spath, fileName: fname,
+        source: "telegram",
+        tgFrom: (msg.from && (msg.from.first_name || msg.from.username)) || "",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      let okParse = false;
+      try {
+        base.text = await parseMedsImage(ANTHROPIC_KEY.value(), buf.toString("base64"), contentType);
+        base.source = "parsed";
+        base.parsedAt = admin.firestore.FieldValue.serverTimestamp();
+        okParse = !!base.text;
+      } catch (e) { console.error("meds claude error", e); }
+
+      await db.collection("meds_records").doc(id).set(base);
+
+      try {
+        const reply = okParse
+          ? `💊 복약 정리 완료\n\n${base.text.slice(0, 600)}\n\n(의약품 식별 페이지에서도 확인·복사할 수 있어요)`
+          : "💊 사진을 받았습니다. (자동 인식 실패 — 의약품 식별 페이지에서 확인해 주세요)";
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: msg.chat.id, text: reply }),
+        });
+      } catch (_) { /* 무시 */ }
+
+      res.status(200).send("ok");
+    } catch (err) {
+      console.error("meds webhook error", err);
       res.status(200).send("ok");
     }
   }
