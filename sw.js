@@ -3,7 +3,7 @@
  *       먼저 서버에서 받아오고, 오프라인/네트워크 실패 시에만 캐시로 대체한다.
  *       => git push로 배포한 변경이 바로 반영된다(캐시에 발목 잡히지 않음).
  */
-const CACHE = 'seoulfirst-admin-v1';
+const CACHE = 'seoulfirst-admin-v2';   // 버전 올리면 activate 때 이전 캐시 전부 삭제(옛 팝업·파일 정리)
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();   // 새 SW 즉시 활성화 대기 없이 설치
