@@ -951,6 +951,31 @@
     .then(function(r){ return r.json(); })
     .then(function(d){
       if(!d.active) return;
+      if (d.until && todayStr > d.until) return;   // 만료일 지나면 자동으로 안 뜸
+      // 이미지 팝업 모드: imageUrl 있으면 팜플릿 이미지를 그대로 표시
+      if (d.imageUrl) {
+        card.innerHTML = '';
+        card.style.background = 'transparent';
+        card.style.boxShadow = 'none';
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 16px 48px rgba(8,28,42,.28)';
+        var img = document.createElement('img');
+        img.src = d.imageUrl; img.alt = d.title || '휴진 안내';
+        img.style.cssText = 'width:100%;display:block;cursor:pointer';
+        img.addEventListener('click', function(){ window.open(d.imageUrl, '_blank'); });
+        var cbtn = document.createElement('button');
+        cbtn.textContent = '×'; cbtn.setAttribute('aria-label', '닫기');
+        cbtn.style.cssText = 'position:absolute;top:10px;right:10px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(0,0,0,.42);color:#fff;font-size:18px;line-height:1;cursor:pointer';
+        cbtn.addEventListener('click', close);
+        var hide = document.createElement('button');
+        hide.textContent = '오늘 하루 그만 보기';
+        hide.style.cssText = 'display:block;width:100%;margin-top:8px;border:none;border-radius:12px;background:rgba(255,255,255,.92);color:#556;padding:11px 0;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit';
+        hide.addEventListener('click', function(){ localStorage.setItem(KEY, todayStr); close(); });
+        wrap.appendChild(img); wrap.appendChild(cbtn);
+        card.appendChild(wrap); card.appendChild(hide);
+        setTimeout(function(){ card.classList.add('show'); }, 600);
+        return;
+      }
       document.getElementById('holidayTitle').textContent = d.title || '휴진 안내';
       document.getElementById('holidayMessage').textContent = d.message || '';
       if (d.badge) document.getElementById('hcardBadge').textContent = d.badge;
