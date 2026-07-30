@@ -178,16 +178,28 @@ async function loadPost() {
   if (!id) { location.href = 'health.html'; return; }
 
   try {
-    const res = await fetch('health-posts.json?v=' + Date.now());
-    const posts = await res.json();
-    const post = posts.find(p => p.id === id);
+    let post, posts = [];
+    try {
+      const [pr, ir] = await Promise.all([
+        fetch('posts/' + id + '.json?v=' + Date.now()),
+        fetch('posts-index.json?v=' + Date.now())
+      ]);
+      if (!pr.ok) throw new Error('post');
+      post = await pr.json();
+      posts = ir.ok ? await ir.json() : [];
+    } catch(eInner) {
+      const res = await fetch('health-posts.json?v=' + Date.now());
+      posts = await res.json();
+      post = posts.find(p => p.id === id);
+    }
     if (!post) { location.href = 'health.html'; return; }
+    posts.sort((a,b)=> b.id - a.id);
 
     // 페이지 타이틀 업데이트
     document.title = post.title + ' | 서울퍼스트내과의원';
 
     // 이전/다음 글
-    const idx = posts.indexOf(post);
+    const idx = posts.findIndex(p => p.id === id);
     const prev = posts[idx + 1];
     const next = posts[idx - 1];
 
