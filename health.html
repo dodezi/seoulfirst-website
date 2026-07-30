@@ -188,12 +188,20 @@ let currentPage = 1;
 
 async function loadPosts() {
   try {
-    const res = await fetch('health-posts.json?v=' + Date.now());
+    let res = await fetch('posts-index.json?v=' + Date.now());
+    if (!res.ok) throw new Error('index');
     allPosts = await res.json();
-    renderPage(1);
   } catch(e) {
-    document.getElementById('health-list').innerHTML = '<p style="text-align:center;color:#888;padding:40px;">건강소식을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.</p>';
+    try {
+      const r = await fetch('health-posts.json?v=' + Date.now());
+      allPosts = await r.json();
+    } catch(e2) {
+      document.getElementById('health-list').innerHTML = '<p style="text-align:center;color:#888;padding:40px;">건강소식을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.</p>';
+      return;
+    }
   }
+  allPosts.sort((a,b)=> b.id - a.id);
+  renderPage(1);
 }
 function renderPage(page) {
   currentPage = page;
