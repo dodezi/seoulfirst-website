@@ -2,6 +2,19 @@
    서울퍼스트내과의원 — multipage.js
    ============================================= */
 
+/* ---------- Google Analytics 4 (방문/유입 분석) ---------- */
+(function () {
+  var GA_ID = 'G-TYXZ511SVG';           // Firebase(seoulfirst-ba9d4) Analytics 측정 ID
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+  gtag('js', new Date());
+  gtag('config', GA_ID);
+})();
+
 /* ---------- Header scroll shadow ---------- */
 (function () {
   const header = document.getElementById('mp-header');
