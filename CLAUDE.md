@@ -1,14 +1,30 @@
 # 서울퍼스트내과의원 홈페이지
 
-## 프로젝트 정보
+# 🚨🚨🚨 최우선 경고 — 실제 운영 사이트는 이 저장소가 아니다 🚨🚨🚨
 
-- **GitHub**: https://github.com/dodezi/seoulfirst-website
-- **라이브 사이트(GitHub Pages)**: https://dodezi.github.io/seoulfirst-website/
+- **실제 라이브 사이트 = Firebase Hosting** → https://seoulfirst-ba9d4.web.app
+  - `www.seoulfirst.co.kr` 는 여기(Firebase)를 가리킨다. (가비아 DNS: `www` CNAME → `seoulfirst-ba9d4.web.app`)
+  - 라이브 관리시스템도 여기: https://seoulfirst-ba9d4.web.app/admin ("의료관리시스템" SPA)
+- **⚠️ 이 GitHub 저장소(dodezi/seoulfirst-website)는 몇 주 전의 옛 복사본이다. 라이브가 아니다.**
+  - 이 저장소의 파일 날짜/`git push`가 최신처럼 보여도 **실제 방문자가 보는 화면과 다르다.**
+- **🚫 절대 금지 (2026-08-06 이걸로 대형 사고남):**
+  - 이 저장소를 최신으로 착각하고 `www` DNS를 `dodezi.github.io`(GitHub Pages)로 돌리지 말 것.
+    → 홈페이지·관리시스템이 전부 옛 버전으로 바뀌는 사고 발생.
+  - `www` CNAME 값은 반드시 **`seoulfirst-ba9d4.web.app`** 로 유지.
+- **홈페이지/관리시스템을 실제로 수정하려면 Firebase 쪽 소스에서 작업해야 한다.**
+  - (❓확인 필요: Firebase 배포 소스 폴더/방법. `Documents/clinic-portal` 가능성. 수정·배포 전 반드시 확인.)
+- 어느 버전이 진짜인지 헷갈리면 **`https://seoulfirst-ba9d4.web.app` 를 직접 열어** 눈으로 확인할 것. 그게 라이브다.
+
+---
+
+## 프로젝트 정보 (이 저장소 = 옛 복사본)
+
+- **이 GitHub 저장소**: https://github.com/dodezi/seoulfirst-website  ← 옛 복사본(라이브 아님)
 - **노트북 파일 경로**: `C:\Users\dodez\Downloads\seoulfirst_multipage\`
 
-> ⚠️ 호스팅은 **GitHub Pages**입니다 (Netlify 아님 — 크레딧 소진으로 이전함).
-> `git push`하면 GitHub Pages가 1~2분 내 자동 배포합니다. 별도 설정 불필요.
-> 이미지/CSS 캐시가 남으면 파일명을 바꾸거나 브라우저 Ctrl+Shift+R로 강력 새로고침.
+> ⚠️ (옛 메모, 지금은 틀림) "호스팅=GitHub Pages"는 **더 이상 사실이 아니다.**
+> 실제 라이브는 위 경고대로 **Firebase Hosting**이다.
+> 브라우저에 옛 화면이 남으면: 시크릿 창(Ctrl+Shift+N) 또는 F12→Application→Storage→Clear site data.
 
 ## 기술 스택
 
